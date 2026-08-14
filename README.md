@@ -1,6 +1,6 @@
 # Weeknote — GitHub Intelligence Desk
 
-A private-aware Svelte 5 dashboard for exploring weekly GitHub engineering activity, delivered outcomes, and Cloudflare account evidence. It combines exact default-branch commit history, additions and deletions, repository inventory, merged work, releases, and GitHub Actions verification in a keyboard-navigable, viewport-contained workbench. Every workspace fits one screen; larger result sets use pagination rather than page scrolling.
+A private-aware Svelte 5 dashboard for exploring weekly GitHub engineering activity, delivered outcomes, Cloudflare account evidence, and an exact-owner career accountability pipeline. It combines exact default-branch commit history, additions and deletions, repository inventory, merged work, releases, and GitHub Actions verification in a keyboard-navigable, viewport-contained workbench. Every workspace fits one screen; larger result sets use pagination rather than page scrolling.
 
 ## Run it
 
@@ -14,7 +14,7 @@ Set `GITHUB_USERNAME` and `GITHUB_TOKEN` in `.env`. The token stays server-side.
 
 ## Cloudflare deployment
 
-The production application runs as the `weeknote` Cloudflare Worker at `https://gh.latham.cloud`, protected by Cloudflare Access. Static assets use Workers Static Assets; independently versioned GitHub and Cloudflare snapshots use the `WEEKNOTE_CACHE` KV binding; `GITHUB_TOKEN` and `CLOUDFLARE_API_TOKEN` are Worker secrets.
+The production application runs as the `weeknote` Cloudflare Worker at `https://gh.latham.cloud`, protected by Cloudflare Access for the exact owner email. Static assets use Workers Static Assets; independently versioned GitHub and Cloudflare snapshots use `WEEKNOTE_CACHE`; mutable owner-scoped opportunities, commitments, and interview stories use the dedicated `CAREER_DB` D1 binding; `GITHUB_TOKEN` and `CLOUDFLARE_API_TOKEN` are Worker secrets.
 
 ```bash
 npm run cf:types
@@ -44,6 +44,8 @@ Use `wrangler secret put GITHUB_TOKEN` or `wrangler secret put CLOUDFLARE_API_TO
 - GitHub GraphQL collection is divided into core repository/commit data and search/outcome data to stay below GitHub's query timeout.
 - Cloudflare inventory counts are labeled **Provisioned**; Workers, D1, and KV analytics and D1 physical storage are labeled **Measured** only after a successful API read. Permission gaps and unsupported response shapes remain **Unavailable**, never zero.
 - Cloudflare collection has a separate cache envelope and refresh lifecycle, so Cloudflare failures cannot replace or invalidate GitHub evidence.
+- Career records are stored in a dedicated D1 database, scoped by the exact normalized Access owner email, and parsed server-side before every mutation. Stage transitions append dated evidence rather than overwriting history silently.
+- The Career workspace tracks deliberate opportunities, one build and one job-search commitment, and private or sanitized interview story drafts. It does not reward application spam.
 - Future evidence-backed improvements and their formulas are tracked in [`docs/EVIDENCE-ROADMAP.md`](docs/EVIDENCE-ROADMAP.md).
 
 ## Navigation
@@ -55,6 +57,7 @@ Use `wrangler secret put GITHUB_TOKEN` or `wrangler secret put CLOUDFLARE_API_TO
 - `5` — Repositories
 - `6` — Ledger
 - `7` — Cloudflare
+- `8` — Career
 - `Ctrl/⌘ + K` — command palette
 
 ## Checks

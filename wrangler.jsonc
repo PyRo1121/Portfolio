@@ -22,7 +22,16 @@
 			"id": "70db94b6340347d0b6a1f7ce236b7cff"
 		}
 	],
+	"d1_databases": [
+		{
+			"binding": "CAREER_DB",
+			"database_name": "weeknote-career",
+			"database_id": "2e37016a-ccb2-4a3d-b4fd-7010c7addf54",
+			"migrations_dir": "migrations/career"
+		}
+	],
 	"vars": {
+		"CAREER_OWNER_EMAIL": "olen@latham.cloud",
 		"CLOUDFLARE_ACCOUNT_ID": "f1e95b3e1b502cf366dfc81a863695fa",
 		"GITHUB_USERNAME": "PyRo1121"
 	},

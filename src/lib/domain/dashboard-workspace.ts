@@ -2,7 +2,7 @@ import type { GitHubDashboardSnapshot, RepositoryIntelligence } from './github-i
 
 /** Top-level analytical workspaces available in the dashboard. */
 export type DashboardWorkspace =
-	'today' | 'brief' | 'delivery' | 'craft' | 'repositories' | 'activity' | 'cloudflare';
+	'today' | 'brief' | 'delivery' | 'craft' | 'repositories' | 'activity' | 'cloudflare' | 'career';
 
 /** Repository visibility filters supported by the explorer. */
 export type RepositoryFilter = 'all' | 'active' | 'private' | 'public';
@@ -51,9 +51,16 @@ export const workspaceDefinitions: ReadonlyArray<WorkspaceDefinition> = [
 	{
 		id: 'cloudflare',
 		index: 7,
-		label: 'Cloudflare',
+		label: 'Cloud',
 		description: 'Platform evidence',
 		shortcut: '7'
+	},
+	{
+		id: 'career',
+		index: 8,
+		label: 'Career',
+		description: 'Accountability pipeline',
+		shortcut: '8'
 	}
 ];
 
