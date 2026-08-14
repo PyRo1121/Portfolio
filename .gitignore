@@ -1,0 +1,38 @@
+node_modules
+*.tsbuildinfo
+*.log
+npm-debug.log*
+
+# Local editors and coding agents
+.vscode/
+.idea/
+.cursor/
+.claude/
+.pi/
+AGENTS.md
+CLAUDE.md
+
+# Output
+.output
+.vercel
+.netlify
+.wrangler
+/.svelte-kit
+/build
+/worker-configuration.d.ts
+/.weeknote-cache
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Env
+.env
+.env.*
+!.env.example
+!.env.test
+
+# Vite
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
