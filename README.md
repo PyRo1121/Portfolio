@@ -45,7 +45,8 @@ Use `wrangler secret put GITHUB_TOKEN` or `wrangler secret put CLOUDFLARE_API_TO
 - Cloudflare inventory counts are labeled **Provisioned**; Workers, D1, and KV analytics and D1 physical storage are labeled **Measured** only after a successful API read. Permission gaps and unsupported response shapes remain **Unavailable**, never zero.
 - Cloudflare collection has a separate cache envelope and refresh lifecycle, so Cloudflare failures cannot replace or invalidate GitHub evidence.
 - Career records are stored in a dedicated D1 database, scoped by the exact normalized Access owner email, and parsed server-side before every mutation. Stage transitions append dated evidence rather than overwriting history silently.
-- The Career workspace tracks deliberate opportunities, editable private context, one build and one job-search commitment, and private or sanitized interview story drafts. Due-date reminders are derived in the dashboard each viewer-local day; Weeknote does not claim an external notification was delivered or reward application spam.
+- The Career workspace opens on a decision-first Accountability Review, then exposes deliberate opportunities, editable private context, one build and one job-search commitment, and private or sanitized interview story drafts. Due-date reminders are derived in the dashboard each viewer-local day; Weeknote does not claim an external notification was delivered or reward application spam.
+- Accountability Review selection, evidence states, and inference limits are documented in [`docs/ACCOUNTABILITY-REVIEW.md`](docs/ACCOUNTABILITY-REVIEW.md).
 - Future evidence-backed improvements and their formulas are tracked in [`docs/EVIDENCE-ROADMAP.md`](docs/EVIDENCE-ROADMAP.md).
 
 ## Navigation

@@ -4,7 +4,7 @@
 	import type { PageProps as GeneratedPageProps } from './$types';
 	import ActivityWorkspace from '$lib/components/ActivityWorkspace.svelte';
 	import BriefWorkspace from '$lib/components/BriefWorkspace.svelte';
-	import CareerWorkspace from '$lib/components/CareerWorkspace.svelte';
+	import CareerAccountabilityWorkspace from '$lib/components/CareerAccountabilityWorkspace.svelte';
 	import CloudflareWorkspace from '$lib/components/CloudflareWorkspace.svelte';
 	import CommandPalette from '$lib/components/CommandPalette.svelte';
 	import CraftWorkspace from '$lib/components/CraftWorkspace.svelte';
@@ -14,6 +14,7 @@
 	import TodayWorkspace from '$lib/components/TodayWorkspace.svelte';
 	import WorkspaceRail from '$lib/components/WorkspaceRail.svelte';
 	import type { CareerSnapshot } from '$lib/domain/career-accountability';
+	import { createCareerAccountabilityReview } from '$lib/domain/career-accountability-review';
 	import { createCareerNavigationSignal } from '$lib/domain/career-navigation';
 	import type {
 		CloudflareUsageRefreshResult,
@@ -76,6 +77,11 @@
 	);
 	const viewerProjection = $derived(
 		snapshot === null ? null : createViewerActivityProjection(snapshot, viewerTimeZone)
+	);
+	const accountabilityReview = $derived(
+		snapshot === null || career === null
+			? null
+			: createCareerAccountabilityReview(snapshot, career, cloudflare, viewerToday)
 	);
 	const workspaceSignals = $derived.by(() => {
 		if (snapshot === null || viewerProjection === null) return null;
@@ -198,8 +204,9 @@
 				tabindex="-1"
 				{@attach dashboardView.workspaceAttachment('career')}
 			>
-				<CareerWorkspace
+				<CareerAccountabilityWorkspace
 					snapshot={career}
+					review={accountabilityReview}
 					accessReason={data.careerAccess.reason}
 					today={viewerToday}
 					actionMessage={form?.careerMessage ?? ''}
