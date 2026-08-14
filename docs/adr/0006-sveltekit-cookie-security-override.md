@@ -18,11 +18,11 @@ Use an exact nested npm override:
 
 ```json
 {
-  "overrides": {
-    "@sveltejs/kit": {
-      "cookie": "0.7.2"
-    }
-  }
+	"overrides": {
+		"@sveltejs/kit": {
+			"cookie": "0.7.2"
+		}
+	}
 }
 ```
 
