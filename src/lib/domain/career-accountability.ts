@@ -93,6 +93,7 @@ const OpportunityFormSchema = Schema.Struct({
 	resumeVersion: OptionalShortText,
 	notes: OptionalText
 });
+const OpportunityIdFormSchema = Schema.Struct({ id: Schema.UUID });
 const StageFormSchema = Schema.Struct({ id: Schema.UUID, stage: CareerStageSchema });
 const CommitmentFormSchema = Schema.Struct({
 	kind: Schema.Union(Schema.Literal('Build'), Schema.Literal('Career')),
@@ -124,6 +125,9 @@ export type CreateOpportunityInput = {
 	readonly resumeVersion: string | null;
 	readonly notes: string | null;
 };
+
+/** Parsed owner-scoped opportunity update input. */
+export type UpdateOpportunityInput = CreateOpportunityInput & { readonly id: string };
 
 /** Parsed commitment creation input. */
 export type CreateCommitmentInput = {
@@ -163,6 +167,16 @@ function parsedHttpsUrl(value: string): Either.Either<string | null, CareerInput
 		: Either.left(new CareerInputError('Links must be valid HTTP or HTTPS URLs.'));
 }
 
+function parsedOptionalDate(value: string): Either.Either<string | null, CareerInputError> {
+	if (value.length === 0) return Either.right(null);
+	const timestamp = Date.parse(`${value}T00:00:00.000Z`);
+	return /^\d{4}-\d{2}-\d{2}$/.test(value) &&
+		Number.isFinite(timestamp) &&
+		new Date(timestamp).toISOString().slice(0, 10) === value
+		? Either.right(value)
+		: Either.left(new CareerInputError('Dates must be valid calendar dates.'));
+}
+
 /** Parse untrusted opportunity form input into a domain command. */
 export function parseCreateOpportunity(
 	input: unknown
@@ -175,17 +189,33 @@ export function parseCreateOpportunity(
 	}
 	const jobUrl = parsedHttpsUrl(decoded.right.jobUrl);
 	if (Either.isLeft(jobUrl)) return Either.left(jobUrl.left);
+	const nextActionDue = parsedOptionalDate(decoded.right.nextActionDue);
+	if (Either.isLeft(nextActionDue)) return Either.left(nextActionDue.left);
 	return Either.right({
 		company: decoded.right.company,
 		role: decoded.right.role,
 		jobUrl: jobUrl.right,
 		stage: decoded.right.stage,
 		nextAction: optionalValue(decoded.right.nextAction),
-		nextActionDue: optionalValue(decoded.right.nextActionDue),
+		nextActionDue: nextActionDue.right,
 		contact: optionalValue(decoded.right.contact),
 		resumeVersion: optionalValue(decoded.right.resumeVersion),
 		notes: optionalValue(decoded.right.notes)
 	});
+}
+
+/** Parse an untrusted opportunity update form into an owner-scoped command. */
+export function parseUpdateOpportunity(
+	input: unknown
+): Either.Either<UpdateOpportunityInput, CareerInputError> {
+	const identity = Schema.decodeUnknownEither(OpportunityIdFormSchema)(input);
+	if (Either.isLeft(identity)) {
+		return Either.left(new CareerInputError('A valid opportunity is required.'));
+	}
+	const opportunity = parseCreateOpportunity(input);
+	return Either.isLeft(opportunity)
+		? Either.left(opportunity.left)
+		: Either.right({ id: identity.right.id, ...opportunity.right });
 }
 
 /** Parse an untrusted stage-transition form. */
@@ -203,13 +233,13 @@ export function parseCreateCommitment(
 	input: unknown
 ): Either.Either<CreateCommitmentInput, CareerInputError> {
 	const decoded = Schema.decodeUnknownEither(CommitmentFormSchema)(input);
-	return Either.isRight(decoded)
-		? Either.right({
-				kind: decoded.right.kind,
-				text: decoded.right.text,
-				dueOn: optionalValue(decoded.right.dueOn)
-			})
-		: Either.left(new CareerInputError('Commitment type and text are required.'));
+	if (Either.isLeft(decoded)) {
+		return Either.left(new CareerInputError('Commitment type and text are required.'));
+	}
+	const dueOn = parsedOptionalDate(decoded.right.dueOn);
+	return Either.isLeft(dueOn)
+		? Either.left(dueOn.left)
+		: Either.right({ kind: decoded.right.kind, text: decoded.right.text, dueOn: dueOn.right });
 }
 
 /** Parse an untrusted commitment status change. */

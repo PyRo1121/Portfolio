@@ -14,7 +14,7 @@
 	import TodayWorkspace from '$lib/components/TodayWorkspace.svelte';
 	import WorkspaceRail from '$lib/components/WorkspaceRail.svelte';
 	import type { CareerSnapshot } from '$lib/domain/career-accountability';
-	import { createCareerNavigationSignal } from '$lib/domain/career-view';
+	import { createCareerNavigationSignal } from '$lib/domain/career-navigation';
 	import type {
 		CloudflareUsageRefreshResult,
 		CloudflareUsageSnapshot
@@ -81,7 +81,7 @@
 		if (snapshot === null || viewerProjection === null) return null;
 		return {
 			...createWorkspaceSignals(snapshot, viewerProjection, cloudflare),
-			career: createCareerNavigationSignal(career)
+			career: createCareerNavigationSignal(career, viewerToday)
 		};
 	});
 	const status = $derived.by(() => {

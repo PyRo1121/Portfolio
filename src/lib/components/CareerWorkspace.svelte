@@ -1,17 +1,19 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import type { SubmitFunction } from '@sveltejs/kit';
 	import {
 		ArrowUpRight,
 		BookOpen,
 		Briefcase,
 		CalendarBlank,
 		CheckCircle,
+		PencilSimple,
 		Plus,
 		Target,
 		UserFocus
 	} from 'phosphor-svelte';
 	import { careerStages, type CareerSnapshot } from '$lib/domain/career-accountability';
-	import { createCareerView } from '$lib/domain/career-view';
+	import { createCareerAccountabilityView } from '$lib/domain/career-workspace-view';
 
 	type CareerPanel = 'pipeline' | 'commitments' | 'stories';
 	type Props = {
@@ -23,12 +25,23 @@
 
 	let { snapshot, accessReason, today, actionMessage }: Props = $props();
 	let mobilePanel = $state<CareerPanel>('pipeline');
-	const view = $derived(snapshot === null ? null : createCareerView(snapshot, today));
+	const view = $derived(snapshot === null ? null : createCareerAccountabilityView(snapshot, today));
 	const panels: ReadonlyArray<{ readonly id: CareerPanel; readonly label: string }> = [
 		{ id: 'pipeline', label: 'Pipeline' },
 		{ id: 'commitments', label: 'Commitments' },
 		{ id: 'stories', label: 'Stories' }
 	];
+	const enhanceOpportunityEdit: SubmitFunction = ({ formElement }) => {
+		const editor = formElement.closest('details');
+		return async ({ result, update }) => {
+			if (result.type === 'success') editor?.removeAttribute('open');
+			await update();
+		};
+	};
+
+	function closeOpportunityEditor(event: MouseEvent & { currentTarget: HTMLButtonElement }): void {
+		event.currentTarget.closest('details')?.removeAttribute('open');
+	}
 </script>
 
 <div class="career-screen">
@@ -49,12 +62,12 @@
 			<h1>Get hired.</h1>
 			<p>Ship evidence. Tell the story. Put it in front of startup teams.</p>
 		</div>
-		{#if snapshot !== null}
+		{#if snapshot !== null && view !== null}
 			<section aria-label="Career summary">
 				<div><strong>{snapshot.summary.activeOpportunities}</strong><span>active roles</span></div>
 				<div><strong>{snapshot.summary.interviewing}</strong><span>interviewing</span></div>
-				<div class={snapshot.summary.overdueActions > 0 ? 'attention' : ''}>
-					<strong>{snapshot.summary.overdueActions}</strong><span>follow-ups due</span>
+				<div class={view.overdueFollowUps > 0 ? 'attention' : ''}>
+					<strong>{view.overdueFollowUps}</strong><span>overdue follow-ups</span>
 				</div>
 				<div><strong>{snapshot.summary.storyDrafts}</strong><span>stories ready</span></div>
 			</section>
@@ -123,6 +136,85 @@
 											datetime={opportunity.nextActionDue}
 											><CalendarBlank size={12} /> {opportunity.nextActionDue}</time
 										>{/if}
+									<details class="opportunity-edit">
+										<summary><PencilSimple size={12} /> Edit details</summary>
+										<form
+											method="POST"
+											action="?/updateOpportunity"
+											aria-label={`Edit ${opportunity.company}`}
+											use:enhance={enhanceOpportunityEdit}
+										>
+											<input type="hidden" name="id" value={opportunity.id} />
+											<label
+												>Company<input
+													name="company"
+													value={opportunity.company}
+													maxlength="180"
+													required
+												/></label
+											>
+											<label
+												>Role<input
+													name="role"
+													value={opportunity.role}
+													maxlength="180"
+													required
+												/></label
+											>
+											<label
+												>Job URL<input
+													name="jobUrl"
+													type="url"
+													value={opportunity.jobUrl ?? ''}
+													maxlength="2048"
+												/></label
+											>
+											<label
+												>Stage<select name="stage"
+													>{#each careerStages as stage (stage)}<option
+															selected={stage === opportunity.stage}>{stage}</option
+														>{/each}</select
+												></label
+											>
+											<label class="wide"
+												>Next action<input
+													name="nextAction"
+													value={opportunity.nextAction ?? ''}
+													maxlength="180"
+												/></label
+											>
+											<label
+												>Due<input
+													name="nextActionDue"
+													type="date"
+													value={opportunity.nextActionDue ?? ''}
+												/></label
+											>
+											<label
+												>Contact<input
+													name="contact"
+													value={opportunity.contact ?? ''}
+													maxlength="180"
+												/></label
+											>
+											<label
+												>Résumé version<input
+													name="resumeVersion"
+													value={opportunity.resumeVersion ?? ''}
+													maxlength="180"
+												/></label
+											>
+											<label class="wide"
+												>Private notes<textarea name="notes" maxlength="2000"
+													>{opportunity.notes ?? ''}</textarea
+												></label
+											>
+											<div class="edit-actions">
+												<button type="button" onclick={closeOpportunityEditor}>Close</button>
+												<button type="submit">Save changes</button>
+											</div>
+										</form>
+									</details>
 									<form method="POST" action="?/transitionOpportunity" use:enhance>
 										<input type="hidden" name="id" value={opportunity.id} />
 										<select name="stage" aria-label={`Move ${opportunity.company} to stage`}>
@@ -166,13 +258,21 @@
 					</article>
 				{:else}<p class="empty">Set one build commitment and one career commitment.</p>{/each}
 			</div>
-			{#if view.nextActions.length > 0}
-				<footer>
-					<Target size={14} /><span>Next follow-up</span><strong
-						>{view.nextActions[0]?.nextAction}</strong
-					>
-				</footer>
-			{/if}
+			<footer class="follow-up-reminders">
+				<header>
+					<div><Target size={14} /><span>Follow-up reminders</span></div>
+					<small>Dashboard · recalculated daily</small>
+				</header>
+				<div>
+					{#each view.followUpReminders as reminder (reminder.opportunityId)}
+						<article>
+							<span class={reminder.tone}>{reminder.label}</span>
+							<strong>{reminder.company}</strong>
+							<p>{reminder.action}</p>
+						</article>
+					{:else}<p class="empty">Add a next action to create a dashboard reminder.</p>{/each}
+				</div>
+			</footer>
 		</section>
 
 		<section class={mobilePanel === 'stories' ? 'career-stories panel-visible' : 'career-stories'}>
@@ -305,7 +405,11 @@
 		grid-template-rows: auto minmax(0, 1fr);
 		overflow: hidden;
 	}
-	.career-commitments,
+	.career-commitments {
+		display: grid;
+		grid-template-rows: auto auto minmax(0, 1fr) auto;
+		overflow: hidden;
+	}
 	.career-stories {
 		display: grid;
 		grid-template-rows: auto auto minmax(0, 1fr);
@@ -353,6 +457,23 @@
 		background: var(--surface-deep);
 		box-shadow: 0 1rem 3rem rgb(0 0 0 / 45%);
 	}
+	.opportunity-edit > form {
+		position: fixed;
+		z-index: 12;
+		top: clamp(5rem, 14vh, 8rem);
+		left: 50%;
+		display: grid;
+		width: min(36rem, calc(100vw - 2rem));
+		max-height: calc(100dvh - 8rem);
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 0.65rem;
+		overflow-y: auto;
+		padding: 0.85rem;
+		border: 1px solid var(--accent);
+		background: var(--surface-deep);
+		box-shadow: 0 1.2rem 4rem rgb(0 0 0 / 70%);
+		transform: translateX(-50%);
+	}
 	label {
 		display: grid;
 		gap: 0.25rem;
@@ -380,6 +501,7 @@
 	}
 	form button,
 	.career-create summary,
+	.opportunity-edit summary,
 	.story-create summary {
 		padding: 0.48rem 0.62rem;
 		border: 1px solid var(--strong);
@@ -454,12 +576,23 @@
 	.opportunity-card time.overdue {
 		color: #d18070;
 	}
-	.opportunity-card form {
+	.opportunity-edit summary {
+		width: fit-content;
+		padding: 0.32rem 0.42rem;
+		font-size: 0.42rem;
+	}
+	.edit-actions {
+		display: flex;
+		grid-column: 1 / -1;
+		gap: 0.45rem;
+		justify-content: flex-end;
+	}
+	.opportunity-card > form {
 		display: grid;
 		grid-template-columns: 1fr auto;
 	}
-	.opportunity-card form select,
-	.opportunity-card form button {
+	.opportunity-card > form select,
+	.opportunity-card > form button {
 		font-size: 0.43rem;
 	}
 	.commitment-form {
@@ -503,14 +636,58 @@
 	.commitment-list form button {
 		padding: 0.35rem;
 	}
-	.career-commitments footer {
-		display: grid;
-		grid-template-columns: auto auto minmax(0, 1fr);
-		gap: 0.4rem;
-		padding: 0.55rem;
+	.follow-up-reminders {
+		min-height: 0;
 		border-top: 1px solid var(--line);
 		font: 480 0.47rem/1.3 var(--mono);
+	}
+	.follow-up-reminders > header {
+		display: flex;
+		justify-content: space-between;
+		gap: 0.5rem;
+		padding: 0.5rem 0.6rem;
 		color: var(--accent);
+		text-transform: uppercase;
+	}
+	.follow-up-reminders > header div {
+		display: flex;
+		gap: 0.35rem;
+		align-items: center;
+	}
+	.follow-up-reminders > header small {
+		color: var(--muted);
+	}
+	.follow-up-reminders > div {
+		display: flex;
+		max-height: 5.2rem;
+		overflow: auto;
+		border-top: 1px solid var(--line);
+	}
+	.follow-up-reminders article {
+		display: grid;
+		min-width: 10rem;
+		flex: 1;
+		gap: 0.18rem;
+		padding: 0.5rem 0.6rem;
+		border-right: 1px solid var(--line);
+	}
+	.follow-up-reminders article span {
+		color: var(--muted);
+		text-transform: uppercase;
+	}
+	.follow-up-reminders article span.overdue,
+	.follow-up-reminders article span.today {
+		color: #d18070;
+	}
+	.follow-up-reminders article span.upcoming {
+		color: var(--accent);
+	}
+	.follow-up-reminders article strong {
+		font-size: 0.55rem;
+	}
+	.follow-up-reminders article p {
+		margin: 0;
+		color: var(--muted);
 	}
 	.story-create {
 		border-bottom: 1px solid var(--line);
@@ -619,6 +796,11 @@
 			grid-template-columns: 1fr 1fr;
 			max-height: calc(100dvh - 10rem);
 			overflow-y: auto;
+		}
+		.opportunity-edit > form {
+			top: 5.5rem;
+			grid-template-columns: 1fr 1fr;
+			max-height: calc(100dvh - 9.5rem);
 		}
 	}
 	@media (max-width: 430px) {

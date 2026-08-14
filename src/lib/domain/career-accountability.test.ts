@@ -2,11 +2,13 @@ import { Either } from 'effect';
 import { describe, expect, it } from 'vitest';
 import {
 	parseCreateOpportunity,
+	parseUpdateOpportunity,
 	summarizeCareer,
 	type CareerCommitment,
 	type CareerOpportunity
 } from './career-accountability';
-import { createCareerView } from './career-view';
+import { createCareerNavigationSignal } from './career-navigation';
+import { createCareerAccountabilityView } from './career-workspace-view';
 
 const opportunity: CareerOpportunity = {
 	id: '22ba8ef8-33cf-4c6b-bbce-474b39533fb7',
@@ -52,8 +54,8 @@ describe('career accountability domain', () => {
 		}
 	});
 
-	it('rejects non-HTTP job links', () => {
-		const parsed = parseCreateOpportunity({
+	it('rejects non-HTTP job links and invalid calendar dates', () => {
+		const unsafeLink = parseCreateOpportunity({
 			company: 'Acme',
 			role: 'Engineer',
 			jobUrl: 'javascript:alert(1)',
@@ -64,7 +66,44 @@ describe('career accountability domain', () => {
 			resumeVersion: '',
 			notes: ''
 		});
-		expect(Either.isLeft(parsed)).toBe(true);
+		const invalidDate = parseCreateOpportunity({
+			company: 'Acme',
+			role: 'Engineer',
+			jobUrl: '',
+			stage: 'Interested',
+			nextAction: 'Follow up',
+			nextActionDue: '2026-02-31',
+			contact: '',
+			resumeVersion: '',
+			notes: ''
+		});
+		expect(Either.isLeft(unsafeLink)).toBe(true);
+		expect(Either.isLeft(invalidDate)).toBe(true);
+	});
+
+	it('requires an owner-scoped identifier when parsing opportunity edits', () => {
+		const parsed = parseUpdateOpportunity({
+			id: opportunity.id,
+			company: ' Acme Labs ',
+			role: opportunity.role,
+			jobUrl: opportunity.jobUrl,
+			stage: 'Contacted',
+			nextAction: 'Schedule founder call',
+			nextActionDue: '2026-08-15',
+			contact: '',
+			resumeVersion: 'startup-v3',
+			notes: 'Private context'
+		});
+		expect(Either.isRight(parsed)).toBe(true);
+		if (Either.isRight(parsed)) {
+			expect(parsed.right).toMatchObject({
+				id: opportunity.id,
+				company: 'Acme Labs',
+				stage: 'Contacted',
+				nextActionDue: '2026-08-15'
+			});
+		}
+		expect(Either.isLeft(parseUpdateOpportunity({ ...opportunity, id: 'not-a-uuid' }))).toBe(true);
 	});
 
 	it('derives overdue accountability and grouped pipeline evidence', () => {
@@ -74,13 +113,50 @@ describe('career accountability domain', () => {
 			overdueActions: 1,
 			openCommitments: 1
 		});
-		const view = createCareerView(
+		const view = createCareerAccountabilityView(
 			{ opportunities: [opportunity], commitments: [commitment], stories: [], summary },
 			'2026-08-14'
 		);
 		expect(view.columns.find((column) => column.stage === 'Applied')?.opportunities).toHaveLength(
 			1
 		);
-		expect(view.nextActions[0]?.overdue).toBe(true);
+		expect(view.followUpReminders[0]).toMatchObject({
+			company: 'Acme',
+			label: '1d overdue',
+			tone: 'overdue'
+		});
+		expect(view.overdueFollowUps).toBe(1);
+	});
+
+	it('reprojects rail urgency against the viewer-local date', () => {
+		const summary = summarizeCareer([opportunity], [], [], '2026-08-13');
+		const snapshot = { opportunities: [opportunity], commitments: [], stories: [], summary };
+		expect(createCareerNavigationSignal(snapshot, '2026-08-13').tone).toBe('neutral');
+		expect(createCareerNavigationSignal(snapshot, '2026-08-14').tone).toBe('attention');
+	});
+
+	it('derives daily reminder urgency and excludes closed opportunities', () => {
+		const opportunities: ReadonlyArray<CareerOpportunity> = [
+			{ ...opportunity, id: '77960ef8-f702-4b4f-a220-d81f39e2393b', nextActionDue: '2026-08-14' },
+			{ ...opportunity, id: '337832de-38b0-4ad9-954c-0f3b29a175d7', nextActionDue: '2026-08-15' },
+			{ ...opportunity, id: '9c9a6f7a-a9a0-402f-b049-f9dc385c8100', nextActionDue: null },
+			{
+				...opportunity,
+				id: 'e67ce570-06bd-4402-8e4b-7bd1441b9151',
+				stage: 'Closed',
+				nextActionDue: '2026-08-12'
+			}
+		];
+		const summary = summarizeCareer(opportunities, [], [], '2026-08-14');
+		const view = createCareerAccountabilityView(
+			{ opportunities, commitments: [], stories: [], summary },
+			'2026-08-14'
+		);
+		expect(view.overdueFollowUps).toBe(0);
+		expect(view.followUpReminders.map(({ label, tone }) => ({ label, tone }))).toEqual([
+			{ label: 'Due today', tone: 'today' },
+			{ label: 'Due tomorrow', tone: 'upcoming' },
+			{ label: 'Needs date', tone: 'unscheduled' }
+		]);
 	});
 });

@@ -10,7 +10,8 @@ import {
 	type CareerStory,
 	type CreateCommitmentInput,
 	type CreateOpportunityInput,
-	type CreateStoryInput
+	type CreateStoryInput,
+	type UpdateOpportunityInput
 } from '$lib/domain/career-accountability';
 
 const OpportunityRowSchema = Schema.Struct({
@@ -209,6 +210,61 @@ export function createCareerOpportunity(
 			]);
 		},
 		catch: (cause) => new CareerStoreError('create opportunity', cause)
+	});
+}
+
+/** Update one owner-scoped opportunity and record a stage change when one occurred. */
+export function updateCareerOpportunity(
+	database: D1Database,
+	ownerEmail: string,
+	input: UpdateOpportunityInput,
+	now: Date
+): Effect.Effect<void, CareerStoreError> {
+	return Effect.tryPromise({
+		try: async () => {
+			const raw = await database
+				.prepare('SELECT stage FROM career_opportunities WHERE id = ? AND owner_email = ?')
+				.bind(input.id, ownerEmail)
+				.first();
+			const current = Schema.decodeUnknownSync(StageRowSchema)(raw);
+			const timestamp = now.toISOString();
+			const update = database
+				.prepare(
+					`UPDATE career_opportunities
+					 SET company = ?, role = ?, job_url = ?, stage = ?, next_action = ?,
+					     next_action_due = ?, contact = ?, resume_version = ?, notes = ?, updated_at = ?
+					 WHERE id = ? AND owner_email = ?`
+				)
+				.bind(
+					input.company,
+					input.role,
+					input.jobUrl,
+					input.stage,
+					input.nextAction,
+					input.nextActionDue,
+					input.contact,
+					input.resumeVersion,
+					input.notes,
+					timestamp,
+					input.id,
+					ownerEmail
+				);
+			if (current.stage === input.stage) {
+				await update.run();
+				return;
+			}
+			await database.batch([
+				update,
+				database
+					.prepare(
+						`INSERT INTO career_stage_events
+						 (id, opportunity_id, owner_email, from_stage, to_stage, occurred_at)
+						 VALUES (?, ?, ?, ?, ?, ?)`
+					)
+					.bind(crypto.randomUUID(), input.id, ownerEmail, current.stage, input.stage, timestamp)
+			]);
+		},
+		catch: (cause) => new CareerStoreError('update opportunity', cause)
 	});
 }
 
