@@ -30,8 +30,12 @@ function repository(fullName: string): RepositoryIntelligenceInput {
 	};
 }
 
-function slice(fullName: string) {
-	return { repository: repository(fullName), releases: [], previousReleaseCount: 0 };
+function refresh(fullName: string) {
+	return {
+		slice: { repository: repository(fullName), releases: [], previousReleaseCount: 0 },
+		graphQLCost: 1,
+		successfulGraphQLRequests: 1
+	};
 }
 
 function cacheFixture() {
@@ -69,7 +73,7 @@ describe('incremental GitHub repository collection', () => {
 							maximumActive = Math.max(maximumActive, active);
 							await new Promise((resolve) => setTimeout(resolve, 5));
 							active -= 1;
-							return slice(name);
+							return refresh(name);
 						},
 						catch: (cause) => new Error(String(cause))
 					})
@@ -77,6 +81,8 @@ describe('incremental GitHub repository collection', () => {
 		);
 		expect(collection.freshRepositories).toBe(7);
 		expect(collection.staleRepositories).toEqual([]);
+		expect(collection.graphQLCost).toBe(7);
+		expect(collection.successfulGraphQLRequests).toBe(7);
 		expect(maximumActive).toBeLessThanOrEqual(6);
 		expect(maximumActive).toBeGreaterThan(1);
 	});
@@ -87,7 +93,7 @@ describe('incremental GitHub repository collection', () => {
 			collectGitHubRepositorySlices({
 				...baseOptions,
 				cache,
-				load: (name) => Effect.succeed(slice(name))
+				load: (name) => Effect.succeed(refresh(name))
 			})
 		);
 		const staleName = names[2]!;
@@ -98,11 +104,15 @@ describe('incremental GitHub repository collection', () => {
 				load: (name) =>
 					name === staleName
 						? Effect.fail(new Error('repository timeout'))
-						: Effect.succeed(slice(name))
+						: Effect.succeed(refresh(name))
 			})
 		);
 		expect(retained.freshRepositories).toBe(6);
-		expect(retained.staleRepositories).toEqual([staleName]);
+		expect(retained.staleRepositories).toEqual([
+			{ repository: staleName, cachedAt: '2026-08-14T20:00:00.000Z' }
+		]);
+		expect(retained.graphQLCost).toBe(6);
+		expect(retained.successfulGraphQLRequests).toBe(6);
 
 		const unmatched = await Effect.runPromiseExit(
 			collectGitHubRepositorySlices({

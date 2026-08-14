@@ -238,7 +238,12 @@ export type GitHubIntelligenceInput = {
 		readonly privateRepositories: number;
 		readonly publicRepositories: number;
 		readonly freshRepositories: number;
-		readonly staleRepositories: ReadonlyArray<string>;
+		readonly staleRepositories: ReadonlyArray<{
+			readonly repository: string;
+			readonly cachedAt: string;
+		}>;
+		readonly graphQLCost: number;
+		readonly successfulGraphQLRequests: number;
 	};
 	readonly contributionDays: ReadonlyArray<ContributionDayInput>;
 	readonly totalYearContributions: number;
@@ -288,6 +293,13 @@ export type RepositoryCollectionEvidence = {
 	readonly totalRepositories: number;
 	readonly freshRepositories: number;
 	readonly staleRepositories: ReadonlyArray<string>;
+	readonly oldestStaleAt: string | null;
+	readonly graphQL: {
+		readonly state: 'Measured' | 'Unavailable';
+		readonly points: number;
+		readonly successfulRequests: number;
+		readonly detail: string;
+	};
 	readonly detail: string;
 };
 
@@ -761,17 +773,32 @@ function buildRepositoryCollectionEvidence(
 	const isCurrent =
 		collection.freshRepositories === collection.totalRepositories &&
 		collection.staleRepositories.length === 0;
+	const oldestStaleAt = collection.staleRepositories.reduce<string | null>(
+		(oldest, repository) =>
+			oldest === null || repository.cachedAt < oldest ? repository.cachedAt : oldest,
+		null
+	);
 	let detail = 'Repository collection is unavailable for this snapshot.';
 	if (isCurrent) {
 		detail = `All ${collection.totalRepositories} repository slices refreshed for the canonical window.`;
 	} else if (collection.staleRepositories.length > 0) {
 		detail = `${collection.freshRepositories} repository slices refreshed; ${collection.staleRepositories.length} retained same-window last-known-good evidence.`;
 	}
+	const graphQLState = isCurrent ? 'Measured' : 'Unavailable';
+	const costQualifier = isCurrent ? '' : ' known';
+	const costLimitation = isCurrent ? '' : ' Failed request cost was not returned.';
 	return {
 		state: isCurrent ? 'Observed' : 'Unavailable',
 		totalRepositories: collection.totalRepositories,
 		freshRepositories: collection.freshRepositories,
-		staleRepositories: collection.staleRepositories,
+		staleRepositories: collection.staleRepositories.map((repository) => repository.repository),
+		oldestStaleAt,
+		graphQL: {
+			state: graphQLState,
+			points: collection.graphQLCost,
+			successfulRequests: collection.successfulGraphQLRequests,
+			detail: `${collection.graphQLCost}${costQualifier} GraphQL points across ${collection.successfulGraphQLRequests} successful requests.${costLimitation}`
+		},
 		detail
 	};
 }
@@ -927,7 +954,9 @@ export function createDemoIntelligence(base: WeeklySnapshot): GitHubDashboardSna
 			privateRepositories: demoRepositories.filter((repository) => repository.isPrivate).length,
 			publicRepositories: demoRepositories.filter((repository) => !repository.isPrivate).length,
 			freshRepositories: 0,
-			staleRepositories: []
+			staleRepositories: [],
+			graphQLCost: 0,
+			successfulGraphQLRequests: 0
 		},
 		contributionDays,
 		totalYearContributions: 864,

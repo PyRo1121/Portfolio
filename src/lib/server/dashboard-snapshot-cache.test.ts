@@ -81,6 +81,27 @@ describe('DashboardSnapshotCache', () => {
 		);
 	});
 
+	it('hydrates pre-observability collection health with unavailable cost evidence', async () => {
+		const { cache, values } = cacheFixture();
+		await cache.refresh('octocat', null, new Date(), async () => liveSnapshot());
+		const [key] = values.keys();
+		expect(key).toBeDefined();
+		const envelope = parseJson<{
+			snapshot: {
+				intelligence: { repositoryCollection: Record<string, unknown> };
+			};
+		}>(values.get(key!)!);
+		delete envelope.snapshot.intelligence.repositoryCollection['graphQL'];
+		delete envelope.snapshot.intelligence.repositoryCollection['oldestStaleAt'];
+		values.set(key!, JSON.stringify(envelope));
+		expect((await cache.read('octocat'))?.snapshot.intelligence.repositoryCollection).toMatchObject(
+			{
+				oldestStaleAt: null,
+				graphQL: { state: 'Unavailable', points: 0, successfulRequests: 0 }
+			}
+		);
+	});
+
 	it('shares one in-flight refresh across concurrent callers', async () => {
 		const { cache } = cacheFixture();
 		let calls = 0;

@@ -30,4 +30,4 @@ Repository-slice storage failure does not invalidate successfully parsed upstrea
 - Same-window failures recover at repository granularity without mixing reporting windows.
 - Cold collection issues more GraphQL operations, bounded to six concurrent repository requests.
 - Live cold-cache verification across 25 repositories reduced the account query to roughly 0.6 seconds; the slowest repository slice was roughly 1.7 seconds, with approximately 8.4 seconds for the complete REST, GraphQL, pagination, and Actions pipeline.
-- Per-slice stale age and GraphQL cost remain future collection-health work.
+- Collection health now retains the oldest same-window stale timestamp and sums GitHub-returned query costs across successful account, search, repository, and pagination responses. A failed request makes the total **Unavailable** because no cost was returned, while known successful-response points remain disclosed.

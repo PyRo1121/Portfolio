@@ -1918,7 +1918,7 @@
 	:global(.screen-toolbar small) {
 		max-width: 34rem;
 		color: var(--muted);
-		font: 440 0.43rem/1.35 var(--mono);
+		font: 440 0.5rem/1.35 var(--mono);
 	}
 	:global(.screen-toolbar small.unavailable) {
 		color: var(--accent);

@@ -1,7 +1,10 @@
 import { createHash } from 'node:crypto';
 import { Schema } from 'effect';
 import type { DashboardRefreshResult } from '$lib/domain/dashboard-hydration';
-import type { GitHubDashboardSnapshot } from '$lib/domain/github-intelligence';
+import type {
+	GitHubDashboardSnapshot,
+	RepositoryCollectionEvidence
+} from '$lib/domain/github-intelligence';
 
 const CACHE_VERSION = 1;
 const DEFAULT_FRESHNESS_MS = 5 * 60_000;
@@ -234,6 +237,15 @@ const DashboardSnapshotSchema = Schema.Struct({
 				totalRepositories: Schema.Number,
 				freshRepositories: Schema.Number,
 				staleRepositories: Schema.Array(Schema.String),
+				oldestStaleAt: Schema.optional(Schema.NullOr(Schema.String)),
+				graphQL: Schema.optional(
+					Schema.Struct({
+						state: Schema.Union(Schema.Literal('Measured'), Schema.Literal('Unavailable')),
+						points: Schema.Number,
+						successfulRequests: Schema.Number,
+						detail: Schema.String
+					})
+				),
 				detail: Schema.String
 			})
 		),
@@ -349,17 +361,34 @@ export class DashboardSnapshotCache {
 			const envelope = Schema.decodeUnknownSync(CacheEnvelopeSchema)(parsed);
 			if (envelope.username.toLocaleLowerCase() !== username.toLocaleLowerCase()) return null;
 			if (envelope.snapshot.source._tag !== 'Live') return null;
+			const storedCollection = envelope.snapshot.intelligence.repositoryCollection;
+			const unavailableGraphQL: RepositoryCollectionEvidence['graphQL'] = {
+				state: 'Unavailable',
+				points: 0,
+				successfulRequests: 0,
+				detail: 'GraphQL collection cost is unavailable for this legacy snapshot.'
+			};
+			const repositoryCollection: RepositoryCollectionEvidence =
+				storedCollection === undefined
+					? {
+							state: 'Unavailable',
+							totalRepositories: envelope.snapshot.intelligence.account.ownedRepositories,
+							freshRepositories: 0,
+							staleRepositories: [],
+							oldestStaleAt: null,
+							graphQL: unavailableGraphQL,
+							detail: 'Repository collection health is unavailable for this legacy snapshot.'
+						}
+					: {
+							...storedCollection,
+							oldestStaleAt: storedCollection.oldestStaleAt ?? null,
+							graphQL: storedCollection.graphQL ?? unavailableGraphQL
+						};
 			const snapshot: GitHubDashboardSnapshot = {
 				...envelope.snapshot,
 				intelligence: {
 					...envelope.snapshot.intelligence,
-					repositoryCollection: envelope.snapshot.intelligence.repositoryCollection ?? {
-						state: 'Unavailable',
-						totalRepositories: envelope.snapshot.intelligence.account.ownedRepositories,
-						freshRepositories: 0,
-						staleRepositories: [],
-						detail: 'Repository collection health is unavailable for this legacy snapshot.'
-					},
+					repositoryCollection,
 					repositories: envelope.snapshot.intelligence.repositories.map((repository) => ({
 						...repository,
 						imageUrl: repository.imageUrl ?? envelope.snapshot.profile.avatarUrl

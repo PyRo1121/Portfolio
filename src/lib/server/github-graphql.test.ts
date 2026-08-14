@@ -31,7 +31,7 @@ function accountResponse() {
 				previous: contributionCollection(1),
 				year: contributionCollection(20)
 			},
-			rateLimit: { limit: 5000, remaining: 4900, resetAt: '2026-08-14T21:00:00Z' }
+			rateLimit: { cost: 1, limit: 5000, remaining: 4900, resetAt: '2026-08-14T21:00:00Z' }
 		}
 	};
 }
@@ -48,15 +48,17 @@ function searchResponse() {
 			currentMergedPullRequests: empty,
 			currentClosedIssues: empty,
 			previousMergedPullRequests: empty,
-			previousClosedIssues: empty
+			previousClosedIssues: empty,
+			rateLimit: { cost: 9, limit: 5000, remaining: 4891, resetAt: '2026-08-14T21:00:00Z' }
 		}
 	};
 }
 
-function repositoryResponse(fullName: string) {
+function repositoryResponse(fullName: string, paginated: boolean) {
 	const [owner, name = fullName] = fullName.split('/');
 	return {
 		data: {
+			rateLimit: { cost: 1, limit: 5000, remaining: 4890, resetAt: '2026-08-14T21:00:00Z' },
 			repository: {
 				name,
 				nameWithOwner: fullName,
@@ -80,8 +82,11 @@ function repositoryResponse(fullName: string) {
 					name: 'main',
 					target: {
 						current: {
-							totalCount: 1,
-							pageInfo: { hasNextPage: false, endCursor: null },
+							totalCount: paginated ? 2 : 1,
+							pageInfo: {
+								hasNextPage: paginated,
+								endCursor: paginated ? 'next-page' : null
+							},
 							nodes: [
 								{
 									oid: `${name}-sha`,
@@ -102,6 +107,35 @@ function repositoryResponse(fullName: string) {
 	};
 }
 
+function commitPageResponse(fullName: string) {
+	return {
+		data: {
+			rateLimit: { cost: 2, limit: 5000, remaining: 4888, resetAt: '2026-08-14T21:00:00Z' },
+			repository: {
+				defaultBranchRef: {
+					target: {
+						history: {
+							totalCount: 2,
+							pageInfo: { hasNextPage: false, endCursor: null },
+							nodes: [
+								{
+									oid: 'paginated-sha',
+									committedDate: '2026-08-14T10:00:00Z',
+									additions: 4,
+									deletions: 1,
+									changedFilesIfAvailable: 1,
+									messageHeadline: 'Paginated commit',
+									url: `https://github.com/${fullName}/commit/paginated-sha`
+								}
+							]
+						}
+					}
+				}
+			}
+		}
+	};
+}
+
 function parsePayload(init: RequestInit | undefined): GraphQLPayload {
 	if (typeof init?.body !== 'string') throw new Error('Expected a GraphQL JSON body.');
 	try {
@@ -114,7 +148,9 @@ function parsePayload(init: RequestInit | undefined): GraphQLPayload {
 function githubFetch(
 	accountQueries: string[],
 	repositoryQueries: string[],
-	failingRepository: string | null
+	failingRepository: string | null,
+	paginatedRepository: string | null = null,
+	failingPaginationRepository: string | null = null
 ): typeof globalThis.fetch {
 	return (async (_input: RequestInfo | URL, init?: RequestInit) => {
 		const payload = parsePayload(init);
@@ -128,7 +164,13 @@ function githubFetch(
 			repositoryQueries.push(fullName);
 			return fullName === failingRepository
 				? new Response('upstream timeout', { status: 502 })
-				: Response.json(repositoryResponse(fullName));
+				: Response.json(repositoryResponse(fullName, fullName === paginatedRepository));
+		}
+		if (payload.query.includes('RepositoryCommitPage')) {
+			const fullName = `${String(payload.variables['owner'])}/${String(payload.variables['name'])}`;
+			return fullName === failingPaginationRepository
+				? new Response('pagination timeout', { status: 502 })
+				: Response.json(commitPageResponse(fullName));
 		}
 		throw new Error('Unexpected GraphQL operation.');
 	}) as typeof globalThis.fetch;
@@ -166,14 +208,16 @@ describe('incremental GitHub GraphQL intelligence', () => {
 		const first = await Effect.runPromise(
 			fetchGitHubIntelligence({
 				...requestWindow,
-				fetch: githubFetch(accountQueries, repositoryQueries, null),
+				fetch: githubFetch(accountQueries, repositoryQueries, null, 'octocat/product'),
 				repositoryCache: cache
 			})
 		);
 		expect(first.repositoryCollection).toMatchObject({
 			totalRepositories: 2,
 			freshRepositories: 2,
-			staleRepositories: []
+			staleRepositories: [],
+			graphQLCost: 14,
+			successfulGraphQLRequests: 5
 		});
 		expect(accountQueries).toHaveLength(1);
 		expect(accountQueries[0]).not.toContain('ownerAffiliations: OWNER');
@@ -189,7 +233,33 @@ describe('incremental GitHub GraphQL intelligence', () => {
 		expect(second.repositories).toHaveLength(2);
 		expect(second.repositoryCollection).toMatchObject({
 			freshRepositories: 1,
-			staleRepositories: ['octocat/product-private']
+			staleRepositories: [
+				{
+					repository: 'octocat/product-private',
+					cachedAt: '2026-08-14T20:00:00.000Z'
+				}
+			],
+			graphQLCost: 11,
+			successfulGraphQLRequests: 3
+		});
+
+		const paginationFailure = await Effect.runPromise(
+			fetchGitHubIntelligence({
+				...requestWindow,
+				fetch: githubFetch([], [], null, 'octocat/product', 'octocat/product'),
+				repositoryCache: cache
+			})
+		);
+		expect(paginationFailure.repositoryCollection).toMatchObject({
+			freshRepositories: 1,
+			staleRepositories: [
+				{
+					repository: 'octocat/product',
+					cachedAt: '2026-08-14T20:00:00.000Z'
+				}
+			],
+			graphQLCost: 12,
+			successfulGraphQLRequests: 4
 		});
 	});
 });
