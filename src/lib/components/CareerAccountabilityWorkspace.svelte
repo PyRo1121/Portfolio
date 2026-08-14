@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { resolve } from '$app/paths';
 	import type { SubmitFunction } from '@sveltejs/kit';
 	import {
 		ArrowUpRight,
@@ -7,6 +8,7 @@
 		Briefcase,
 		CalendarBlank,
 		CheckCircle,
+		DownloadSimple,
 		PencilSimple,
 		Plus,
 		Target,
@@ -14,6 +16,7 @@
 	} from 'phosphor-svelte';
 	import { careerStages, type CareerSnapshot } from '$lib/domain/career-accountability';
 	import type { CareerAccountabilityReview } from '$lib/domain/career-accountability-review';
+	import { createCareerStoryView } from '$lib/domain/career-story-view';
 	import { createCareerAccountabilityView } from '$lib/domain/career-workspace-view';
 	import AccountabilityReview from './AccountabilityReview.svelte';
 
@@ -29,13 +32,15 @@
 	let { snapshot, review, accessReason, today, actionMessage }: Props = $props();
 	let mobilePanel = $state<CareerPanel>('review');
 	const view = $derived(snapshot === null ? null : createCareerAccountabilityView(snapshot, today));
+	const storyView = $derived(snapshot === null ? null : createCareerStoryView(snapshot));
+	const portfolioExportUrl = resolve('/career/portfolio.md');
 	const panels: ReadonlyArray<{ readonly id: CareerPanel; readonly label: string }> = [
 		{ id: 'review', label: 'Review' },
 		{ id: 'pipeline', label: 'Pipeline' },
 		{ id: 'commitments', label: 'Commitments' },
 		{ id: 'stories', label: 'Stories' }
 	];
-	const enhanceOpportunityEdit: SubmitFunction = ({ formElement }) => {
+	const enhanceAndCloseEditor: SubmitFunction = ({ formElement }) => {
 		const editor = formElement.closest('details');
 		return async ({ result, update }) => {
 			if (result.type === 'success') editor?.removeAttribute('open');
@@ -43,7 +48,7 @@
 		};
 	};
 
-	function closeOpportunityEditor(event: MouseEvent & { currentTarget: HTMLButtonElement }): void {
+	function closeEditor(event: MouseEvent & { currentTarget: HTMLButtonElement }): void {
 		event.currentTarget.closest('details')?.removeAttribute('open');
 	}
 </script>
@@ -162,7 +167,7 @@
 												method="POST"
 												action="?/updateOpportunity"
 												aria-label={`Edit ${opportunity.company}`}
-												use:enhance={enhanceOpportunityEdit}
+												use:enhance={enhanceAndCloseEditor}
 											>
 												<input type="hidden" name="id" value={opportunity.id} />
 												<label
@@ -230,7 +235,7 @@
 													></label
 												>
 												<div class="edit-actions">
-													<button type="button" onclick={closeOpportunityEditor}>Close</button>
+													<button type="button" onclick={closeEditor}>Close</button>
 													<button type="submit">Save changes</button>
 												</div>
 											</form>
@@ -298,7 +303,21 @@
 			<section
 				class={mobilePanel === 'stories' ? 'career-stories panel-visible' : 'career-stories'}
 			>
-				<header><span>Interview story bank</span><small>Problem → action → outcome</small></header>
+				<header>
+					<div><span>Interview story bank</span><small>Problem → action → outcome</small></div>
+					{#if storyView !== null && storyView.canExport}
+						<a
+							class="story-export"
+							href={portfolioExportUrl}
+							title="Sanitized Markdown; Private stories and Career records are excluded"
+							download
+							data-sveltekit-reload
+							><DownloadSimple size={12} /> Export ShareDrafts · {storyView.shareDraftCount}</a
+						>
+					{:else}
+						<span class="story-export-unavailable">Mark ShareDraft to export</span>
+					{/if}
+				</header>
 				<details class="story-create">
 					<summary><BookOpen size={13} /> Draft a story</summary>
 					<form method="POST" action="?/createStory" use:enhance>
@@ -317,12 +336,73 @@
 					{#each snapshot.stories as story (story.id)}
 						<article>
 							<span>{story.visibility}</span><strong>{story.title}</strong>
-							<p>{story.outcome}</p>
+							<dl class="story-sequence">
+								<div>
+									<dt>Problem</dt>
+									<dd>{story.problem}</dd>
+								</div>
+								<div>
+									<dt>Action</dt>
+									<dd>{story.action}</dd>
+								</div>
+								<div>
+									<dt>Outcome</dt>
+									<dd>{story.outcome}</dd>
+								</div>
+							</dl>
 							{#if story.evidenceUrl}<a
 									href={story.evidenceUrl}
 									target="_blank"
 									rel="external noreferrer">Evidence <ArrowUpRight size={12} /></a
 								>{/if}
+							<details class="story-edit">
+								<summary><PencilSimple size={12} /> Edit story</summary>
+								<form
+									method="POST"
+									action="?/updateStory"
+									aria-label={`Edit ${story.title}`}
+									use:enhance={enhanceAndCloseEditor}
+								>
+									<input type="hidden" name="id" value={story.id} />
+									<label
+										>Title<input name="title" value={story.title} maxlength="180" required /></label
+									>
+									<label
+										>Visibility<select name="visibility"
+											><option selected={story.visibility === 'Private'}>Private</option><option
+												selected={story.visibility === 'ShareDraft'}>ShareDraft</option
+											></select
+										></label
+									>
+									<label class="wide"
+										>Problem<textarea name="problem" maxlength="2000" required
+											>{story.problem}</textarea
+										></label
+									>
+									<label class="wide"
+										>Action<textarea name="action" maxlength="2000" required
+											>{story.action}</textarea
+										></label
+									>
+									<label class="wide"
+										>Outcome<textarea name="outcome" maxlength="2000" required
+											>{story.outcome}</textarea
+										></label
+									>
+									<label class="wide"
+										>Evidence URL<input
+											name="evidenceUrl"
+											type="url"
+											value={story.evidenceUrl ?? ''}
+											maxlength="2048"
+										/></label
+									>
+									<div class="edit-actions">
+										<button type="button" onclick={closeEditor}>Close</button>
+										<button type="submit">Save changes</button>
+									</div>
+								</form>
+							</details>
 						</article>
 					{:else}<p class="empty">
 							Turn the next shipped feature into an interview-ready story.
@@ -476,9 +556,25 @@
 		border-bottom: 1px solid var(--line);
 		color: var(--muted);
 	}
-	.career-pipeline > header > div {
+	.career-pipeline > header > div,
+	.career-stories > header > div {
 		display: grid;
 		gap: 0.15rem;
+	}
+	.story-export,
+	.story-export-unavailable {
+		display: flex;
+		align-items: center;
+		gap: 0.3rem;
+		font: 520 0.44rem/1 var(--mono);
+		text-transform: uppercase;
+	}
+	.story-export {
+		color: var(--accent);
+		text-decoration: none;
+	}
+	.story-export-unavailable {
+		color: var(--muted);
 	}
 	.career-create {
 		position: relative;
@@ -508,7 +604,8 @@
 		background: var(--surface-deep);
 		box-shadow: 0 1rem 3rem rgb(0 0 0 / 45%);
 	}
-	.opportunity-edit > form {
+	.opportunity-edit > form,
+	.story-edit > form {
 		position: fixed;
 		z-index: 12;
 		top: clamp(5rem, 14vh, 8rem);
@@ -524,6 +621,9 @@
 		background: var(--surface-deep);
 		box-shadow: 0 1.2rem 4rem rgb(0 0 0 / 70%);
 		transform: translateX(-50%);
+	}
+	.story-edit > form {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
 	}
 	label {
 		display: grid;
@@ -553,7 +653,8 @@
 	form button,
 	.career-create summary,
 	.opportunity-edit summary,
-	.story-create summary {
+	.story-create summary,
+	.story-edit summary {
 		padding: 0.48rem 0.62rem;
 		border: 1px solid var(--strong);
 		background: transparent;
@@ -627,7 +728,8 @@
 	.opportunity-card time.overdue {
 		color: #d18070;
 	}
-	.opportunity-edit summary {
+	.opportunity-edit summary,
+	.story-edit summary {
 		width: fit-content;
 		padding: 0.32rem 0.42rem;
 		font-size: 0.42rem;
@@ -755,6 +857,9 @@
 	.story-create textarea {
 		min-height: 2.6rem;
 	}
+	.story-edit textarea {
+		min-height: 4rem;
+	}
 	.story-list article {
 		display: grid;
 		gap: 0.3rem;
@@ -764,7 +869,22 @@
 	.story-list article strong {
 		font-size: 0.65rem;
 	}
-	.story-list article p {
+	.story-sequence {
+		display: grid;
+		gap: 0.35rem;
+		margin: 0;
+	}
+	.story-sequence div {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr);
+		gap: 0.4rem;
+	}
+	.story-sequence dt {
+		font: 520 0.42rem/1.4 var(--mono);
+		color: var(--accent);
+		text-transform: uppercase;
+	}
+	.story-sequence dd {
 		margin: 0;
 		font: 450 0.48rem/1.4 var(--mono);
 		color: var(--muted);
@@ -855,7 +975,8 @@
 			max-height: calc(100dvh - 10rem);
 			overflow-y: auto;
 		}
-		.opportunity-edit > form {
+		.opportunity-edit > form,
+		.story-edit > form {
 			top: 5.5rem;
 			grid-template-columns: 1fr 1fr;
 			max-height: calc(100dvh - 9.5rem);
@@ -875,8 +996,12 @@
 		.commitment-form button {
 			grid-column: span 1;
 		}
-		.story-create form {
+		.story-create form,
+		.story-edit > form {
 			grid-template-columns: 1fr;
+		}
+		.story-edit > form label.wide {
+			grid-column: auto;
 		}
 	}
 </style>

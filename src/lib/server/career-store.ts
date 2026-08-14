@@ -10,7 +10,6 @@ import {
 	type CareerStory,
 	type CreateCommitmentInput,
 	type CreateOpportunityInput,
-	type CreateStoryInput,
 	type UpdateOpportunityInput
 } from '$lib/domain/career-accountability';
 
@@ -354,40 +353,5 @@ export function setCareerCommitmentStatus(
 				.run();
 		},
 		catch: (cause) => new CareerStoreError('update commitment', cause)
-	});
-}
-
-/** Insert one owner-scoped interview story draft. */
-export function createCareerStory(
-	database: D1Database,
-	ownerEmail: string,
-	input: CreateStoryInput,
-	now: Date
-): Effect.Effect<void, CareerStoreError> {
-	return Effect.tryPromise({
-		try: async () => {
-			const timestamp = now.toISOString();
-			await database
-				.prepare(
-					`INSERT INTO career_stories
-					 (id, owner_email, title, problem, action, outcome, evidence_url, visibility,
-					  created_at, updated_at)
-					 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-				)
-				.bind(
-					crypto.randomUUID(),
-					ownerEmail,
-					input.title,
-					input.problem,
-					input.action,
-					input.outcome,
-					input.evidenceUrl,
-					input.visibility,
-					timestamp,
-					timestamp
-				)
-				.run();
-		},
-		catch: (cause) => new CareerStoreError('create story', cause)
 	});
 }
