@@ -16,6 +16,7 @@ import {
 } from '$lib/domain/github-intelligence';
 import { fetchWorkflowCoverage } from './github-actions';
 import { fetchGitHubIntelligence, GitHubGraphQLError } from './github-graphql';
+import type { GitHubRepositorySliceCache } from './github-repository-slice-cache';
 
 const MAX_PUSH_LOOKUPS = 25;
 const MAX_EVENT_PAGES = 3;
@@ -39,7 +40,8 @@ const RepositorySchema = Schema.Struct({
 	language: Schema.NullOr(Schema.String),
 	stargazers_count: Schema.Number,
 	forks_count: Schema.Number,
-	html_url: Schema.String
+	html_url: Schema.String,
+	private: Schema.Boolean
 });
 
 const EventSchema = Schema.Struct({
@@ -338,7 +340,8 @@ function fetchPushMeasurement(
 export function fetchWeeklySnapshot(
 	fetch: Fetch,
 	config: GitHubStatsConfig,
-	now: Date
+	now: Date,
+	repositoryCache: GitHubRepositorySliceCache
 ): Effect.Effect<GitHubDashboardSnapshot, GitHubStatsError> {
 	const username = encodeURIComponent(config.username);
 	return Effect.gen(function* () {
@@ -414,15 +417,20 @@ export function fetchWeeklySnapshot(
 			);
 		}
 		const weekEnd = addZonedDays(weekStart, 7, COLLECTION_TIME_ZONE);
-		const intelligence = yield* fetchGitHubIntelligence(
+		const intelligence = yield* fetchGitHubIntelligence({
 			fetch,
-			config.token,
-			config.username,
-			user.node_id,
+			token: config.token,
+			username: config.username,
+			authorId: user.node_id,
 			weekStart,
 			weekEnd,
-			now
-		);
+			now,
+			repositoryInventory: rawRepositories.map((repository) => ({
+				fullName: repository.full_name,
+				isPrivate: repository.private
+			})),
+			repositoryCache
+		});
 		const workflows = yield* fetchWorkflowCoverage(
 			fetch,
 			config.token,

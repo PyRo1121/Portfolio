@@ -131,7 +131,13 @@ export const load: PageServerLoad = async ({ platform, request, setHeaders }) =>
 	const dashboardSnapshotCache = dashboardSnapshotCacheFor(platform.env.WEEKNOTE_CACHE);
 	const cached = await dashboardSnapshotCache.read(username);
 	const refresh = dashboardSnapshotCache.refresh(username, cached, now, () =>
-		loadLiveDashboardSnapshot(globalThis.fetch, username, token, now)
+		loadLiveDashboardSnapshot({
+			fetch: globalThis.fetch,
+			username,
+			token,
+			now,
+			cacheStore: platform.env.WEEKNOTE_CACHE
+		})
 	);
 
 	if (cached !== null) {
