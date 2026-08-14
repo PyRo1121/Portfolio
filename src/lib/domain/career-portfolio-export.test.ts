@@ -9,7 +9,7 @@ function story(overrides: Partial<CareerStory>): CareerStory {
 		problem: 'Private problem',
 		action: 'Private action',
 		outcome: 'Private outcome',
-		evidenceUrl: null,
+		evidence: null,
 		visibility: 'Private',
 		createdAt: '2026-08-10T00:00:00.000Z',
 		updatedAt: '2026-08-10T00:00:00.000Z',
@@ -28,13 +28,26 @@ describe('career portfolio export', () => {
 					problem: '<script>alert(1)</script>',
 					action: 'Built [a private link](javascript:alert(1)).',
 					outcome: 'Shipped a useful result.',
-					evidenceUrl: 'https://example.test/evidence',
+					evidence: {
+						_tag: 'Observed',
+						source: 'GitHub',
+						kind: 'Release',
+						title: 'v1.0.0',
+						repository: 'octocat/product',
+						url: 'https://github.com/octocat/product/releases/tag/v1.0.0',
+						occurredAt: '2026-08-13T12:00:00.000Z',
+						observedAt: '2026-08-14T20:00:00.000Z'
+					},
 					visibility: 'ShareDraft'
 				}),
 				story({
 					id: 'c7647ef2-ced2-466f-b3ea-e9e10873993d',
 					title: 'Unsafe legacy link',
-					evidenceUrl: 'javascript:alert(1)',
+					evidence: {
+						_tag: 'Unavailable',
+						url: 'javascript:alert(1)',
+						reason: 'Legacy link was not verified.'
+					},
 					visibility: 'ShareDraft'
 				})
 			],
@@ -45,10 +58,13 @@ describe('career portfolio export', () => {
 		expect(exported.filename).toBe('weeknote-portfolio-draft.md');
 		expect(exported.body).toContain('Product \\*delivery\\*');
 		expect(exported.body).toContain('&lt;script&gt;alert\\(1\\)&lt;/script&gt;');
-		expect(exported.body).toContain('[Evidence](https://example.test/evidence)');
+		expect(exported.body).toContain(
+			'[v1\\.0\\.0](https://github.com/octocat/product/releases/tag/v1.0.0)'
+		);
 		expect(exported.body).not.toContain('Never disclose me');
 		expect(exported.body).not.toContain('owner@example.test');
-		expect(exported.body).not.toContain('[Evidence](javascript:');
+		expect(exported.body).not.toContain('](javascript:');
+		expect(exported.body).toContain('Evidence · Unavailable');
 		expect(exported.body).toContain('\\[a private link\\]\\(javascript:alert\\(1\\)\\)');
 		expect(exported.body).toContain('Review this draft before sharing');
 	});

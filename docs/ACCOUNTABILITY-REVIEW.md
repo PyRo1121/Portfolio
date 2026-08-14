@@ -30,7 +30,7 @@ The coverage map remains lane-based and is never summed into a score:
 - **Automated verification — Observed:** a successful retained workflow matches the selected repository.
 - **Runtime operation — Measured:** Cloudflare reports a Worker request metric. This is account-level evidence unless deployment linkage is collected.
 - **Data platform — Provisioned:** Cloudflare inventories D1 databases. Provisioning does not prove ownership of the selected artifact.
-- **Outcome communication — Observed:** a private interview story is recorded. It remains self-authored evidence and links externally only when an evidence URL was stored.
+- **Outcome communication — Observed:** a private interview story is recorded. It remains self-authored evidence and links externally only when its GitHub outcome was server-verified and stored as an Observed association. Legacy free-form links remain Unavailable.
 
 ## Role relevance
 

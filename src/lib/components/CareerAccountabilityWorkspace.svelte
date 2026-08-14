@@ -16,6 +16,7 @@
 	} from 'phosphor-svelte';
 	import { careerStages, type CareerSnapshot } from '$lib/domain/career-accountability';
 	import type { CareerAccountabilityReview } from '$lib/domain/career-accountability-review';
+	import type { CareerStoryEvidenceOption } from '$lib/domain/career-story-evidence';
 	import { createCareerStoryView } from '$lib/domain/career-story-view';
 	import { createCareerAccountabilityView } from '$lib/domain/career-workspace-view';
 	import AccountabilityReview from './AccountabilityReview.svelte';
@@ -23,13 +24,14 @@
 	type CareerPanel = 'review' | 'pipeline' | 'commitments' | 'stories';
 	type Props = {
 		readonly snapshot: CareerSnapshot | null;
+		readonly evidenceOptions: ReadonlyArray<CareerStoryEvidenceOption>;
 		readonly review: CareerAccountabilityReview | null;
 		readonly accessReason: string;
 		readonly today: string;
 		readonly actionMessage: string;
 	};
 
-	let { snapshot, review, accessReason, today, actionMessage }: Props = $props();
+	let { snapshot, evidenceOptions, review, accessReason, today, actionMessage }: Props = $props();
 	let mobilePanel = $state<CareerPanel>('review');
 	const view = $derived(snapshot === null ? null : createCareerAccountabilityView(snapshot, today));
 	const storyView = $derived(snapshot === null ? null : createCareerStoryView(snapshot));
@@ -325,7 +327,12 @@
 						<textarea name="problem" maxlength="2000" placeholder="Problem" required></textarea>
 						<textarea name="action" maxlength="2000" placeholder="Action" required></textarea>
 						<textarea name="outcome" maxlength="2000" placeholder="Outcome" required></textarea>
-						<input name="evidenceUrl" type="url" maxlength="2048" placeholder="Evidence URL" />
+						<select name="evidenceUrl" aria-label="Observed GitHub outcome">
+							<option value="">No observed GitHub outcome</option>
+							{#each evidenceOptions as evidence (evidence.url)}
+								<option value={evidence.url}>{evidence.label}</option>
+							{/each}
+						</select>
 						<select name="visibility" aria-label="Story visibility"
 							><option>Private</option><option>ShareDraft</option></select
 						>
@@ -350,11 +357,23 @@
 									<dd>{story.outcome}</dd>
 								</div>
 							</dl>
-							{#if story.evidenceUrl}<a
-									href={story.evidenceUrl}
+							{#if story.evidence?._tag === 'Observed'}
+								<a
+									class="story-evidence observed"
+									href={story.evidence.url}
 									target="_blank"
-									rel="external noreferrer">Evidence <ArrowUpRight size={12} /></a
-								>{/if}
+									rel="external noreferrer"
+									><span>Observed · {story.evidence.kind}</span>{story.evidence.title}<small
+										>{story.evidence.repository}</small
+									><ArrowUpRight size={12} /></a
+								>
+							{:else if story.evidence?._tag === 'Unavailable'}
+								<p class="story-evidence unavailable">
+									<span>Unavailable</span>{story.evidence.reason}
+								</p>
+							{:else}
+								<p class="story-evidence unlinked"><span>Unlinked</span>No outcome selected.</p>
+							{/if}
 							<details class="story-edit">
 								<summary><PencilSimple size={12} /> Edit story</summary>
 								<form
@@ -390,12 +409,18 @@
 										></label
 									>
 									<label class="wide"
-										>Evidence URL<input
-											name="evidenceUrl"
-											type="url"
-											value={story.evidenceUrl ?? ''}
-											maxlength="2048"
-										/></label
+										>Observed GitHub outcome<select name="evidenceUrl">
+											<option value="" selected={story.evidence?._tag !== 'Observed'}
+												>No observed outcome</option
+											>
+											{#each evidenceOptions as evidence (evidence.url)}
+												<option
+													value={evidence.url}
+													selected={story.evidence?._tag === 'Observed' &&
+														story.evidence.url === evidence.url}>{evidence.label}</option
+												>
+											{/each}
+										</select></label
 									>
 									<div class="edit-actions">
 										<button type="button" onclick={closeEditor}>Close</button>
@@ -889,13 +914,35 @@
 		font: 450 0.48rem/1.4 var(--mono);
 		color: var(--muted);
 	}
-	.story-list article a {
-		display: flex;
-		gap: 0.3rem;
-		align-items: center;
-		color: var(--accent);
-		font: 500 0.45rem/1 var(--mono);
+	.story-evidence {
+		margin: 0;
+		padding: 0.45rem;
+		border-left: 1px solid var(--strong);
+		font: 500 0.46rem/1.35 var(--mono);
+	}
+	.story-list article > a.story-evidence {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		gap: 0.14rem 0.4rem;
+		color: var(--ink);
 		text-decoration: none;
+	}
+	.story-evidence span {
+		display: block;
+		color: var(--accent);
+		font-size: 0.4rem;
+		text-transform: uppercase;
+	}
+	.story-evidence small {
+		grid-column: 1;
+		color: var(--muted);
+	}
+	.story-evidence.unavailable,
+	.story-evidence.unlinked {
+		color: var(--muted);
+	}
+	.story-evidence.unavailable span {
+		color: #d18070;
 	}
 	.empty {
 		margin: 0;

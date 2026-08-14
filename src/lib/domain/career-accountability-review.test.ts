@@ -52,7 +52,16 @@ const career: CareerSnapshot = {
 			problem: 'Evidence was fragmented.',
 			action: 'Built a private review.',
 			outcome: 'Connected delivery to career action.',
-			evidenceUrl: 'https://example.test/evidence',
+			evidence: {
+				_tag: 'Observed',
+				source: 'GitHub',
+				kind: 'PullRequest',
+				title: 'Private signal projection',
+				repository: 'octocat/signal-garden',
+				url: 'https://example.test/evidence',
+				occurredAt: '2026-08-10T00:00:00.000Z',
+				observedAt: '2026-08-10T00:00:00.000Z'
+			},
 			visibility: 'Private',
 			createdAt: '2026-08-10T00:00:00.000Z',
 			updatedAt: '2026-08-10T00:00:00.000Z'

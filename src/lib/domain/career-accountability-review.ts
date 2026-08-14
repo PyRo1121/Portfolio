@@ -9,6 +9,7 @@ import {
 	type CloudflareProductEvidence,
 	type CloudflareUsageSnapshot
 } from './cloudflare-usage';
+import { strongestRetainedDeliveryOutcome } from './dashboard-delivery-outcomes';
 import type {
 	DeliveryArtifact,
 	GitHubDashboardSnapshot,
@@ -75,24 +76,6 @@ const DAY_IN_MILLISECONDS = 86_400_000;
 const OUTCOME_SELECTION_FORMULA =
 	'Among retained artifacts: stable release > merged pull request > closed issue > prerelease; newest occurrence breaks ties.';
 
-function artifactRank(artifact: DeliveryArtifact): number {
-	if (artifact.kind === 'Release') return artifact.detail.includes('prerelease') ? 1 : 4;
-	if (artifact.kind === 'PullRequest') return 3;
-	if (artifact.kind === 'Issue') return 2;
-	return 0;
-}
-
-function strongestOutcome(snapshot: GitHubDashboardSnapshot): DeliveryArtifact | null {
-	return (
-		[...snapshot.intelligence.delivery.artifacts]
-			.filter((artifact) => artifact.status === 'shipped' && artifact.kind !== 'WorkflowRun')
-			.sort((left, right) => {
-				const rankDelta = artifactRank(right) - artifactRank(left);
-				return rankDelta === 0 ? right.occurredAt.localeCompare(left.occurredAt) : rankDelta;
-			})[0] ?? null
-	);
-}
-
 function successfulWorkflowFor(
 	repository: string,
 	runs: ReadonlyArray<WorkflowRunInput>
@@ -111,7 +94,7 @@ function outcomeHeadline(artifact: DeliveryArtifact): string {
 }
 
 function createOutcome(snapshot: GitHubDashboardSnapshot): AccountabilityOutcome {
-	const artifact = strongestOutcome(snapshot);
+	const artifact = strongestRetainedDeliveryOutcome(snapshot);
 	if (artifact === null) {
 		return {
 			state: 'Unavailable',
@@ -312,7 +295,9 @@ function communicationCoverage(story: CareerStory | undefined): AccountabilityCo
 		state: 'Observed',
 		detail: `Private story recorded: “${story.title}”.`,
 		evidence:
-			story.evidenceUrl === null ? null : { label: 'Open story evidence', url: story.evidenceUrl }
+			story.evidence?._tag === 'Observed'
+				? { label: 'Open observed story evidence', url: story.evidence.url }
+				: null
 	};
 }
 

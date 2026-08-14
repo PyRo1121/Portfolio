@@ -12,9 +12,11 @@ The export allowlist is:
 - problem;
 - action;
 - outcome;
-- a valid HTTP or HTTPS evidence URL.
+- server-verified GitHub artifact title, repository, kind, occurrence time, and canonical HTTP(S) URL.
 
-User-authored Markdown and HTML control characters are escaped. Legacy or corrupted evidence URLs using other schemes are omitted.
+A submitted evidence URL is untrusted. The Career action resolves it by exact match against shipped releases, merged pull requests, or closed issues in the current Live GitHub cache. Workflow runs and Demo artifacts cannot be selected. The canonical artifact metadata is then stored transactionally in `career_story_evidence`, so an association remains auditable after the artifact leaves the rolling dashboard window.
+
+User-authored Markdown and HTML control characters are escaped. A pre-existing free-form URL without an association row is rendered privately as **Unavailable** and its URL is excluded from the export. Malformed associated URLs are also omitted.
 
 ## Explicit exclusion
 

@@ -50,6 +50,27 @@ export type CareerCommitment = {
 	readonly updatedAt: string;
 };
 
+/** Durable GitHub outcome evidence associated after server-side snapshot verification. */
+export type ObservedCareerStoryEvidence = {
+	readonly _tag: 'Observed';
+	readonly source: 'GitHub';
+	readonly kind: 'PullRequest' | 'Issue' | 'Release';
+	readonly title: string;
+	readonly repository: string;
+	readonly url: string;
+	readonly occurredAt: string;
+	readonly observedAt: string;
+};
+
+/** A legacy story link that has not been verified against retained delivery evidence. */
+export type UnavailableCareerStoryEvidence = {
+	readonly _tag: 'Unavailable';
+	readonly url: string;
+	readonly reason: string;
+};
+
+export type CareerStoryEvidence = ObservedCareerStoryEvidence | UnavailableCareerStoryEvidence;
+
 /** One private or sanitized interview story draft. */
 export type CareerStory = {
 	readonly id: string;
@@ -57,7 +78,7 @@ export type CareerStory = {
 	readonly problem: string;
 	readonly action: string;
 	readonly outcome: string;
-	readonly evidenceUrl: string | null;
+	readonly evidence: CareerStoryEvidence | null;
 	readonly visibility: 'Private' | 'ShareDraft';
 	readonly createdAt: string;
 	readonly updatedAt: string;
