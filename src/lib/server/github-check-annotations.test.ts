@@ -18,15 +18,16 @@ function run(conclusion: string | null): WorkflowRunInput {
 	};
 }
 
-const token = Redacted.make('secret');
+const actionsToken = Redacted.make('actions-secret');
+const checksToken = Redacted.make('checks-secret');
 
 describe('fetchWorkflowAnnotations', () => {
 	it('links a bounded failure annotation to its exact workflow job and run', async () => {
 		const requested: string[] = [];
 		const longMessage = `GitHub billing evidence: ${'x'.repeat(900)}`;
-		const fetch = (async (input: RequestInfo | URL) => {
+		const fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
 			const url = String(input);
-			requested.push(url);
+			requested.push(`${url}|${new Headers(init?.headers).get('Authorization')}`);
 			if (url.includes('/actions/runs/42/jobs')) {
 				return Response.json({
 					total_count: 1,
@@ -57,7 +58,7 @@ describe('fetchWorkflowAnnotations', () => {
 		}) as typeof globalThis.fetch;
 
 		const result = await Effect.runPromise(
-			fetchWorkflowAnnotations(fetch, token, [run('failure')])
+			fetchWorkflowAnnotations(fetch, actionsToken, checksToken, [run('failure')])
 		);
 		expect(result).toMatchObject({
 			state: 'Observed',
@@ -76,8 +77,12 @@ describe('fetchWorkflowAnnotations', () => {
 		});
 		expect(result.evidence[0]?.message).toHaveLength(800);
 		expect(requested).toEqual([
-			expect.stringContaining('/actions/runs/42/jobs?filter=all&per_page=100&page=1'),
-			expect.stringContaining('/check-runs/99/annotations?per_page=100&page=1')
+			expect.stringMatching(
+				/\/actions\/runs\/42\/jobs\?filter=all&per_page=100&page=1\|Bearer actions-secret$/u
+			),
+			expect.stringMatching(
+				/\/check-runs\/99\/annotations\?per_page=100&page=1\|Bearer checks-secret$/u
+			)
 		]);
 	});
 
@@ -88,9 +93,30 @@ describe('fetchWorkflowAnnotations', () => {
 			return new Response('unexpected', { status: 500 });
 		}) as typeof globalThis.fetch;
 		const result = await Effect.runPromise(
-			fetchWorkflowAnnotations(fetch, token, [run('success')])
+			fetchWorkflowAnnotations(fetch, actionsToken, checksToken, [run('success')])
 		);
 		expect(result).toMatchObject({ state: 'Observed', targetedRuns: 0, evidence: [] });
+		expect(calls).toBe(0);
+	});
+
+	it('reports unavailable evidence without using the Actions token for Checks', async () => {
+		let calls = 0;
+		const fetch = (async () => {
+			calls += 1;
+			return new Response('unexpected', { status: 500 });
+		}) as typeof globalThis.fetch;
+
+		const result = await Effect.runPromise(
+			fetchWorkflowAnnotations(fetch, actionsToken, undefined, [run('failure')])
+		);
+
+		expect(result).toEqual({
+			state: 'Unavailable',
+			targetedRuns: 1,
+			evidence: [],
+			truncated: false,
+			detail: 'GitHub Checks app authentication was unavailable; workflow totals remain current.'
+		});
 		expect(calls).toBe(0);
 	});
 
@@ -98,7 +124,7 @@ describe('fetchWorkflowAnnotations', () => {
 		const fetch = (async () =>
 			new Response('forbidden', { status: 403 })) as typeof globalThis.fetch;
 		const result = await Effect.runPromise(
-			fetchWorkflowAnnotations(fetch, token, [run('failure')])
+			fetchWorkflowAnnotations(fetch, actionsToken, checksToken, [run('failure')])
 		);
 		expect(result).toMatchObject({
 			state: 'Unavailable',
@@ -106,7 +132,7 @@ describe('fetchWorkflowAnnotations', () => {
 			evidence: [],
 			truncated: false,
 			detail:
-				'Check-run annotations are permission-limited; the server token requires Checks: read.'
+				'Check-run annotations are permission-limited; verify the GitHub App installation and Checks: read permission.'
 		});
 	});
 });

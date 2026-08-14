@@ -15,6 +15,7 @@ import {
 	type GitHubDashboardSnapshot
 } from '$lib/domain/github-intelligence';
 import { fetchWorkflowCoverage } from './github-actions';
+import { fetchGitHubChecksToken, type GitHubChecksAppConfig } from './github-app-auth';
 import { fetchGitHubIntelligence, GitHubGraphQLError } from './github-graphql';
 import type { GitHubRepositorySliceCache } from './github-repository-slice-cache';
 
@@ -133,6 +134,7 @@ export type GitHubStatsError =
 export type GitHubStatsConfig = {
 	readonly username: string;
 	readonly token?: Redacted.Redacted<string>;
+	readonly checksApp?: GitHubChecksAppConfig;
 };
 
 type Fetch = typeof globalThis.fetch;
@@ -431,9 +433,15 @@ export function fetchWeeklySnapshot(
 			})),
 			repositoryCache
 		});
+		const checksToken = yield* config.checksApp === undefined
+			? Effect.succeed<Redacted.Redacted<string> | undefined>(undefined)
+			: fetchGitHubChecksToken(fetch, config.checksApp, now).pipe(
+					Effect.catchAll(() => Effect.succeed(undefined))
+				);
 		const workflows = yield* fetchWorkflowCoverage(
 			fetch,
 			config.token,
+			checksToken,
 			config.username,
 			intelligence.repositories,
 			weekStart,

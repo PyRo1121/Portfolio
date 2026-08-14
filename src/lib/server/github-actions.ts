@@ -187,6 +187,7 @@ function aggregate(results: ReadonlyArray<RepositoryWindowResult>): {
 export function fetchWorkflowCoverage(
 	fetch: Fetch,
 	token: Redacted.Redacted<string>,
+	checksToken: Redacted.Redacted<string> | undefined,
 	username: string,
 	repositories: ReadonlyArray<RepositoryIntelligenceInput>,
 	currentStart: Date,
@@ -231,7 +232,7 @@ export function fetchWorkflowCoverage(
 		const currentRuns = currentAvailable
 			.flatMap((result) => result.runs)
 			.sort((left, right) => right.createdAt.localeCompare(left.createdAt));
-		const annotations = yield* fetchWorkflowAnnotations(fetch, token, currentRuns);
+		const annotations = yield* fetchWorkflowAnnotations(fetch, token, checksToken, currentRuns);
 		return {
 			coveredRepositories: currentAvailable.length,
 			totalRepositories: activeRepositories.length,

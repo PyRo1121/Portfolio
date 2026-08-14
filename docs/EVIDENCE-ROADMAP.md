@@ -44,12 +44,12 @@ Weeknote should remain decision-first: show one decisive signal on entry, then e
 - Link directly to the run; never infer root cause from a step name.
 - Source: [GitHub REST workflow jobs](https://docs.github.com/en/rest/actions/workflow-jobs).
 
-### Check annotations — Observed when accessible; currently permission-limited in production
+### Check annotations — Observed through a least-privilege GitHub App
 
 - Formula: from the newest four failed default-branch `push`, `workflow_dispatch`, or `repository_dispatch` runs, inspect at most two pages of jobs and two pages of check-run annotations. Retain at most eight annotations; cap messages at 800 characters and mark truncation.
 - Dependabot `dynamic`, scheduled, and chained automation runs do not affect the user-triggered verification pass rate.
 - Each annotation retains exact repository, run, job URL, level, path, line range, and bounded GitHub message. The dashboard links to the job and does not infer a billing balance or root cause beyond GitHub's returned text.
-- The current dedicated runtime PAT can list Actions jobs but GitHub returns `403 Resource not accessible by personal access token` for annotations because it lacks fine-grained **Checks: read**. Production therefore remains **Unavailable** until that permission is granted; no broad GitHub CLI OAuth token is embedded in the Worker.
+- GitHub's fine-grained PAT UI does not expose the documented **Checks: read** permission. Weeknote keeps Actions job discovery on its fine-grained PAT and uses a private GitHub App with only **Checks: read** plus mandatory **Metadata: read** for annotations. The Worker mints one short-lived installation token per refresh; no broad classic PAT or GitHub CLI OAuth token is embedded.
 - Source: [GitHub REST check runs](https://docs.github.com/en/rest/checks/runs).
 
 ## Priority 3 — impact and operational health

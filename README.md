@@ -10,18 +10,18 @@ npm ci
 npm run dev
 ```
 
-Set `GITHUB_USERNAME` in `.env`, but keep `GITHUB_TOKEN` outside the repository tree or in a credential manager. For the local mode-`0600` credential file, run `GITHUB_TOKEN="$(cat ~/.config/weeknote/github-token)" npm run dev`. The token stays server-side. When authorized, Weeknote uses GitHub GraphQL to include owned private repositories and their visible default-branch commits.
+Set `GITHUB_USERNAME` in `.env`, but keep GitHub credentials outside the repository tree or in a credential manager. The mode-`0600` `~/.config/weeknote/github-token` fine-grained PAT reads private engineering evidence. The mode-`0600` `~/.config/weeknote/github-checks-app.pem` PKCS#8 key belongs to a private GitHub App with only **Checks: read** and mandatory **Metadata: read**. Both remain server-side.
 
 ## Cloudflare deployment
 
-The production application runs as the `weeknote` Cloudflare Worker at `https://gh.latham.cloud`, protected by Cloudflare Access for the exact owner email. Static assets use Workers Static Assets; independently versioned GitHub and Cloudflare snapshots use `WEEKNOTE_CACHE`; mutable owner-scoped opportunities, commitments, and interview stories use the dedicated `CAREER_DB` D1 binding; `GITHUB_TOKEN` and `CLOUDFLARE_API_TOKEN` are Worker secrets.
+The production application runs as the `weeknote` Cloudflare Worker at `https://gh.latham.cloud`, protected by Cloudflare Access for the exact owner email. Static assets use Workers Static Assets; independently versioned GitHub and Cloudflare snapshots use `WEEKNOTE_CACHE`; mutable owner-scoped opportunities, commitments, and interview stories use the dedicated `CAREER_DB` D1 binding; `GITHUB_TOKEN`, `GITHUB_CHECKS_APP_PRIVATE_KEY`, and `CLOUDFLARE_API_TOKEN` are Worker secrets.
 
 ```bash
 npm run cf:types
 npm run deploy
 ```
 
-Use `wrangler secret put GITHUB_TOKEN` or `wrangler secret put CLOUDFLARE_API_TOKEN` to rotate production tokens. Never add credentials to `wrangler.jsonc`. Keep the Access application and its exact-account-owner allow policy in place before attaching another hostname.
+Use `wrangler secret put GITHUB_TOKEN`, `wrangler secret put GITHUB_CHECKS_APP_PRIVATE_KEY`, or `wrangler secret put CLOUDFLARE_API_TOKEN` to rotate production credentials. Never add credential values to `wrangler.jsonc`. The non-secret GitHub App and installation IDs remain ordinary Worker variables. Keep the Access application and its exact-account-owner allow policy in place before attaching another hostname.
 
 ## Data model
 
@@ -43,7 +43,7 @@ Use `wrangler secret put GITHUB_TOKEN` or `wrangler secret put CLOUDFLARE_API_TO
 - Private dashboard responses use `Cache-Control: private, no-store`; private repository data is never intentionally placed in a shared HTTP cache.
 - GitHub GraphQL collection uses a small account query, an isolated search/outcome query, and independently cached per-repository slices refreshed at concurrency six with a 15-second request timeout. A failed repository may reuse only same-window last-known-good evidence; without a matching slice, the full refresh fails and preserves the prior dashboard snapshot.
 - Repository collection health shows oldest retained-slice age and sums GitHub-returned point cost across successful account, search, repository, and pagination responses. Any fallback makes total cost **Unavailable** while preserving the known successful-response lower bound.
-- Verification totals include only default-branch push/dispatch runs. Recent failed runs can expose bounded, job-linked check annotations as **Observed** evidence when the dedicated runtime PAT has **Checks: read**; permission gaps remain **Unavailable** and never become an inferred failure cause.
+- Verification totals include only default-branch push/dispatch runs. Actions jobs use the fine-grained PAT; bounded, job-linked check annotations use a one-hour token minted from a private least-privilege GitHub App. Authentication or permission gaps remain **Unavailable** and never become an inferred failure cause.
 - Cloudflare inventory counts are labeled **Provisioned**; Workers, D1, and KV analytics and D1 physical storage are labeled **Measured** only after a successful API read. Permission gaps and unsupported response shapes remain **Unavailable**, never zero.
 - Cloudflare collection has a separate cache envelope and refresh lifecycle, so Cloudflare failures cannot replace or invalidate GitHub evidence.
 - Career records are stored in a dedicated D1 database, scoped by the exact normalized Access owner email, and parsed server-side before every mutation. Stage transitions append dated evidence rather than overwriting history silently.
