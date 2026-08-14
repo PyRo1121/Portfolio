@@ -1,5 +1,6 @@
 <script lang="ts">
 	import {
+		Briefcase,
 		ChartLineUp,
 		CirclesThreePlus,
 		Cloud,
@@ -26,7 +27,8 @@
 		craft: Flask,
 		activity: ChartLineUp,
 		repositories: CirclesThreePlus,
-		cloudflare: Cloud
+		cloudflare: Cloud,
+		career: Briefcase
 	};
 </script>
 

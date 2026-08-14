@@ -1,4 +1,5 @@
-import type { KVNamespace } from '@cloudflare/workers-types';
+import type { D1Database, KVNamespace } from '@cloudflare/workers-types';
+import type { CareerSnapshot } from '$lib/domain/career-accountability';
 import type {
 	CloudflareUsageRefreshResult,
 	CloudflareUsageSnapshot
@@ -11,6 +12,11 @@ declare global {
 		// interface Error {}
 		// interface Locals {}
 		interface PageData {
+			career: CareerSnapshot | null;
+			careerAccess: {
+				readonly _tag: 'Current' | 'Unavailable';
+				readonly reason: string;
+			};
 			cloudflare: CloudflareUsageSnapshot | null;
 			cloudflareCache: { readonly _tag: 'Cold' | 'Cached'; readonly cachedAt: string | null };
 			cloudflareRefresh: Promise<CloudflareUsageRefreshResult>;
@@ -18,6 +24,8 @@ declare global {
 		// interface PageState {}
 		interface Platform {
 			env: {
+				CAREER_DB: D1Database;
+				CAREER_OWNER_EMAIL?: string;
 				CLOUDFLARE_ACCOUNT_ID?: string;
 				CLOUDFLARE_API_TOKEN?: string;
 				GITHUB_TOKEN?: string;

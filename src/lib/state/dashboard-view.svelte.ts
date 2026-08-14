@@ -125,7 +125,8 @@ export class DashboardView {
 				'4': 'craft',
 				'5': 'repositories',
 				'6': 'activity',
-				'7': 'cloudflare'
+				'7': 'cloudflare',
+				'8': 'career'
 			};
 			const workspace = shortcuts[event.key];
 			if (workspace !== undefined) this.navigate(workspace);

@@ -51,6 +51,7 @@ export function createWorkspaceSignals(
 				cloudflare.summary.availableProducts < cloudflare.summary.totalProducts
 					? 'attention'
 					: 'neutral'
-		}
+		},
+		career: { value: '—', label: 'locked', tone: 'neutral' }
 	};
 }

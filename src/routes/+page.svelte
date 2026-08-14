@@ -4,6 +4,7 @@
 	import type { PageProps as GeneratedPageProps } from './$types';
 	import ActivityWorkspace from '$lib/components/ActivityWorkspace.svelte';
 	import BriefWorkspace from '$lib/components/BriefWorkspace.svelte';
+	import CareerWorkspace from '$lib/components/CareerWorkspace.svelte';
 	import CloudflareWorkspace from '$lib/components/CloudflareWorkspace.svelte';
 	import CommandPalette from '$lib/components/CommandPalette.svelte';
 	import CraftWorkspace from '$lib/components/CraftWorkspace.svelte';
@@ -12,18 +13,29 @@
 	import RepositoriesWorkspace from '$lib/components/RepositoriesWorkspace.svelte';
 	import TodayWorkspace from '$lib/components/TodayWorkspace.svelte';
 	import WorkspaceRail from '$lib/components/WorkspaceRail.svelte';
+	import type { CareerSnapshot } from '$lib/domain/career-accountability';
+	import { createCareerNavigationSignal } from '$lib/domain/career-view';
 	import type {
 		CloudflareUsageRefreshResult,
 		CloudflareUsageSnapshot
 	} from '$lib/domain/cloudflare-usage';
 	import { createWorkspaceSignals } from '$lib/domain/dashboard-navigation';
-	import { resolvedViewerTimeZone, SSR_VIEWER_TIME_ZONE } from '$lib/domain/dashboard-time';
+	import {
+		resolvedViewerTimeZone,
+		SSR_VIEWER_TIME_ZONE,
+		zonedDateKey
+	} from '$lib/domain/dashboard-time';
 	import { createViewerActivityProjection } from '$lib/domain/dashboard-viewer-time';
 	import { filterRepositories, resolveSelectedRepository } from '$lib/domain/dashboard-workspace';
 	import type { GitHubDashboardSnapshot } from '$lib/domain/github-intelligence';
 	import { DashboardView } from '$lib/state/dashboard-view.svelte';
 
-	type CloudflarePageData = {
+	type PrivatePageData = {
+		readonly career: CareerSnapshot | null;
+		readonly careerAccess: {
+			readonly _tag: 'Current' | 'Unavailable';
+			readonly reason: string;
+		};
 		readonly cloudflare: CloudflareUsageSnapshot | null;
 		readonly cloudflareCache: {
 			readonly _tag: 'Cold' | 'Cached';
@@ -31,12 +43,15 @@
 		};
 		readonly cloudflareRefresh: Promise<CloudflareUsageRefreshResult>;
 	};
-	type PageProps = Omit<GeneratedPageProps, 'data'> & {
-		readonly data: GeneratedPageProps['data'] & CloudflarePageData;
+	type CareerActionData = { readonly careerMessage?: string };
+	type PageProps = Omit<GeneratedPageProps, 'data' | 'form'> & {
+		readonly data: GeneratedPageProps['data'] & PrivatePageData;
+		readonly form: CareerActionData | null;
 	};
 
-	let { data }: PageProps = $props();
+	let { data, form }: PageProps = $props();
 	let snapshot: GitHubDashboardSnapshot | null = $derived(data.snapshot);
+	let career: CareerSnapshot | null = $derived(data.career);
 	let cloudflare: CloudflareUsageSnapshot | null = $derived(data.cloudflare);
 	let refreshState = $state<'Refreshing' | 'Current' | 'Fresh' | 'Unavailable'>('Refreshing');
 	let refreshMessage = $state('');
@@ -45,6 +60,7 @@
 	);
 	let cloudflareMessage = $state('');
 	let viewerTimeZone = $derived(SSR_VIEWER_TIME_ZONE);
+	const viewerToday = $derived(zonedDateKey(new Date(), viewerTimeZone));
 	const dashboardView = new DashboardView();
 	const visibleRepositories = $derived(
 		snapshot === null
@@ -61,11 +77,13 @@
 	const viewerProjection = $derived(
 		snapshot === null ? null : createViewerActivityProjection(snapshot, viewerTimeZone)
 	);
-	const workspaceSignals = $derived(
-		snapshot === null || viewerProjection === null
-			? null
-			: createWorkspaceSignals(snapshot, viewerProjection, cloudflare)
-	);
+	const workspaceSignals = $derived.by(() => {
+		if (snapshot === null || viewerProjection === null) return null;
+		return {
+			...createWorkspaceSignals(snapshot, viewerProjection, cloudflare),
+			career: createCareerNavigationSignal(career)
+		};
+	});
 	const status = $derived.by(() => {
 		if (refreshState === 'Refreshing')
 			return snapshot === null ? 'Warming cache' : 'Private · refreshing';
@@ -116,7 +134,10 @@
 
 <svelte:head>
 	<title>{snapshot?.profile.login ?? 'Weeknote'} / Weeknote</title>
-	<meta name="description" content="A focused private-aware weekly journal of GitHub work." />
+	<meta
+		name="description"
+		content="A private engineering accountability, delivery, and career intelligence desk."
+	/>
 </svelte:head>
 <a class="skip-link" href="#workspace-stage">Skip to dashboard</a>
 
@@ -170,7 +191,21 @@
 	</header>
 
 	<main id="workspace-stage" class="stage">
-		{#if dashboardView.activeWorkspace === 'cloudflare'}
+		{#if dashboardView.activeWorkspace === 'career'}
+			<section
+				class="active"
+				aria-hidden="false"
+				tabindex="-1"
+				{@attach dashboardView.workspaceAttachment('career')}
+			>
+				<CareerWorkspace
+					snapshot={career}
+					accessReason={data.careerAccess.reason}
+					today={viewerToday}
+					actionMessage={form?.careerMessage ?? ''}
+				/>
+			</section>
+		{:else if dashboardView.activeWorkspace === 'cloudflare'}
 			<section
 				class="active"
 				aria-hidden="false"
@@ -2489,9 +2524,9 @@
 		}
 	}
 
-	@media (max-width: 1180px) and (min-width: 901px) {
+	@media (max-width: 1380px) and (min-width: 901px) {
 		:global(.workspace-link) {
-			min-width: 7rem;
+			min-width: 5.7rem;
 			grid-template-columns: auto minmax(0, 1fr);
 		}
 		:global(.workspace-link__signal) {
