@@ -8,7 +8,8 @@ import {
 	parseCreateOpportunity,
 	parseCreateStory,
 	parseStageTransition,
-	parseUpdateOpportunity
+	parseUpdateOpportunity,
+	parseUpdateStory
 } from '$lib/domain/career-accountability';
 import type { CloudflareUsageRefreshResult } from '$lib/domain/cloudflare-usage';
 import type { DashboardRefreshResult } from '$lib/domain/dashboard-hydration';
@@ -18,12 +19,12 @@ import { resolveCareerAccess } from '$lib/server/career-access';
 import {
 	createCareerCommitment,
 	createCareerOpportunity,
-	createCareerStory,
 	loadCareerSnapshot,
 	setCareerCommitmentStatus,
 	transitionCareerOpportunity,
 	updateCareerOpportunity
 } from '$lib/server/career-store';
+import { createCareerStory, updateCareerStory } from '$lib/server/career-story-store';
 import { loadCloudflareUsageSnapshot } from '$lib/server/cloudflare-api';
 import { cloudflareUsageCacheFor } from '$lib/server/cloudflare-usage-cache';
 import { loadLiveDashboardSnapshot } from '$lib/server/dashboard-loader';
@@ -262,5 +263,17 @@ export const actions = {
 		return exit._tag === 'Success'
 			? { careerMessage: 'Interview story saved.' }
 			: fail(503, { careerMessage: 'Interview story could not be saved.' });
+	},
+	updateStory: async (event) => {
+		const access = actionAccess(event);
+		if (access._tag === 'Denied') return fail(403, { careerMessage: access.reason });
+		const parsed = parseUpdateStory(await actionInput(event));
+		if (Either.isLeft(parsed)) return fail(400, { careerMessage: parsed.left.reason });
+		const exit = await Effect.runPromiseExit(
+			updateCareerStory(access.database, access.ownerEmail, parsed.right, new Date())
+		);
+		return exit._tag === 'Success'
+			? { careerMessage: 'Interview story updated.' }
+			: fail(503, { careerMessage: 'Interview story could not be updated.' });
 	}
 } satisfies Actions;

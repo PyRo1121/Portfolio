@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
 	parseCreateOpportunity,
 	parseUpdateOpportunity,
+	parseUpdateStory,
 	summarizeCareer,
 	type CareerCommitment,
 	type CareerOpportunity
@@ -104,6 +105,39 @@ describe('career accountability domain', () => {
 			});
 		}
 		expect(Either.isLeft(parseUpdateOpportunity({ ...opportunity, id: 'not-a-uuid' }))).toBe(true);
+	});
+
+	it('parses owner-scoped story edits and preserves ShareDraft intent', () => {
+		const parsed = parseUpdateStory({
+			id: '07f332f3-aa2d-4233-ab1d-497463ce84e2',
+			title: ' Private Cloudflare intelligence ',
+			problem: 'Evidence was fragmented.',
+			action: 'Built an isolated collector.',
+			outcome: 'Shipped measurable operational evidence.',
+			evidenceUrl: 'https://example.test/evidence',
+			visibility: 'ShareDraft'
+		});
+		expect(Either.isRight(parsed)).toBe(true);
+		if (Either.isRight(parsed)) {
+			expect(parsed.right).toMatchObject({
+				id: '07f332f3-aa2d-4233-ab1d-497463ce84e2',
+				title: 'Private Cloudflare intelligence',
+				visibility: 'ShareDraft'
+			});
+		}
+		expect(
+			Either.isLeft(
+				parseUpdateStory({
+					id: 'not-a-uuid',
+					title: 'Story',
+					problem: 'Problem',
+					action: 'Action',
+					outcome: 'Outcome',
+					evidenceUrl: '',
+					visibility: 'Private'
+				})
+			)
+		).toBe(true);
 	});
 
 	it('derives overdue accountability and grouped pipeline evidence', () => {

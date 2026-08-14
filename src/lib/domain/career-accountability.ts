@@ -104,6 +104,7 @@ const CommitmentStatusFormSchema = Schema.Struct({
 	id: Schema.UUID,
 	status: Schema.Union(Schema.Literal('Open'), Schema.Literal('Done'))
 });
+const StoryIdFormSchema = Schema.Struct({ id: Schema.UUID });
 const StoryFormSchema = Schema.Struct({
 	title: RequiredText,
 	problem: Schema.Trim.pipe(Schema.minLength(1), Schema.maxLength(2_000)),
@@ -145,6 +146,9 @@ export type CreateStoryInput = {
 	readonly evidenceUrl: string | null;
 	readonly visibility: 'Private' | 'ShareDraft';
 };
+
+/** Parsed owner-scoped interview-story update input. */
+export type UpdateStoryInput = CreateStoryInput & { readonly id: string };
 
 /** Stable, user-safe form parsing failure. */
 export class CareerInputError extends Error {
@@ -270,6 +274,20 @@ export function parseCreateStory(
 		evidenceUrl: evidenceUrl.right,
 		visibility: decoded.right.visibility
 	});
+}
+
+/** Parse an untrusted interview-story update form into an owner-scoped command. */
+export function parseUpdateStory(
+	input: unknown
+): Either.Either<UpdateStoryInput, CareerInputError> {
+	const identity = Schema.decodeUnknownEither(StoryIdFormSchema)(input);
+	if (Either.isLeft(identity)) {
+		return Either.left(new CareerInputError('A valid interview story is required.'));
+	}
+	const story = parseCreateStory(input);
+	return Either.isLeft(story)
+		? Either.left(story.left)
+		: Either.right({ id: identity.right.id, ...story.right });
 }
 
 /** Derive transparent career-pipeline summary counts. */
