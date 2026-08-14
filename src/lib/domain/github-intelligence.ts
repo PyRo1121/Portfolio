@@ -196,6 +196,32 @@ export type WorkflowRunInput = {
 	readonly createdAt: string;
 };
 
+/** One bounded check-run annotation linked to its exact workflow job and run. */
+export type WorkflowCheckAnnotationInput = {
+	readonly runId: number;
+	readonly runTitle: string;
+	readonly runUrl: string;
+	readonly repository: string;
+	readonly jobName: string;
+	readonly jobUrl: string;
+	readonly level: 'notice' | 'warning' | 'failure';
+	readonly path: string;
+	readonly startLine: number;
+	readonly endLine: number;
+	readonly title: string;
+	readonly message: string;
+	readonly messageTruncated: boolean;
+};
+
+/** Collection state for bounded annotations from recent failed workflow runs. */
+export type WorkflowAnnotationCoverageInput = {
+	readonly state: 'Observed' | 'Unavailable';
+	readonly targetedRuns: number;
+	readonly evidence: ReadonlyArray<WorkflowCheckAnnotationInput>;
+	readonly truncated: boolean;
+	readonly detail: string;
+};
+
 /** Exact workflow totals for one repository and time window. */
 export type RepositoryWorkflowSummaryInput = {
 	readonly repository: string;
@@ -220,6 +246,7 @@ export type WorkflowCoverageInput = {
 		readonly other: number;
 		readonly repositories: ReadonlyArray<RepositoryWorkflowSummaryInput>;
 		readonly recent: ReadonlyArray<WorkflowRunInput>;
+		readonly annotations: WorkflowAnnotationCoverageInput;
 	};
 	readonly previous: {
 		readonly total: number;
@@ -1009,7 +1036,14 @@ export function createDemoIntelligence(base: WeeklySnapshot): GitHubDashboardSna
 							other: 0
 						}
 					],
-					recent: []
+					recent: [],
+					annotations: {
+						state: 'Unavailable',
+						targetedRuns: 0,
+						evidence: [],
+						truncated: false,
+						detail: 'Check-run annotations are unavailable in demo evidence.'
+					}
 				},
 				previous: { total: 5, successful: 4, failed: 1, cancelled: 0, other: 0 }
 			}

@@ -10,6 +10,7 @@
 		XCircle
 	} from 'phosphor-svelte';
 	import type { DeliveryArtifact, GitHubDashboardSnapshot } from '$lib/domain/github-intelligence';
+	import { workflowAnnotationCoverage } from '$lib/domain/dashboard-workflow-annotations';
 	import {
 		formatInteger,
 		formatRelativeTime,
@@ -33,6 +34,8 @@
 	const workflow = $derived(delivery.workflows.current);
 	const artifacts = $derived(delivery.artifacts.slice(0, 8));
 	const verificationTotal = $derived(workflow.successful + workflow.failed);
+	const annotationCoverage = $derived(workflowAnnotationCoverage(snapshot));
+	const latestAnnotation = $derived(annotationCoverage.evidence[0] ?? null);
 
 	function artifactLabel(artifact: DeliveryArtifact): string {
 		switch (artifact.kind) {
@@ -158,6 +161,25 @@
 				>
 			</div>
 		</div>
+		{#if latestAnnotation}
+			<a
+				class="verification-annotation"
+				href={latestAnnotation.jobUrl}
+				target="_blank"
+				rel="external noreferrer"
+				title={latestAnnotation.message}
+			>
+				<div>
+					<small>Observed check annotation</small>
+					<strong>{latestAnnotation.message}{latestAnnotation.messageTruncated ? '…' : ''}</strong>
+				</div>
+				<span>{latestAnnotation.repository} · {latestAnnotation.jobName}</span>
+			</a>
+		{:else if annotationCoverage.state === 'Unavailable' && annotationCoverage.targetedRuns > 0}
+			<p class="coverage-warning">
+				<WarningCircle size={14} />{annotationCoverage.detail}
+			</p>
+		{/if}
 		{#if delivery.workflows.unavailableRepositories.length > 0 || delivery.workflows.truncated}
 			<p class="coverage-warning">
 				<WarningCircle size={14} />{delivery.workflows.truncated

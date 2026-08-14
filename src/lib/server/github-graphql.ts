@@ -936,7 +936,14 @@ export function fetchGitHubIntelligence(
 						cancelled: 0,
 						other: 0,
 						repositories: [],
-						recent: []
+						recent: [],
+						annotations: {
+							state: 'Unavailable',
+							targetedRuns: 0,
+							evidence: [],
+							truncated: false,
+							detail: 'Check-run annotations require the isolated Actions collector.'
+						}
 					},
 					previous: { total: 0, successful: 0, failed: 0, cancelled: 0, other: 0 }
 				}

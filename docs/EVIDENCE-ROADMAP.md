@@ -38,16 +38,18 @@ Weeknote should remain decision-first: show one decisive signal on entry, then e
 - Preserve failed, cancelled, and successful distributions instead of one blended average.
 - Source: [GitHub REST workflow jobs](https://docs.github.com/en/rest/actions/workflow-jobs).
 
-### Failed-step evidence — Measured
+### Failed-step evidence — New collection required
 
-- Collect failing job steps and timestamps for recent failed default-branch runs.
+- Collect failing job steps and timestamps only after a job actually starts. Jobs rejected before runner allocation have no steps and must not be assigned an inferred root cause.
 - Link directly to the run; never infer root cause from a step name.
 - Source: [GitHub REST workflow jobs](https://docs.github.com/en/rest/actions/workflow-jobs).
 
-### Check annotations — Measured when accessible
+### Check annotations — Observed when accessible; currently permission-limited in production
 
-- Surface warning/failure annotation counts and a bounded sample of file/line evidence.
-- Access and code-scanning gaps remain **Unavailable**.
+- Formula: from the newest four failed default-branch `push`, `workflow_dispatch`, or `repository_dispatch` runs, inspect at most two pages of jobs and two pages of check-run annotations. Retain at most eight annotations; cap messages at 800 characters and mark truncation.
+- Dependabot `dynamic`, scheduled, and chained automation runs do not affect the user-triggered verification pass rate.
+- Each annotation retains exact repository, run, job URL, level, path, line range, and bounded GitHub message. The dashboard links to the job and does not infer a billing balance or root cause beyond GitHub's returned text.
+- The current dedicated runtime PAT can list Actions jobs but GitHub returns `403 Resource not accessible by personal access token` for annotations because it lacks fine-grained **Checks: read**. Production therefore remains **Unavailable** until that permission is granted; no broad GitHub CLI OAuth token is embedded in the Worker.
 - Source: [GitHub REST check runs](https://docs.github.com/en/rest/checks/runs).
 
 ## Priority 3 — impact and operational health

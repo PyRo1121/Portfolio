@@ -3,7 +3,8 @@ import { Schema } from 'effect';
 import type { DashboardRefreshResult } from '$lib/domain/dashboard-hydration';
 import type {
 	GitHubDashboardSnapshot,
-	RepositoryCollectionEvidence
+	RepositoryCollectionEvidence,
+	WorkflowAnnotationCoverageInput
 } from '$lib/domain/github-intelligence';
 
 const CACHE_VERSION = 1;
@@ -177,6 +178,32 @@ const WorkflowTotalsSchema = Schema.Struct({
 	cancelled: Schema.Number,
 	other: Schema.Number
 });
+const WorkflowCheckAnnotationSchema = Schema.Struct({
+	runId: Schema.Number,
+	runTitle: Schema.String,
+	runUrl: Schema.String,
+	repository: Schema.String,
+	jobName: Schema.String,
+	jobUrl: Schema.String,
+	level: Schema.Union(
+		Schema.Literal('notice'),
+		Schema.Literal('warning'),
+		Schema.Literal('failure')
+	),
+	path: Schema.String,
+	startLine: Schema.Number,
+	endLine: Schema.Number,
+	title: Schema.String,
+	message: Schema.String,
+	messageTruncated: Schema.Boolean
+});
+const WorkflowAnnotationCoverageSchema = Schema.Struct({
+	state: Schema.Union(Schema.Literal('Observed'), Schema.Literal('Unavailable')),
+	targetedRuns: Schema.Number,
+	evidence: Schema.Array(WorkflowCheckAnnotationSchema),
+	truncated: Schema.Boolean,
+	detail: Schema.String
+});
 const WorkflowCoverageSchema = Schema.Struct({
 	coveredRepositories: Schema.Number,
 	totalRepositories: Schema.Number,
@@ -185,7 +212,8 @@ const WorkflowCoverageSchema = Schema.Struct({
 	current: Schema.Struct({
 		...WorkflowTotalsSchema.fields,
 		repositories: Schema.Array(RepositoryWorkflowSummarySchema),
-		recent: Schema.Array(WorkflowRunSchema)
+		recent: Schema.Array(WorkflowRunSchema),
+		annotations: Schema.optional(WorkflowAnnotationCoverageSchema)
 	}),
 	previous: WorkflowTotalsSchema
 });
@@ -384,11 +412,29 @@ export class DashboardSnapshotCache {
 							oldestStaleAt: storedCollection.oldestStaleAt ?? null,
 							graphQL: storedCollection.graphQL ?? unavailableGraphQL
 						};
+			const storedWorkflows = envelope.snapshot.intelligence.delivery.workflows;
+			const unavailableAnnotations: WorkflowAnnotationCoverageInput = {
+				state: 'Unavailable',
+				targetedRuns: 0,
+				evidence: [],
+				truncated: false,
+				detail: 'Check-run annotations are unavailable for this legacy snapshot.'
+			};
 			const snapshot: GitHubDashboardSnapshot = {
 				...envelope.snapshot,
 				intelligence: {
 					...envelope.snapshot.intelligence,
 					repositoryCollection,
+					delivery: {
+						...envelope.snapshot.intelligence.delivery,
+						workflows: {
+							...storedWorkflows,
+							current: {
+								...storedWorkflows.current,
+								annotations: storedWorkflows.current.annotations ?? unavailableAnnotations
+							}
+						}
+					},
 					repositories: envelope.snapshot.intelligence.repositories.map((repository) => ({
 						...repository,
 						imageUrl: repository.imageUrl ?? envelope.snapshot.profile.avatarUrl

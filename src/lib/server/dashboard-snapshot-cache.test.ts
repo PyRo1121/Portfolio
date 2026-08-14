@@ -102,6 +102,30 @@ describe('DashboardSnapshotCache', () => {
 		);
 	});
 
+	it('hydrates legacy workflow snapshots with unavailable annotation evidence', async () => {
+		const { cache, values } = cacheFixture();
+		await cache.refresh('octocat', null, new Date(), async () => liveSnapshot());
+		const [key] = values.keys();
+		expect(key).toBeDefined();
+		const envelope = parseJson<{
+			snapshot: {
+				intelligence: {
+					delivery: { workflows: { current: Record<string, unknown> } };
+				};
+			};
+		}>(values.get(key!)!);
+		delete envelope.snapshot.intelligence.delivery.workflows.current['annotations'];
+		values.set(key!, JSON.stringify(envelope));
+		expect(
+			(await cache.read('octocat'))?.snapshot.intelligence.delivery.workflows.current.annotations
+		).toMatchObject({
+			state: 'Unavailable',
+			targetedRuns: 0,
+			evidence: [],
+			detail: 'Check-run annotations are unavailable for this legacy snapshot.'
+		});
+	});
+
 	it('shares one in-flight refresh across concurrent callers', async () => {
 		const { cache } = cacheFixture();
 		let calls = 0;
