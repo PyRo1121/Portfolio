@@ -7,7 +7,8 @@ import {
 	parseCreateCommitment,
 	parseCreateOpportunity,
 	parseCreateStory,
-	parseStageTransition
+	parseStageTransition,
+	parseUpdateOpportunity
 } from '$lib/domain/career-accountability';
 import type { CloudflareUsageRefreshResult } from '$lib/domain/cloudflare-usage';
 import type { DashboardRefreshResult } from '$lib/domain/dashboard-hydration';
@@ -20,7 +21,8 @@ import {
 	createCareerStory,
 	loadCareerSnapshot,
 	setCareerCommitmentStatus,
-	transitionCareerOpportunity
+	transitionCareerOpportunity,
+	updateCareerOpportunity
 } from '$lib/server/career-store';
 import { loadCloudflareUsageSnapshot } from '$lib/server/cloudflare-api';
 import { cloudflareUsageCacheFor } from '$lib/server/cloudflare-usage-cache';
@@ -188,6 +190,18 @@ export const actions = {
 		return exit._tag === 'Success'
 			? { careerMessage: 'Opportunity added.' }
 			: fail(503, { careerMessage: 'Opportunity could not be saved.' });
+	},
+	updateOpportunity: async (event) => {
+		const access = actionAccess(event);
+		if (access._tag === 'Denied') return fail(403, { careerMessage: access.reason });
+		const parsed = parseUpdateOpportunity(await actionInput(event));
+		if (Either.isLeft(parsed)) return fail(400, { careerMessage: parsed.left.reason });
+		const exit = await Effect.runPromiseExit(
+			updateCareerOpportunity(access.database, access.ownerEmail, parsed.right, new Date())
+		);
+		return exit._tag === 'Success'
+			? { careerMessage: 'Opportunity updated.' }
+			: fail(503, { careerMessage: 'Opportunity could not be updated.' });
 	},
 	transitionOpportunity: async (event) => {
 		const access = actionAccess(event);
