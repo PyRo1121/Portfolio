@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { GitHubIntelligenceInput } from './github-intelligence';
 import { createDemoIntelligence, createGitHubDashboardSnapshot } from './github-intelligence';
 import { createDemoSnapshot } from './github-stats';
 
@@ -7,7 +8,7 @@ const now = new Date('2026-08-13T08:00:00Z');
 describe('createGitHubDashboardSnapshot', () => {
 	it('projects private repository commits, churn, calendar, and account totals', () => {
 		const base = createDemoSnapshot(now, 'octocat', 'test');
-		const snapshot = createGitHubDashboardSnapshot(base, {
+		const input: GitHubIntelligenceInput = {
 			repositories: [
 				{
 					name: 'private-work',
@@ -57,7 +58,9 @@ describe('createGitHubDashboardSnapshot', () => {
 				privateRepositories: 1,
 				publicRepositories: 0,
 				freshRepositories: 1,
-				staleRepositories: []
+				staleRepositories: [],
+				graphQLCost: 12,
+				successfulGraphQLRequests: 3
 			},
 			contributionDays: [
 				{ date: '2026-08-11', count: 2 },
@@ -110,7 +113,8 @@ describe('createGitHubDashboardSnapshot', () => {
 				}
 			},
 			rateLimit: { remaining: 4_900, limit: 5_000, resetAt: now.toISOString() }
-		});
+		};
+		const snapshot = createGitHubDashboardSnapshot(base, input);
 
 		expect(snapshot.totals).toMatchObject({
 			commits: 2,
@@ -129,7 +133,9 @@ describe('createGitHubDashboardSnapshot', () => {
 			state: 'Observed',
 			totalRepositories: 1,
 			freshRepositories: 1,
-			staleRepositories: []
+			staleRepositories: [],
+			oldestStaleAt: null,
+			graphQL: { state: 'Measured', points: 12, successfulRequests: 3 }
 		});
 		expect(snapshot.intelligence.comparison).toMatchObject({
 			currentCommits: 2,
@@ -149,6 +155,30 @@ describe('createGitHubDashboardSnapshot', () => {
 			changedFiles: 6
 		});
 		expect(snapshot.dailyActivity.map((day) => day.commits)).toEqual([0, 0, 0, 0, 1, 1, 0]);
+
+		const staleSnapshot = createGitHubDashboardSnapshot(base, {
+			...input,
+			repositoryCollection: {
+				...input.repositoryCollection,
+				freshRepositories: 0,
+				staleRepositories: [
+					{ repository: 'octocat/private-work', cachedAt: '2026-08-13T07:30:00.000Z' }
+				],
+				graphQLCost: 10,
+				successfulGraphQLRequests: 2
+			}
+		});
+		expect(staleSnapshot.intelligence.repositoryCollection).toMatchObject({
+			state: 'Unavailable',
+			staleRepositories: ['octocat/private-work'],
+			oldestStaleAt: '2026-08-13T07:30:00.000Z',
+			graphQL: {
+				state: 'Unavailable',
+				points: 10,
+				successfulRequests: 2,
+				detail: expect.stringContaining('Failed request cost was not returned.')
+			}
+		});
 	});
 
 	it('keeps demo repository collection explicitly unavailable', () => {

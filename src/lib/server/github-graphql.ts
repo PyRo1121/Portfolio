@@ -8,6 +8,7 @@ import type {
 	RepositoryIntelligenceInput
 } from '$lib/domain/github-intelligence';
 import { collectGitHubRepositorySlices } from '$lib/server/github-repository-collector';
+import type { GitHubRepositoryRefresh } from '$lib/server/github-repository-collector';
 import type {
 	GitHubRepositorySlice,
 	GitHubRepositorySliceCache
@@ -157,17 +158,20 @@ const SearchConnectionSchema = Schema.Struct({
 	nodes: Schema.Array(Schema.NullOr(SearchResultSchema))
 });
 
+const GraphQLRateLimitSchema = Schema.Struct({
+	cost: Schema.Number,
+	limit: Schema.Number,
+	remaining: Schema.Number,
+	resetAt: Schema.String
+});
+
 const CoreDataSchema = Schema.Struct({
 	viewer: Schema.Struct({
 		current: ContributionCollectionSchema,
 		previous: ContributionCollectionSchema,
 		year: ContributionCollectionSchema
 	}),
-	rateLimit: Schema.Struct({
-		limit: Schema.Number,
-		remaining: Schema.Number,
-		resetAt: Schema.String
-	})
+	rateLimit: GraphQLRateLimitSchema
 });
 const SearchDataSchema = Schema.Struct({
 	authoredPullRequests: SearchConnectionSchema,
@@ -178,7 +182,8 @@ const SearchDataSchema = Schema.Struct({
 	currentMergedPullRequests: SearchConnectionSchema,
 	currentClosedIssues: SearchConnectionSchema,
 	previousMergedPullRequests: SearchConnectionSchema,
-	previousClosedIssues: SearchConnectionSchema
+	previousClosedIssues: SearchConnectionSchema,
+	rateLimit: GraphQLRateLimitSchema
 });
 
 const GraphQLErrorSchema = Schema.Struct({ message: Schema.String });
@@ -192,7 +197,12 @@ const SearchResponseSchema = Schema.Struct({
 });
 const RepositoryResponseSchema = Schema.Struct({
 	data: Schema.optional(
-		Schema.NullOr(Schema.Struct({ repository: Schema.NullOr(RepositorySchema) }))
+		Schema.NullOr(
+			Schema.Struct({
+				repository: Schema.NullOr(RepositorySchema),
+				rateLimit: GraphQLRateLimitSchema
+			})
+		)
 	),
 	errors: Schema.optional(Schema.Array(GraphQLErrorSchema))
 });
@@ -204,7 +214,8 @@ const CommitPageDataSchema = Schema.Struct({
 				Schema.Struct({ target: Schema.NullOr(Schema.Struct({ history: HistorySchema })) })
 			)
 		})
-	)
+	),
+	rateLimit: GraphQLRateLimitSchema
 });
 
 const CommitPageResponseSchema = Schema.Struct({
@@ -231,7 +242,7 @@ query GitHubSignalAccount(
       ...ContributionFields
     }
   }
-  rateLimit { limit remaining resetAt }
+  rateLimit { cost limit remaining resetAt }
 }
 
 fragment ContributionFields on ContributionsCollection {
@@ -270,6 +281,7 @@ query GitHubSignalSearches(
   currentClosedIssues: search(query: $currentClosedIssues, type: ISSUE, first: ${SEARCH_PAGE_SIZE}) { ...SearchFields }
   previousMergedPullRequests: search(query: $previousMergedPullRequests, type: ISSUE, first: 1) { ...SearchFields }
   previousClosedIssues: search(query: $previousClosedIssues, type: ISSUE, first: 1) { ...SearchFields }
+  rateLimit { cost limit remaining resetAt }
 }
 
 fragment SearchFields on SearchResultItemConnection {
@@ -299,6 +311,7 @@ query GitHubRepositorySlice(
   $weekEnd: GitTimestamp!
   $previousStart: GitTimestamp!
 ) {
+  rateLimit { cost limit remaining resetAt }
   repository(owner: $owner, name: $name) {
     name
     nameWithOwner
@@ -356,6 +369,7 @@ query RepositoryCommitPage(
   $weekEnd: GitTimestamp!
   $after: String!
 ) {
+  rateLimit { cost limit remaining resetAt }
   repository(owner: $owner, name: $name) {
     defaultBranchRef {
       target {
@@ -380,11 +394,23 @@ export class GitHubGraphQLError extends Error {
 	constructor(
 		readonly operation: string,
 		override readonly cause: unknown,
-		readonly status: number | null = null
+		readonly status: number | null = null,
+		readonly graphQLCost = 0,
+		readonly successfulGraphQLRequests = 0
 	) {
 		super(
 			`GitHub GraphQL failed during ${operation}${status === null ? '' : ` with HTTP ${status}`}`,
 			{ cause }
+		);
+	}
+
+	withObservation(graphQLCost: number, successfulGraphQLRequests: number): GitHubGraphQLError {
+		return new GitHubGraphQLError(
+			this.operation,
+			this.cause,
+			this.status,
+			this.graphQLCost + graphQLCost,
+			this.successfulGraphQLRequests + successfulGraphQLRequests
 		);
 	}
 }
@@ -453,21 +479,36 @@ function repositoryParts(fullName: string): readonly [string, string] | null {
 	return [fullName.slice(0, separator), fullName.slice(separator + 1)];
 }
 
+type CommitPaginationRequest = {
+	readonly fetch: Fetch;
+	readonly token: Redacted.Redacted<string>;
+	readonly repository: DecodedRepository;
+	readonly authorId: string;
+	readonly weekStart: string;
+	readonly weekEnd: string;
+};
+
+type CommitPaginationResult = {
+	readonly commits: ReadonlyArray<DecodedCommit>;
+	readonly graphQLCost: number;
+	readonly successfulGraphQLRequests: number;
+};
+
 function fetchRemainingCommits(
-	fetch: Fetch,
-	token: Redacted.Redacted<string>,
-	repository: DecodedRepository,
-	authorId: string,
-	weekStart: string,
-	weekEnd: string
-): Effect.Effect<ReadonlyArray<DecodedCommit>, GitHubGraphQLError> {
+	request: CommitPaginationRequest
+): Effect.Effect<CommitPaginationResult, GitHubGraphQLError> {
+	const { fetch, token, repository, authorId, weekStart, weekEnd } = request;
 	const initialHistory = repository.defaultBranchRef?.target?.current;
 	if (!initialHistory?.pageInfo.hasNextPage || initialHistory.pageInfo.endCursor === null) {
-		return Effect.succeed([]);
+		return Effect.succeed({ commits: [], graphQLCost: 0, successfulGraphQLRequests: 0 });
 	}
 	const parts = repositoryParts(repository.nameWithOwner);
-	if (parts === null) return Effect.succeed([]);
+	if (parts === null) {
+		return Effect.succeed({ commits: [], graphQLCost: 0, successfulGraphQLRequests: 0 });
+	}
 	const [owner, name] = parts;
+	let graphQLCost = 0;
+	let successfulGraphQLRequests = 0;
 	return Effect.gen(function* () {
 		const commits: DecodedCommit[] = [];
 		let cursor: string | null = initialHistory.pageInfo.endCursor;
@@ -485,17 +526,27 @@ function fetchRemainingCommits(
 			);
 			if (response.errors?.length || response.data == null) {
 				return yield* Effect.fail(
-					new GitHubGraphQLError('commit pagination response', response.errors)
+					new GitHubGraphQLError(
+						'commit pagination response',
+						response.errors,
+						null,
+						response.data?.rateLimit.cost ?? 0,
+						response.data === null || response.data === undefined ? 0 : 1
+					)
 				);
 			}
+			graphQLCost += response.data.rateLimit.cost;
+			successfulGraphQLRequests += 1;
 			const history = response.data.repository?.defaultBranchRef?.target?.history;
 			if (history === undefined) break;
 			commits.push(...history.nodes.filter((commit) => commit !== null));
 			hasNextPage = history.pageInfo.hasNextPage;
 			cursor = history.pageInfo.endCursor;
 		}
-		return commits;
-	});
+		return { commits, graphQLCost, successfulGraphQLRequests };
+	}).pipe(
+		Effect.mapError((cause) => cause.withObservation(graphQLCost, successfulGraphQLRequests))
+	);
 }
 
 function toRepository(
@@ -570,7 +621,7 @@ function repositoryReleaseEvidence(
 /** Fetch one complete repository evidence slice for independent caching. */
 export function fetchGitHubRepositorySlice(
 	request: RepositorySliceRequest
-): Effect.Effect<GitHubRepositorySlice, GitHubGraphQLError> {
+): Effect.Effect<GitHubRepositoryRefresh, GitHubGraphQLError> {
 	const parts = repositoryParts(request.fullName);
 	if (parts === null) {
 		return Effect.fail(
@@ -600,21 +651,32 @@ export function fetchGitHubRepositorySlice(
 		);
 		if (response.errors?.length || response.data?.repository == null) {
 			return yield* Effect.fail(
-				new GitHubGraphQLError(`repository slice response for ${request.fullName}`, response.errors)
+				new GitHubGraphQLError(
+					`repository slice response for ${request.fullName}`,
+					response.errors,
+					null,
+					response.data?.rateLimit.cost ?? 0,
+					response.data === null || response.data === undefined ? 0 : 1
+				)
 			);
 		}
 		const repository = response.data.repository;
-		const additionalCommits = yield* fetchRemainingCommits(
-			request.fetch,
-			request.token,
+		const repositoryRateLimit = response.data.rateLimit;
+		const additionalCommits = yield* fetchRemainingCommits({
+			fetch: request.fetch,
+			token: request.token,
 			repository,
-			request.authorId,
-			request.weekStart,
-			request.weekEnd
-		);
+			authorId: request.authorId,
+			weekStart: request.weekStart,
+			weekEnd: request.weekEnd
+		}).pipe(Effect.mapError((cause) => cause.withObservation(repositoryRateLimit.cost, 1)));
 		return {
-			repository: toRepository(repository, additionalCommits),
-			...repositoryReleaseEvidence(repository, request)
+			slice: {
+				repository: toRepository(repository, additionalCommits.commits),
+				...repositoryReleaseEvidence(repository, request)
+			},
+			graphQLCost: repositoryRateLimit.cost + additionalCommits.graphQLCost,
+			successfulGraphQLRequests: 1 + additionalCommits.successfulGraphQLRequests
 		};
 	});
 }
@@ -744,6 +806,10 @@ export function fetchGitHubIntelligence(
 					windowEnd: weekEnd.toISOString(),
 					now,
 					cache: repositoryCache,
+					observeFailure: (failure) => ({
+						graphQLCost: failure.graphQLCost,
+						successfulGraphQLRequests: failure.successfulGraphQLRequests
+					}),
 					load: (fullName) =>
 						fetchGitHubRepositorySlice({
 							fetch,
@@ -827,7 +893,10 @@ export function fetchGitHubIntelligence(
 				publicRepositories: repositoryInventory.filter((repository) => !repository.isPrivate)
 					.length,
 				freshRepositories: repositoryCollection.freshRepositories,
-				staleRepositories: repositoryCollection.staleRepositories
+				staleRepositories: repositoryCollection.staleRepositories,
+				graphQLCost:
+					account.rateLimit.cost + searches.rateLimit.cost + repositoryCollection.graphQLCost,
+				successfulGraphQLRequests: 2 + repositoryCollection.successfulGraphQLRequests
 			},
 			contributionDays: account.viewer.year.contributionCalendar.weeks.flatMap((week) =>
 				week.contributionDays.map((day) => ({
@@ -872,7 +941,11 @@ export function fetchGitHubIntelligence(
 					previous: { total: 0, successful: 0, failed: 0, cancelled: 0, other: 0 }
 				}
 			},
-			rateLimit: account.rateLimit
+			rateLimit: {
+				remaining: account.rateLimit.remaining,
+				limit: account.rateLimit.limit,
+				resetAt: account.rateLimit.resetAt
+			}
 		};
 	});
 }

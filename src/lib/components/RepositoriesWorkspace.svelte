@@ -40,6 +40,11 @@
 		repositories.slice(boundedPage * pageSize, (boundedPage + 1) * pageSize)
 	);
 	const collectionEvidence = $derived(repositoryCollectionEvidence(snapshot));
+	const oldestStaleAge = $derived(
+		collectionEvidence.oldestStaleAt === null
+			? null
+			: formatRelativeTime(collectionEvidence.oldestStaleAt, snapshot.generatedAt)
+	);
 	const filters: ReadonlyArray<{ readonly id: RepositoryFilter; readonly label: string }> = [
 		{ id: 'active', label: 'Active' },
 		{ id: 'private', label: 'Private' },
@@ -62,7 +67,12 @@
 		<div>
 			<span>Repository inventory</span><strong>{formatInteger(repositories.length)} results</strong>
 			<small class={collectionEvidence.state.toLocaleLowerCase()}
-				>{collectionEvidence.state} · {collectionEvidence.detail}</small
+				>{collectionEvidence.state} · {collectionEvidence.detail}{#if oldestStaleAge}
+					Oldest retained
+					{oldestStaleAge}.{/if}</small
+			>
+			<small class={collectionEvidence.graphQL.state.toLocaleLowerCase()}
+				>{collectionEvidence.graphQL.state} · {collectionEvidence.graphQL.detail}</small
 			>
 		</div>
 		<label
