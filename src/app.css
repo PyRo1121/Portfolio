@@ -1,0 +1,16 @@
+@import '@fontsource-variable/geist';
+@import '@fontsource-variable/jetbrains-mono';
+
+@font-face {
+	font-family: 'Observatory Mono';
+	src: url('/observatory-mono.ttf') format('truetype');
+	font-display: swap;
+	font-style: normal;
+	font-weight: 400;
+}
+
+:root {
+	font-synthesis: none;
+	text-rendering: optimizeLegibility;
+	color-scheme: dark;
+}

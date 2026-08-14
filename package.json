@@ -1,0 +1,58 @@
+{
+	"name": "gh-stats",
+	"private": true,
+	"version": "0.0.1",
+	"description": "Private GitHub engineering intelligence dashboard for Cloudflare Workers",
+	"license": "UNLICENSED",
+	"type": "module",
+	"packageManager": "npm@12.0.2",
+	"engines": {
+		"node": ">=22.22.2"
+	},
+	"scripts": {
+		"dev": "vite dev",
+		"build": "vite build",
+		"deploy": "npm run ci && wrangler deploy --strict",
+		"deploy:dry-run": "npm run build && wrangler deploy --dry-run --strict",
+		"preview": "vite preview",
+		"preview:cloudflare": "npm run build && wrangler dev .svelte-kit/cloudflare/_worker.js",
+		"prepare": "svelte-kit sync",
+		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+		"test": "vitest run",
+		"cf:types": "wrangler types worker-configuration.d.ts",
+		"lint": "prettier --check . && eslint .",
+		"format": "prettier --write .",
+		"ci": "npm run check && npm run lint && npm test && npm run build"
+	},
+	"devDependencies": {
+		"@cloudflare/workers-types": "5.20260813.1",
+		"@eslint/js": "^10.0.1",
+		"@sveltejs/adapter-cloudflare": "7.2.9",
+		"@sveltejs/kit": "^2.63.0",
+		"@sveltejs/vite-plugin-svelte": "^7.1.2",
+		"@types/node": "^24",
+		"@types/three": "^0.185.4",
+		"eslint": "^10.4.1",
+		"eslint-config-prettier": "^10.1.8",
+		"eslint-plugin-svelte": "^3.19.0",
+		"globals": "^17.6.0",
+		"prettier": "^3.8.3",
+		"prettier-plugin-svelte": "^4.1.0",
+		"svelte": "^5.56.1",
+		"svelte-check": "^4.6.0",
+		"typescript": "^6.0.3",
+		"typescript-eslint": "^8.60.1",
+		"vite": "^8.0.16",
+		"vitest": "^4.1.10",
+		"wrangler": "4.122.0"
+	},
+	"dependencies": {
+		"@fontsource-variable/geist": "^5.3.0",
+		"@fontsource-variable/jetbrains-mono": "^5.3.0",
+		"@threlte/core": "^8.5.16",
+		"effect": "^3.22.1",
+		"phosphor-svelte": "^3.1.0",
+		"three": "^0.185.1"
+	}
+}

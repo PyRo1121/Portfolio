@@ -1,0 +1,33 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "weeknote",
+	"main": ".svelte-kit/cloudflare/_worker.js",
+	"compatibility_date": "2026-08-13",
+	"compatibility_flags": ["nodejs_compat"],
+	"workers_dev": false,
+	"preview_urls": false,
+	"routes": [
+		{
+			"pattern": "gh.latham.cloud",
+			"custom_domain": true
+		}
+	],
+	"assets": {
+		"binding": "ASSETS",
+		"directory": ".svelte-kit/cloudflare"
+	},
+	"kv_namespaces": [
+		{
+			"binding": "WEEKNOTE_CACHE",
+			"id": "70db94b6340347d0b6a1f7ce236b7cff"
+		}
+	],
+	"vars": {
+		"CLOUDFLARE_ACCOUNT_ID": "f1e95b3e1b502cf366dfc81a863695fa",
+		"GITHUB_USERNAME": "PyRo1121"
+	},
+	"observability": {
+		"enabled": true,
+		"head_sampling_rate": 1
+	}
+}
