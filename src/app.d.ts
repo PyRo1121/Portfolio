@@ -28,6 +28,9 @@ declare global {
 				CAREER_OWNER_EMAIL?: string;
 				CLOUDFLARE_ACCOUNT_ID?: string;
 				CLOUDFLARE_API_TOKEN?: string;
+				GITHUB_CHECKS_APP_ID?: string;
+				GITHUB_CHECKS_APP_PRIVATE_KEY?: string;
+				GITHUB_CHECKS_INSTALLATION_ID?: string;
 				GITHUB_TOKEN?: string;
 				GITHUB_USERNAME?: string;
 				WEEKNOTE_CACHE: KVNamespace;

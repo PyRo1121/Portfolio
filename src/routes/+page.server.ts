@@ -29,6 +29,7 @@ import { createCareerStory, updateCareerStory } from '$lib/server/career-story-s
 import { loadCloudflareUsageSnapshot } from '$lib/server/cloudflare-api';
 import { cloudflareUsageCacheFor } from '$lib/server/cloudflare-usage-cache';
 import { loadLiveDashboardSnapshot } from '$lib/server/dashboard-loader';
+import { parseGitHubChecksAppConfig } from '$lib/server/github-app-auth';
 import { dashboardSnapshotCacheFor } from '$lib/server/dashboard-snapshot-cache';
 
 const DEFAULT_USERNAME = 'PyRo1121';
@@ -45,6 +46,16 @@ export const load: PageServerLoad = async ({ platform, request, setHeaders }) =>
 	if (platform === undefined) {
 		throw new Error('Weeknote bindings are unavailable outside the configured Cloudflare runtime.');
 	}
+
+	const checksApp = parseGitHubChecksAppConfig({
+		appId: platform.env.GITHUB_CHECKS_APP_ID?.trim() || env['GITHUB_CHECKS_APP_ID']?.trim(),
+		installationId:
+			platform.env.GITHUB_CHECKS_INSTALLATION_ID?.trim() ||
+			env['GITHUB_CHECKS_INSTALLATION_ID']?.trim(),
+		privateKey:
+			platform.env.GITHUB_CHECKS_APP_PRIVATE_KEY?.trim() ||
+			env['GITHUB_CHECKS_APP_PRIVATE_KEY']?.trim()
+	});
 
 	const careerAccess = resolveCareerAccess(
 		request.headers,
@@ -135,6 +146,7 @@ export const load: PageServerLoad = async ({ platform, request, setHeaders }) =>
 			fetch: globalThis.fetch,
 			username,
 			token,
+			...(checksApp === undefined ? {} : { checksApp }),
 			now,
 			cacheStore: platform.env.WEEKNOTE_CACHE
 		})

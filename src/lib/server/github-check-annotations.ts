@@ -194,18 +194,19 @@ function toEvidence(
 
 async function collectRunAnnotations(
 	fetch: Fetch,
-	token: Redacted.Redacted<string>,
+	actionsToken: Redacted.Redacted<string>,
+	checksToken: Redacted.Redacted<string>,
 	run: WorkflowRunInput
 ): Promise<RunAnnotationResult> {
 	try {
-		const jobs = await fetchJobs(fetch, token, run);
+		const jobs = await fetchJobs(fetch, actionsToken, run);
 		const failedJobs = jobs.values.filter(
 			(job) => job.conclusion !== null && FAILED_CONCLUSIONS.has(job.conclusion)
 		);
 		const annotations = await Promise.all(
 			failedJobs.map(async (job) => ({
 				job,
-				annotations: await fetchJobAnnotations(fetch, token, run.repository, job.id)
+				annotations: await fetchJobAnnotations(fetch, checksToken, run.repository, job.id)
 			}))
 		);
 		return {
@@ -240,7 +241,7 @@ function annotationCoverageDetail(
 	targetedRunCount: number
 ): string {
 	if (permissionLimited) {
-		return 'Check-run annotations are permission-limited; the server token requires Checks: read.';
+		return 'Check-run annotations are permission-limited; verify the GitHub App installation and Checks: read permission.';
 	}
 	if (unavailable) {
 		return `Check-run annotations were unavailable for at least one of ${targetedRunCount} failed workflow runs.`;
@@ -251,7 +252,8 @@ function annotationCoverageDetail(
 /** Collect bounded check-run annotations for recent failed default-branch workflow runs. */
 export function fetchWorkflowAnnotations(
 	fetch: Fetch,
-	token: Redacted.Redacted<string>,
+	actionsToken: Redacted.Redacted<string>,
+	checksToken: Redacted.Redacted<string> | undefined,
 	runs: ReadonlyArray<WorkflowRunInput>
 ): Effect.Effect<WorkflowAnnotationCoverageInput, never> {
 	const failedRuns = runs
@@ -267,8 +269,19 @@ export function fetchWorkflowAnnotations(
 			detail: 'No failed workflow runs required annotation collection.'
 		});
 	}
+	if (checksToken === undefined) {
+		return Effect.succeed({
+			state: 'Unavailable',
+			targetedRuns: targetedRuns.length,
+			evidence: [],
+			truncated: failedRuns.length > MAX_FAILED_RUNS,
+			detail: 'GitHub Checks app authentication was unavailable; workflow totals remain current.'
+		});
+	}
 	return Effect.promise(() =>
-		Promise.all(targetedRuns.map((run) => collectRunAnnotations(fetch, token, run)))
+		Promise.all(
+			targetedRuns.map((run) => collectRunAnnotations(fetch, actionsToken, checksToken, run))
+		)
 	).pipe(
 		Effect.map((results): WorkflowAnnotationCoverageInput => {
 			const permissionLimited = results.some((result) => result.limitation === 'PermissionLimited');

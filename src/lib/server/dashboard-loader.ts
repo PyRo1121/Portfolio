@@ -2,6 +2,7 @@ import { Effect, Redacted } from 'effect';
 import type { GitHubDashboardSnapshot } from '$lib/domain/github-intelligence';
 import type { DashboardCacheStore } from './dashboard-snapshot-cache';
 import { fetchWeeklySnapshot } from './github-api';
+import type { GitHubChecksAppConfig } from './github-app-auth';
 import { createGitHubRepositorySliceCache } from './github-repository-slice-cache';
 
 const RETRY_DELAYS_MS = [700, 1_600] as const;
@@ -16,6 +17,7 @@ export type DashboardLoadRequest = {
 	readonly fetch: Fetch;
 	readonly username: string;
 	readonly token: string;
+	readonly checksApp?: GitHubChecksAppConfig;
 	readonly now: Date;
 	readonly cacheStore: DashboardCacheStore;
 };
@@ -24,12 +26,21 @@ export type DashboardLoadRequest = {
 export async function loadLiveDashboardSnapshot(
 	request: DashboardLoadRequest
 ): Promise<GitHubDashboardSnapshot> {
-	const { fetch, username, token, now, cacheStore } = request;
+	const { fetch, username, token, checksApp, now, cacheStore } = request;
 	const repositoryCache = createGitHubRepositorySliceCache(cacheStore);
 	let lastFailure: unknown = new Error('GitHub refresh did not start.');
 	for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt += 1) {
 		const exit = await Effect.runPromiseExit(
-			fetchWeeklySnapshot(fetch, { username, token: Redacted.make(token) }, now, repositoryCache)
+			fetchWeeklySnapshot(
+				fetch,
+				{
+					username,
+					token: Redacted.make(token),
+					...(checksApp === undefined ? {} : { checksApp })
+				},
+				now,
+				repositoryCache
+			)
 		);
 		if (exit._tag === 'Success') return exit.value;
 		lastFailure = exit.cause;

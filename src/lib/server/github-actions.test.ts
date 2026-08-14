@@ -110,6 +110,7 @@ describe('summarizeRepositoryWorkflows', () => {
 			fetchWorkflowCoverage(
 				fetch,
 				Redacted.make('secret'),
+				Redacted.make('checks-secret'),
 				'octocat',
 				[repository],
 				new Date('2026-08-08T00:00:00.000Z'),
