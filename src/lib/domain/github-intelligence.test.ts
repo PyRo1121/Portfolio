@@ -107,7 +107,14 @@ describe('createGitHubDashboardSnapshot', () => {
 						cancelled: 0,
 						other: 0,
 						repositories: [],
-						recent: []
+						recent: [],
+						annotations: {
+							state: 'Observed',
+							targetedRuns: 0,
+							evidence: [],
+							truncated: false,
+							detail: 'No failed workflow runs required annotation collection.'
+						}
 					},
 					previous: { total: 0, successful: 0, failed: 0, cancelled: 0, other: 0 }
 				}

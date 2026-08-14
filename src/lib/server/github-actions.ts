@@ -5,11 +5,13 @@ import type {
 	WorkflowCoverageInput,
 	WorkflowRunInput
 } from '$lib/domain/github-intelligence';
+import { fetchWorkflowAnnotations } from '$lib/server/github-check-annotations';
 
 const API_ROOT = 'https://api.github.com';
 const PAGE_SIZE = 100;
 const MAX_PAGES = 10;
 const MAX_RECENT_RUNS = 16;
+const USER_TRIGGERED_EVENTS = new Set(['push', 'workflow_dispatch', 'repository_dispatch']);
 
 const WorkflowRunSchema = Schema.Struct({
 	id: Schema.Number,
@@ -58,6 +60,11 @@ function toWorkflowRun(repository: string, run: DecodedWorkflowRun): WorkflowRun
 		branch: run.head_branch,
 		createdAt: run.created_at.toISOString()
 	};
+}
+
+/** Return whether an Actions event is explicitly initiated by a user push or dispatch. */
+function isUserTriggeredWorkflowEvent(event: string): boolean {
+	return USER_TRIGGERED_EVENTS.has(event);
 }
 
 function conclusionCounts(runs: ReadonlyArray<WorkflowRunInput>): {
@@ -146,7 +153,10 @@ function fetchRepositoryWindow(
 			if (decoded.right.workflow_runs.length < PAGE_SIZE) break;
 		}
 		const runs = collected
-			.filter((run) => run.created_at >= start && run.created_at < end)
+			.filter(
+				(run) =>
+					run.created_at >= start && run.created_at < end && isUserTriggeredWorkflowEvent(run.event)
+			)
 			.map((run) => toWorkflowRun(repository, run))
 			.sort((left, right) => right.createdAt.localeCompare(left.createdAt));
 		return {
@@ -218,6 +228,10 @@ export function fetchWorkflowCoverage(
 			.map((result) => result.repository);
 		const currentAvailable = current.filter((result) => !result.unavailable);
 		const previousAvailable = previous.filter((result) => !result.unavailable);
+		const currentRuns = currentAvailable
+			.flatMap((result) => result.runs)
+			.sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+		const annotations = yield* fetchWorkflowAnnotations(fetch, token, currentRuns);
 		return {
 			coveredRepositories: currentAvailable.length,
 			totalRepositories: activeRepositories.length,
@@ -231,10 +245,8 @@ export function fetchWorkflowCoverage(
 						(left, right) =>
 							right.total - left.total || left.repository.localeCompare(right.repository)
 					),
-				recent: currentAvailable
-					.flatMap((result) => result.runs)
-					.sort((left, right) => right.createdAt.localeCompare(left.createdAt))
-					.slice(0, MAX_RECENT_RUNS)
+				recent: currentRuns.slice(0, MAX_RECENT_RUNS),
+				annotations
 			},
 			previous: aggregate(previousAvailable)
 		};
