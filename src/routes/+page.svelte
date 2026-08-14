@@ -16,6 +16,7 @@
 	import type { CareerSnapshot } from '$lib/domain/career-accountability';
 	import { createCareerAccountabilityReview } from '$lib/domain/career-accountability-review';
 	import { createCareerNavigationSignal } from '$lib/domain/career-navigation';
+	import { createCareerStoryEvidenceOptions } from '$lib/domain/career-story-evidence';
 	import type {
 		CloudflareUsageRefreshResult,
 		CloudflareUsageSnapshot
@@ -82,6 +83,9 @@
 		snapshot === null || career === null
 			? null
 			: createCareerAccountabilityReview(snapshot, career, cloudflare, viewerToday)
+	);
+	const storyEvidenceOptions = $derived(
+		snapshot === null ? [] : createCareerStoryEvidenceOptions(snapshot)
 	);
 	const workspaceSignals = $derived.by(() => {
 		if (snapshot === null || viewerProjection === null) return null;
@@ -206,6 +210,7 @@
 			>
 				<CareerAccountabilityWorkspace
 					snapshot={career}
+					evidenceOptions={storyEvidenceOptions}
 					review={accountabilityReview}
 					accessReason={data.careerAccess.reason}
 					today={viewerToday}

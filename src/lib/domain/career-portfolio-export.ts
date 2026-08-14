@@ -49,8 +49,26 @@ function safeEvidenceUrl(value: string | null): string | null {
 		: null;
 }
 
+function evidenceMarkdown(story: CareerStory): ReadonlyArray<string> {
+	if (story.evidence === null) return [];
+	if (story.evidence._tag === 'Unavailable') {
+		return [
+			'',
+			'**Evidence · Unavailable**',
+			'No server-verified GitHub outcome is associated with this story.'
+		];
+	}
+	const evidenceUrl = safeEvidenceUrl(story.evidence.url);
+	if (evidenceUrl === null) return [];
+	return [
+		'',
+		'**Evidence · Observed**',
+		`[${inlineMarkdown(story.evidence.title)}](${evidenceUrl})`,
+		`${inlineMarkdown(story.evidence.repository)} · ${inlineMarkdown(story.evidence.kind)} · ${inlineMarkdown(story.evidence.occurredAt)}`
+	];
+}
+
 function storyMarkdown(story: CareerStory): string {
-	const evidenceUrl = safeEvidenceUrl(story.evidenceUrl);
 	return [
 		`## ${inlineMarkdown(story.title)}`,
 		'',
@@ -62,7 +80,7 @@ function storyMarkdown(story: CareerStory): string {
 		'',
 		'**Outcome**',
 		escapedMarkdown(story.outcome),
-		...(evidenceUrl === null ? [] : ['', `[Evidence](${evidenceUrl})`])
+		...evidenceMarkdown(story)
 	].join('\n');
 }
 

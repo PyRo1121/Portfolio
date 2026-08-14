@@ -24,6 +24,7 @@ import {
 	transitionCareerOpportunity,
 	updateCareerOpportunity
 } from '$lib/server/career-store';
+import { resolveObservedCareerStoryEvidence } from '$lib/server/career-story-evidence';
 import { createCareerStory, updateCareerStory } from '$lib/server/career-story-store';
 import { loadCloudflareUsageSnapshot } from '$lib/server/cloudflare-api';
 import { cloudflareUsageCacheFor } from '$lib/server/cloudflare-usage-cache';
@@ -171,7 +172,12 @@ function actionAccess(event: CareerActionEvent) {
 		: {
 				_tag: 'Allowed' as const,
 				ownerEmail: access.ownerEmail,
-				database: event.platform.env.CAREER_DB
+				database: event.platform.env.CAREER_DB,
+				cache: event.platform.env.WEEKNOTE_CACHE,
+				username:
+					event.platform.env.GITHUB_USERNAME?.trim() ||
+					env['GITHUB_USERNAME']?.trim() ||
+					DEFAULT_USERNAME
 			};
 }
 
@@ -257,8 +263,20 @@ export const actions = {
 		if (access._tag === 'Denied') return fail(403, { careerMessage: access.reason });
 		const parsed = parseCreateStory(await actionInput(event));
 		if (Either.isLeft(parsed)) return fail(400, { careerMessage: parsed.left.reason });
+		const now = new Date();
+		const evidenceExit = await Effect.runPromiseExit(
+			resolveObservedCareerStoryEvidence(
+				access.cache,
+				access.username,
+				parsed.right.evidenceUrl,
+				now
+			)
+		);
+		if (evidenceExit._tag === 'Failure') {
+			return fail(409, { careerMessage: 'Selected GitHub evidence is no longer retained.' });
+		}
 		const exit = await Effect.runPromiseExit(
-			createCareerStory(access.database, access.ownerEmail, parsed.right, new Date())
+			createCareerStory(access.database, access.ownerEmail, parsed.right, evidenceExit.value, now)
 		);
 		return exit._tag === 'Success'
 			? { careerMessage: 'Interview story saved.' }
@@ -269,8 +287,20 @@ export const actions = {
 		if (access._tag === 'Denied') return fail(403, { careerMessage: access.reason });
 		const parsed = parseUpdateStory(await actionInput(event));
 		if (Either.isLeft(parsed)) return fail(400, { careerMessage: parsed.left.reason });
+		const now = new Date();
+		const evidenceExit = await Effect.runPromiseExit(
+			resolveObservedCareerStoryEvidence(
+				access.cache,
+				access.username,
+				parsed.right.evidenceUrl,
+				now
+			)
+		);
+		if (evidenceExit._tag === 'Failure') {
+			return fail(409, { careerMessage: 'Selected GitHub evidence is no longer retained.' });
+		}
 		const exit = await Effect.runPromiseExit(
-			updateCareerStory(access.database, access.ownerEmail, parsed.right, new Date())
+			updateCareerStory(access.database, access.ownerEmail, parsed.right, evidenceExit.value, now)
 		);
 		return exit._tag === 'Success'
 			? { careerMessage: 'Interview story updated.' }

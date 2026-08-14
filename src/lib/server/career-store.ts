@@ -7,11 +7,12 @@ import {
 	type CareerOpportunity,
 	type CareerSnapshot,
 	type CareerStage,
-	type CareerStory,
 	type CreateCommitmentInput,
 	type CreateOpportunityInput,
 	type UpdateOpportunityInput
 } from '$lib/domain/career-accountability';
+import { CareerStoryRowSchema, careerStoryFromRow } from './career-story-store';
+import { CareerStoreError } from './career-store-error';
 
 const OpportunityRowSchema = Schema.Struct({
 	id: Schema.String,
@@ -36,30 +37,7 @@ const CommitmentRowSchema = Schema.Struct({
 	created_at: Schema.String,
 	updated_at: Schema.String
 });
-const StoryRowSchema = Schema.Struct({
-	id: Schema.String,
-	title: Schema.String,
-	problem: Schema.String,
-	action: Schema.String,
-	outcome: Schema.String,
-	evidence_url: Schema.NullOr(Schema.String),
-	visibility: Schema.Union(Schema.Literal('Private'), Schema.Literal('ShareDraft')),
-	created_at: Schema.String,
-	updated_at: Schema.String
-});
 const StageRowSchema = Schema.Struct({ stage: CareerStageSchema });
-
-/** Typed failure from the private career D1 adapter. */
-export class CareerStoreError extends Error {
-	readonly _tag = 'CareerStoreError';
-
-	constructor(
-		readonly operation: string,
-		readonly sourceCause: unknown
-	) {
-		super(`Career store failed during ${operation}`);
-	}
-}
 
 function opportunityFromRow(
 	row: Schema.Schema.Type<typeof OpportunityRowSchema>
@@ -92,20 +70,6 @@ function commitmentFromRow(row: Schema.Schema.Type<typeof CommitmentRowSchema>):
 	};
 }
 
-function storyFromRow(row: Schema.Schema.Type<typeof StoryRowSchema>): CareerStory {
-	return {
-		id: row.id,
-		title: row.title,
-		problem: row.problem,
-		action: row.action,
-		outcome: row.outcome,
-		evidenceUrl: row.evidence_url,
-		visibility: row.visibility,
-		createdAt: row.created_at,
-		updatedAt: row.updated_at
-	};
-}
-
 /** Load the complete owner-scoped Career workspace from D1. */
 export function loadCareerSnapshot(
 	database: D1Database,
@@ -133,9 +97,18 @@ export function loadCareerSnapshot(
 					.all(),
 				database
 					.prepare(
-						`SELECT id, title, problem, action, outcome, evidence_url, visibility,
-						 created_at, updated_at FROM career_stories
-						 WHERE owner_email = ? ORDER BY updated_at DESC`
+						`SELECT s.id, s.title, s.problem, s.action, s.outcome, s.evidence_url,
+						        s.visibility, s.created_at, s.updated_at,
+						        e.source AS evidence_source, e.artifact_kind AS evidence_kind,
+						        e.artifact_title AS evidence_title,
+						        e.repository AS evidence_repository,
+						        e.url AS evidence_canonical_url,
+						        e.occurred_at AS evidence_occurred_at,
+						        e.observed_at AS evidence_observed_at
+						 FROM career_stories s
+						 LEFT JOIN career_story_evidence e
+						   ON e.story_id = s.id AND e.owner_email = s.owner_email
+						 WHERE s.owner_email = ? ORDER BY s.updated_at DESC`
 					)
 					.bind(ownerEmail)
 					.all()
@@ -146,9 +119,9 @@ export function loadCareerSnapshot(
 			const commitments = Schema.decodeUnknownSync(Schema.Array(CommitmentRowSchema))(
 				commitmentResult.results
 			).map(commitmentFromRow);
-			const stories = Schema.decodeUnknownSync(Schema.Array(StoryRowSchema))(
+			const stories = Schema.decodeUnknownSync(Schema.Array(CareerStoryRowSchema))(
 				storyResult.results
-			).map(storyFromRow);
+			).map(careerStoryFromRow);
 			return {
 				opportunities,
 				commitments,
