@@ -233,6 +233,13 @@ export type WorkflowCoverageInput = {
 /** Inputs required to build authenticated GitHub intelligence. */
 export type GitHubIntelligenceInput = {
 	readonly repositories: ReadonlyArray<RepositoryIntelligenceInput>;
+	readonly repositoryCollection: {
+		readonly totalRepositories: number;
+		readonly privateRepositories: number;
+		readonly publicRepositories: number;
+		readonly freshRepositories: number;
+		readonly staleRepositories: ReadonlyArray<string>;
+	};
 	readonly contributionDays: ReadonlyArray<ContributionDayInput>;
 	readonly totalYearContributions: number;
 	readonly restrictedWeekContributions: number;
@@ -273,6 +280,15 @@ export type AccountIntelligence = {
 	readonly totalDiskUsageKb: number;
 	readonly openIssues: number;
 	readonly openPullRequests: number;
+};
+
+/** Transparency contract for incremental repository collection. */
+export type RepositoryCollectionEvidence = {
+	readonly state: 'Observed' | 'Unavailable';
+	readonly totalRepositories: number;
+	readonly freshRepositories: number;
+	readonly staleRepositories: ReadonlyArray<string>;
+	readonly detail: string;
 };
 
 /** Current week compared with the preceding week. */
@@ -332,6 +348,7 @@ export type DeliveryIntelligence = {
 /** Authenticated activity and collaboration metrics shown by the dashboard. */
 export type GitHubIntelligence = {
 	readonly account: AccountIntelligence;
+	readonly repositoryCollection: RepositoryCollectionEvidence;
 	readonly comparison: WeekComparison;
 	readonly year: YearIntelligence;
 	readonly restrictedWeekContributions: number;
@@ -738,6 +755,27 @@ function buildTotals(
 	};
 }
 
+function buildRepositoryCollectionEvidence(
+	collection: GitHubIntelligenceInput['repositoryCollection']
+): RepositoryCollectionEvidence {
+	const isCurrent =
+		collection.freshRepositories === collection.totalRepositories &&
+		collection.staleRepositories.length === 0;
+	let detail = 'Repository collection is unavailable for this snapshot.';
+	if (isCurrent) {
+		detail = `All ${collection.totalRepositories} repository slices refreshed for the canonical window.`;
+	} else if (collection.staleRepositories.length > 0) {
+		detail = `${collection.freshRepositories} repository slices refreshed; ${collection.staleRepositories.length} retained same-window last-known-good evidence.`;
+	}
+	return {
+		state: isCurrent ? 'Observed' : 'Unavailable',
+		totalRepositories: collection.totalRepositories,
+		freshRepositories: collection.freshRepositories,
+		staleRepositories: collection.staleRepositories,
+		detail
+	};
+}
+
 /** Merge authenticated repository intelligence into a weekly snapshot. */
 export function createGitHubDashboardSnapshot(
 	base: WeeklySnapshot,
@@ -759,11 +797,9 @@ export function createGitHubDashboardSnapshot(
 	);
 	const intelligence: GitHubIntelligence = {
 		account: {
-			ownedRepositories: repositoryIntelligence.length,
-			privateRepositories: repositoryIntelligence.filter((repository) => repository.isPrivate)
-				.length,
-			publicRepositories: repositoryIntelligence.filter((repository) => !repository.isPrivate)
-				.length,
+			ownedRepositories: input.repositoryCollection.totalRepositories,
+			privateRepositories: input.repositoryCollection.privateRepositories,
+			publicRepositories: input.repositoryCollection.publicRepositories,
 			activeRepositories: repositoryIntelligence.filter((repository) => repository.commits > 0)
 				.length,
 			totalStars: sum(repositoryIntelligence.map((repository) => repository.stars)),
@@ -772,6 +808,7 @@ export function createGitHubDashboardSnapshot(
 			openIssues: sum(repositoryIntelligence.map((repository) => repository.openIssues)),
 			openPullRequests: sum(repositoryIntelligence.map((repository) => repository.openPullRequests))
 		},
+		repositoryCollection: buildRepositoryCollectionEvidence(input.repositoryCollection),
 		comparison: compareWeeks(commits.length, previousCommits),
 		year: buildYearIntelligence(input.contributionDays, input.totalYearContributions),
 		restrictedWeekContributions: input.restrictedWeekContributions,
@@ -885,6 +922,13 @@ export function createDemoIntelligence(base: WeeklySnapshot): GitHubDashboardSna
 	});
 	return createGitHubDashboardSnapshot(base, {
 		repositories: demoRepositories,
+		repositoryCollection: {
+			totalRepositories: demoRepositories.length,
+			privateRepositories: demoRepositories.filter((repository) => repository.isPrivate).length,
+			publicRepositories: demoRepositories.filter((repository) => !repository.isPrivate).length,
+			freshRepositories: 0,
+			staleRepositories: []
+		},
 		contributionDays,
 		totalYearContributions: 864,
 		restrictedWeekContributions: 28,

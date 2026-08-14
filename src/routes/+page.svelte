@@ -1915,6 +1915,14 @@
 	:global(.ledger-toolbar strong) {
 		color: var(--ink);
 	}
+	:global(.screen-toolbar small) {
+		max-width: 34rem;
+		color: var(--muted);
+		font: 440 0.43rem/1.35 var(--mono);
+	}
+	:global(.screen-toolbar small.unavailable) {
+		color: var(--accent);
+	}
 	:global(.screen-toolbar label) {
 		display: flex;
 		align-items: center;
@@ -2762,6 +2770,11 @@
 			gap: 0.5rem;
 		}
 		:global(.screen-toolbar > div) {
+			display: grid;
+			grid-column: 1 / -1;
+		}
+		:global(.screen-toolbar > div > span),
+		:global(.screen-toolbar > div > strong) {
 			display: none;
 		}
 		:global(.screen-toolbar label) {

@@ -58,10 +58,12 @@ Weeknote should remain decision-first: show one decisive signal on entry, then e
 - Persist dated daily slices and label the exact returned coverage window; never imply lifetime impact.
 - Source: [GitHub REST repository traffic](https://docs.github.com/en/rest/metrics/traffic).
 
-### Collection health — Measured
+### Collection health — Observed now; deeper measurements pending
 
-- Show last successful refresh per upstream slice, stale age, unavailable repository count, GraphQL cost, and remaining rate limit.
-- This belongs in a compact disclosure, not another headline score.
+- Available now: exact repository inventory count, slices refreshed in the current canonical window, names of same-window stale slices retained after upstream failure, and an explicit **Unavailable** state when the refresh is not fully current.
+- Current collection uses one account query, one search query, independently cached repository slices, concurrency six, and a 15-second timeout per GraphQL request.
+- Correctness boundary: a stale slice is reusable only when its cached window exactly matches the requested UTC window. Without a matching slice, the full refresh fails and the dashboard retains its prior last-known-good snapshot.
+- Still to collect: per-slice stale age, unavailable repository count from abandoned inventory entries, GraphQL cost, and a compact rate-limit disclosure.
 - Source: [GitHub GraphQL rate limits](https://docs.github.com/en/graphql/overview/rate-limits-and-query-limits-for-the-graphql-api).
 
 ## Product framing

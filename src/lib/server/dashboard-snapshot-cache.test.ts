@@ -22,6 +22,14 @@ function cacheFixture() {
 	};
 }
 
+function parseJson<Value>(encoded: string): Value {
+	try {
+		return JSON.parse(encoded) as Value;
+	} catch (cause) {
+		throw new Error('Test cache envelope was not valid JSON.', { cause });
+	}
+}
+
 describe('DashboardSnapshotCache', () => {
 	it('persists and decodes a live snapshot through its private store', async () => {
 		const { cache, values } = cacheFixture();
@@ -37,12 +45,12 @@ describe('DashboardSnapshotCache', () => {
 		await cache.refresh('octocat', null, new Date(), async () => liveSnapshot());
 		const [key] = values.keys();
 		expect(key).toBeDefined();
-		const envelope = JSON.parse(values.get(key!)!) as {
+		const envelope = parseJson<{
 			snapshot: {
 				profile: { avatarUrl: string };
 				intelligence: { repositories: Array<Record<string, unknown>> };
 			};
-		};
+		}>(values.get(key!)!);
 		for (const repository of envelope.snapshot.intelligence.repositories) {
 			delete repository['imageUrl'];
 		}
@@ -53,6 +61,24 @@ describe('DashboardSnapshotCache', () => {
 				(repository) => repository.imageUrl === cached.snapshot.profile.avatarUrl
 			)
 		).toBe(true);
+	});
+
+	it('hydrates legacy snapshots with explicitly unavailable repository collection health', async () => {
+		const { cache, values } = cacheFixture();
+		await cache.refresh('octocat', null, new Date(), async () => liveSnapshot());
+		const [key] = values.keys();
+		expect(key).toBeDefined();
+		const envelope = parseJson<{
+			snapshot: { intelligence: Record<string, unknown> };
+		}>(values.get(key!)!);
+		delete envelope.snapshot.intelligence['repositoryCollection'];
+		values.set(key!, JSON.stringify(envelope));
+		expect((await cache.read('octocat'))?.snapshot.intelligence.repositoryCollection).toMatchObject(
+			{
+				state: 'Unavailable',
+				freshRepositories: 0
+			}
+		);
 	});
 
 	it('shares one in-flight refresh across concurrent callers', async () => {
@@ -91,7 +117,7 @@ describe('DashboardSnapshotCache', () => {
 		await cache.refresh('octocat', null, new Date(), async () => liveSnapshot());
 		const [key] = values.keys();
 		expect(key).toBeDefined();
-		const envelope = JSON.parse(values.get(key!)!) as Record<string, unknown>;
+		const envelope = parseJson<Record<string, unknown>>(values.get(key!)!);
 		values.set(key!, JSON.stringify({ ...envelope, version: 2 }));
 		expect(await cache.read('octocat')).toBeNull();
 	});

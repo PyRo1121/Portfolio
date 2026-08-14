@@ -10,6 +10,7 @@
 		GitHubDashboardSnapshot,
 		RepositoryIntelligence
 	} from '$lib/domain/github-intelligence';
+	import { repositoryCollectionEvidence } from '$lib/domain/dashboard-repository-collection';
 	import type { RepositoryFilter } from '$lib/domain/dashboard-workspace';
 	import {
 		formatCompact,
@@ -38,6 +39,7 @@
 	const pageRepositories = $derived(
 		repositories.slice(boundedPage * pageSize, (boundedPage + 1) * pageSize)
 	);
+	const collectionEvidence = $derived(repositoryCollectionEvidence(snapshot));
 	const filters: ReadonlyArray<{ readonly id: RepositoryFilter; readonly label: string }> = [
 		{ id: 'active', label: 'Active' },
 		{ id: 'private', label: 'Private' },
@@ -59,6 +61,9 @@
 	<header class="screen-toolbar">
 		<div>
 			<span>Repository inventory</span><strong>{formatInteger(repositories.length)} results</strong>
+			<small class={collectionEvidence.state.toLocaleLowerCase()}
+				>{collectionEvidence.state} · {collectionEvidence.detail}</small
+			>
 		</div>
 		<label
 			><MagnifyingGlass size={15} weight="light" /><span class="sr-only">Search repositories</span
@@ -88,7 +93,7 @@
 				{#each pageRepositories as repository (repository.fullName)}
 					<button
 						type="button"
-						class:active={selected?.fullName === repository.fullName}
+						class={selected?.fullName === repository.fullName ? 'active' : ''}
 						aria-pressed={selected?.fullName === repository.fullName}
 						onclick={() => onSelect(repository.fullName)}
 					>

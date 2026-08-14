@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createGitHubDashboardSnapshot } from './github-intelligence';
+import { createDemoIntelligence, createGitHubDashboardSnapshot } from './github-intelligence';
 import { createDemoSnapshot } from './github-stats';
 
 const now = new Date('2026-08-13T08:00:00Z');
@@ -52,6 +52,13 @@ describe('createGitHubDashboardSnapshot', () => {
 					]
 				}
 			],
+			repositoryCollection: {
+				totalRepositories: 1,
+				privateRepositories: 1,
+				publicRepositories: 0,
+				freshRepositories: 1,
+				staleRepositories: []
+			},
 			contributionDays: [
 				{ date: '2026-08-11', count: 2 },
 				{ date: '2026-08-12', count: 3 }
@@ -118,6 +125,12 @@ describe('createGitHubDashboardSnapshot', () => {
 			openIssues: 2,
 			openPullRequests: 1
 		});
+		expect(snapshot.intelligence.repositoryCollection).toMatchObject({
+			state: 'Observed',
+			totalRepositories: 1,
+			freshRepositories: 1,
+			staleRepositories: []
+		});
 		expect(snapshot.intelligence.comparison).toMatchObject({
 			currentCommits: 2,
 			previousCommits: 1,
@@ -136,5 +149,14 @@ describe('createGitHubDashboardSnapshot', () => {
 			changedFiles: 6
 		});
 		expect(snapshot.dailyActivity.map((day) => day.commits)).toEqual([0, 0, 0, 0, 1, 1, 0]);
+	});
+
+	it('keeps demo repository collection explicitly unavailable', () => {
+		const snapshot = createDemoIntelligence(createDemoSnapshot(now, 'octocat', 'test'));
+		expect(snapshot.intelligence.repositoryCollection).toMatchObject({
+			state: 'Unavailable',
+			freshRepositories: 0,
+			staleRepositories: []
+		});
 	});
 });

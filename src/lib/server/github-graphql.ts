@@ -4,13 +4,19 @@ import type {
 	CollaborationItem,
 	CommitIntelligenceInput,
 	GitHubIntelligenceInput,
+	ReleaseInput,
 	RepositoryIntelligenceInput
 } from '$lib/domain/github-intelligence';
+import { collectGitHubRepositorySlices } from '$lib/server/github-repository-collector';
+import type {
+	GitHubRepositorySlice,
+	GitHubRepositorySliceCache
+} from '$lib/server/github-repository-slice-cache';
 
 const GRAPHQL_ENDPOINT = 'https://api.github.com/graphql';
-const REPOSITORY_PAGE_SIZE = 100;
 const COMMIT_PAGE_SIZE = 100;
 const SEARCH_PAGE_SIZE = 20;
+const GRAPHQL_TIMEOUT_MS = 15_000;
 
 const LanguageSchema = Schema.Struct({
 	name: Schema.String,
@@ -155,11 +161,7 @@ const CoreDataSchema = Schema.Struct({
 	viewer: Schema.Struct({
 		current: ContributionCollectionSchema,
 		previous: ContributionCollectionSchema,
-		year: ContributionCollectionSchema,
-		repositories: Schema.Struct({
-			totalCount: Schema.Number,
-			nodes: Schema.Array(Schema.NullOr(RepositorySchema))
-		})
+		year: ContributionCollectionSchema
 	}),
 	rateLimit: Schema.Struct({
 		limit: Schema.Number,
@@ -188,6 +190,12 @@ const SearchResponseSchema = Schema.Struct({
 	data: Schema.optional(Schema.NullOr(SearchDataSchema)),
 	errors: Schema.optional(Schema.Array(GraphQLErrorSchema))
 });
+const RepositoryResponseSchema = Schema.Struct({
+	data: Schema.optional(
+		Schema.NullOr(Schema.Struct({ repository: Schema.NullOr(RepositorySchema) }))
+	),
+	errors: Schema.optional(Schema.Array(GraphQLErrorSchema))
+});
 
 const CommitPageDataSchema = Schema.Struct({
 	repository: Schema.NullOr(
@@ -204,12 +212,8 @@ const CommitPageResponseSchema = Schema.Struct({
 	errors: Schema.optional(Schema.Array(GraphQLErrorSchema))
 });
 
-const CORE_QUERY = `
-query GitHubSignalCore(
-  $author: ID!
-  $weekStart: GitTimestamp!
-  $weekEnd: GitTimestamp!
-  $previousStart: GitTimestamp!
+const ACCOUNT_QUERY = `
+query GitHubSignalAccount(
   $contributionWeekStart: DateTime!
   $contributionWeekEnd: DateTime!
   $contributionPreviousStart: DateTime!
@@ -225,46 +229,6 @@ query GitHubSignalCore(
     }
     year: contributionsCollection(from: $yearStart, to: $now) {
       ...ContributionFields
-    }
-    repositories(first: ${REPOSITORY_PAGE_SIZE}, ownerAffiliations: OWNER, orderBy: { field: PUSHED_AT, direction: DESC }) {
-      totalCount
-      nodes {
-        name
-        nameWithOwner
-        url
-        isPrivate
-        isFork
-        isArchived
-        openGraphImageUrl
-        createdAt
-        pushedAt
-        stargazerCount
-        forkCount
-        diskUsage
-        description
-        primaryLanguage { name color }
-        languages(first: 8, orderBy: { field: SIZE, direction: DESC }) {
-          edges { size node { name color } }
-        }
-        issues(states: OPEN) { totalCount }
-        pullRequests(states: OPEN) { totalCount }
-        releases(first: 20, orderBy: { field: CREATED_AT, direction: DESC }) {
-          nodes { name tagName url createdAt publishedAt isDraft isPrerelease }
-        }
-        defaultBranchRef {
-          name
-          target {
-            ... on Commit {
-              current: history(first: ${COMMIT_PAGE_SIZE}, since: $weekStart, until: $weekEnd, author: { id: $author }) {
-                ...HistoryFields
-              }
-              previous: history(first: 1, since: $previousStart, until: $weekStart, author: { id: $author }) {
-                totalCount
-              }
-            }
-          }
-        }
-      }
     }
   }
   rateLimit { limit remaining resetAt }
@@ -283,19 +247,6 @@ fragment ContributionFields on ContributionsCollection {
   }
 }
 
-fragment HistoryFields on CommitHistoryConnection {
-  totalCount
-  pageInfo { hasNextPage endCursor }
-  nodes {
-    oid
-    committedDate
-    additions
-    deletions
-    changedFilesIfAvailable
-    messageHeadline
-    url
-  }
-}
 `;
 
 const SEARCH_QUERY = `
@@ -338,6 +289,63 @@ fragment SearchFields on SearchResultItemConnection {
     }
   }
 }`;
+
+const REPOSITORY_QUERY = `
+query GitHubRepositorySlice(
+  $owner: String!
+  $name: String!
+  $author: ID!
+  $weekStart: GitTimestamp!
+  $weekEnd: GitTimestamp!
+  $previousStart: GitTimestamp!
+) {
+  repository(owner: $owner, name: $name) {
+    name
+    nameWithOwner
+    url
+    isPrivate
+    isFork
+    isArchived
+    openGraphImageUrl
+    createdAt
+    pushedAt
+    stargazerCount
+    forkCount
+    diskUsage
+    description
+    primaryLanguage { name color }
+    languages(first: 8, orderBy: { field: SIZE, direction: DESC }) {
+      edges { size node { name color } }
+    }
+    issues(states: OPEN) { totalCount }
+    pullRequests(states: OPEN) { totalCount }
+    releases(first: 20, orderBy: { field: CREATED_AT, direction: DESC }) {
+      nodes { name tagName url createdAt publishedAt isDraft isPrerelease }
+    }
+    defaultBranchRef {
+      name
+      target {
+        ... on Commit {
+          current: history(first: ${COMMIT_PAGE_SIZE}, since: $weekStart, until: $weekEnd, author: { id: $author }) {
+            ...HistoryFields
+          }
+          previous: history(first: 1, since: $previousStart, until: $weekStart, author: { id: $author }) {
+            totalCount
+          }
+        }
+      }
+    }
+  }
+}
+
+fragment HistoryFields on CommitHistoryConnection {
+  totalCount
+  pageInfo { hasNextPage endCursor }
+  nodes {
+    oid committedDate additions deletions changedFilesIfAvailable messageHeadline url
+  }
+}
+`;
 
 const COMMIT_PAGE_QUERY = `
 query RepositoryCommitPage(
@@ -395,24 +403,31 @@ function graphQLRequest(
 ): Effect.Effect<unknown, GitHubGraphQLError> {
 	return Effect.tryPromise({
 		try: async () => {
-			const response = await fetch(GRAPHQL_ENDPOINT, {
-				method: 'POST',
-				headers: {
-					Accept: 'application/vnd.github+json',
-					Authorization: `Bearer ${Redacted.value(token)}`,
-					'Content-Type': 'application/json',
-					'X-GitHub-Api-Version': '2022-11-28'
-				},
-				body: JSON.stringify({ query, variables })
-			});
-			const body = await response.text();
-			if (!response.ok) {
-				throw new GitHubGraphQLError(operation, body.slice(0, 500), response.status);
-			}
+			const controller = new AbortController();
+			const timeout = setTimeout(() => controller.abort(), GRAPHQL_TIMEOUT_MS);
 			try {
-				return JSON.parse(body) as unknown;
-			} catch (cause) {
-				throw new GitHubGraphQLError(operation, cause, response.status);
+				const response = await fetch(GRAPHQL_ENDPOINT, {
+					method: 'POST',
+					headers: {
+						Accept: 'application/vnd.github+json',
+						Authorization: `Bearer ${Redacted.value(token)}`,
+						'Content-Type': 'application/json',
+						'X-GitHub-Api-Version': '2022-11-28'
+					},
+					body: JSON.stringify({ query, variables }),
+					signal: controller.signal
+				});
+				const body = await response.text();
+				if (!response.ok) {
+					throw new GitHubGraphQLError(operation, body.slice(0, 500), response.status);
+				}
+				try {
+					return JSON.parse(body) as unknown;
+				} catch (cause) {
+					throw new GitHubGraphQLError(operation, cause, response.status);
+				}
+			} finally {
+				clearTimeout(timeout);
 			}
 		},
 		catch: (cause) =>
@@ -502,9 +517,9 @@ function toRepository(
 		pushedAt: repository.pushedAt,
 		primaryLanguage: repository.primaryLanguage?.name ?? null,
 		primaryLanguageColor: repository.primaryLanguage?.color ?? null,
-		languages: repository.languages.edges
-			.filter((edge) => edge !== null)
-			.map((edge) => ({ name: edge.node.name, color: edge.node.color, bytes: edge.size })),
+		languages: repository.languages.edges.flatMap((edge) =>
+			edge === null ? [] : [{ name: edge.node.name, color: edge.node.color, bytes: edge.size }]
+		),
 		stars: repository.stargazerCount,
 		forks: repository.forkCount,
 		diskUsageKb: repository.diskUsage,
@@ -514,6 +529,94 @@ function toRepository(
 		previousCommits: history?.previous.totalCount ?? 0,
 		commits: [...initialCommits, ...additionalCommits].map(toCommit)
 	};
+}
+
+type RepositorySliceRequest = {
+	readonly fetch: Fetch;
+	readonly token: Redacted.Redacted<string>;
+	readonly fullName: string;
+	readonly authorId: string;
+	readonly weekStart: string;
+	readonly weekEnd: string;
+	readonly previousStart: string;
+};
+
+function repositoryReleaseEvidence(
+	repository: DecodedRepository,
+	request: RepositorySliceRequest
+): Pick<GitHubRepositorySlice, 'releases' | 'previousReleaseCount'> {
+	const releases: ReleaseInput[] = [];
+	let previousReleaseCount = 0;
+	for (const release of repository.releases.nodes) {
+		if (release === null || release.isDraft) continue;
+		const occurredAt = release.publishedAt ?? release.createdAt;
+		if (occurredAt >= request.weekStart && occurredAt < request.weekEnd) {
+			releases.push({
+				name: release.name ?? release.tagName,
+				tagName: release.tagName,
+				repository: repository.nameWithOwner,
+				url: release.url,
+				createdAt: release.createdAt,
+				publishedAt: release.publishedAt,
+				isPrerelease: release.isPrerelease
+			});
+		} else if (occurredAt >= request.previousStart && occurredAt < request.weekStart) {
+			previousReleaseCount += 1;
+		}
+	}
+	return { releases, previousReleaseCount };
+}
+
+/** Fetch one complete repository evidence slice for independent caching. */
+export function fetchGitHubRepositorySlice(
+	request: RepositorySliceRequest
+): Effect.Effect<GitHubRepositorySlice, GitHubGraphQLError> {
+	const parts = repositoryParts(request.fullName);
+	if (parts === null) {
+		return Effect.fail(
+			new GitHubGraphQLError(`repository name parsing for ${request.fullName}`, request.fullName)
+		);
+	}
+	const [owner, name] = parts;
+	return Effect.gen(function* () {
+		const body = yield* graphQLRequest(
+			request.fetch,
+			request.token,
+			REPOSITORY_QUERY,
+			{
+				owner,
+				name,
+				author: request.authorId,
+				weekStart: request.weekStart,
+				weekEnd: request.weekEnd,
+				previousStart: request.previousStart
+			},
+			`repository slice for ${request.fullName}`
+		);
+		const response = yield* Schema.decodeUnknown(RepositoryResponseSchema)(body).pipe(
+			Effect.mapError(
+				(cause) => new GitHubGraphQLError(`repository slice parsing for ${request.fullName}`, cause)
+			)
+		);
+		if (response.errors?.length || response.data?.repository == null) {
+			return yield* Effect.fail(
+				new GitHubGraphQLError(`repository slice response for ${request.fullName}`, response.errors)
+			);
+		}
+		const repository = response.data.repository;
+		const additionalCommits = yield* fetchRemainingCommits(
+			request.fetch,
+			request.token,
+			repository,
+			request.authorId,
+			request.weekStart,
+			request.weekEnd
+		);
+		return {
+			repository: toRepository(repository, additionalCommits),
+			...repositoryReleaseEvidence(repository, request)
+		};
+	});
 }
 
 function toCollaborationItem(
@@ -575,31 +678,49 @@ function isoDate(date: Date): string {
 	return date.toISOString().slice(0, 10);
 }
 
+export type GitHubIntelligenceRequest = {
+	readonly fetch: Fetch;
+	readonly token: Redacted.Redacted<string>;
+	readonly username: string;
+	readonly authorId: string;
+	readonly weekStart: Date;
+	readonly weekEnd: Date;
+	readonly now: Date;
+	readonly repositoryInventory: ReadonlyArray<{
+		readonly fullName: string;
+		readonly isPrivate: boolean;
+	}>;
+	readonly repositoryCache: GitHubRepositorySliceCache;
+};
+
 /** Fetch private-aware repository, commit, calendar, and collaboration intelligence. */
 export function fetchGitHubIntelligence(
-	fetch: Fetch,
-	token: Redacted.Redacted<string>,
-	username: string,
-	authorId: string,
-	weekStart: Date,
-	weekEnd: Date,
-	now: Date
+	request: GitHubIntelligenceRequest
 ): Effect.Effect<GitHubIntelligenceInput, GitHubGraphQLError> {
+	const {
+		fetch,
+		token,
+		username,
+		authorId,
+		weekStart,
+		weekEnd,
+		now,
+		repositoryInventory,
+		repositoryCache
+	} = request;
 	const previousStart = addZonedDays(weekStart, -7, COLLECTION_TIME_ZONE);
 	const yearStart = new Date(now);
 	yearStart.setUTCFullYear(yearStart.getUTCFullYear() - 1);
 	const collaborationStart = new Date(now.getTime() - 30 * 86_400_000);
 	const searchDate = isoDate(collaborationStart);
-	const variables = {
-		author: authorId,
-		weekStart: weekStart.toISOString(),
-		weekEnd: weekEnd.toISOString(),
-		previousStart: previousStart.toISOString(),
+	const accountVariables = {
 		contributionWeekStart: weekStart.toISOString(),
 		contributionWeekEnd: weekEnd.toISOString(),
 		contributionPreviousStart: previousStart.toISOString(),
 		yearStart: yearStart.toISOString(),
-		now: now.toISOString(),
+		now: now.toISOString()
+	};
+	const searchVariables = {
 		authoredPullRequests: `is:pr author:${username} created:>=${searchDate}`,
 		mergedPullRequests: `is:pr author:${username} merged:>=${searchDate}`,
 		reviewedPullRequests: `is:pr reviewed-by:${username} updated:>=${searchDate}`,
@@ -612,22 +733,40 @@ export function fetchGitHubIntelligence(
 	};
 
 	return Effect.gen(function* () {
-		const [coreBody, searchBody] = yield* Effect.all(
+		const [accountBody, searchBody, repositoryCollection] = yield* Effect.all(
 			[
-				graphQLRequest(fetch, token, CORE_QUERY, variables, 'core dashboard query'),
-				graphQLRequest(fetch, token, SEARCH_QUERY, variables, 'dashboard search query')
+				graphQLRequest(fetch, token, ACCOUNT_QUERY, accountVariables, 'account dashboard query'),
+				graphQLRequest(fetch, token, SEARCH_QUERY, searchVariables, 'dashboard search query'),
+				collectGitHubRepositorySlices({
+					username,
+					repositoryNames: repositoryInventory.map((repository) => repository.fullName),
+					windowStart: weekStart.toISOString(),
+					windowEnd: weekEnd.toISOString(),
+					now,
+					cache: repositoryCache,
+					load: (fullName) =>
+						fetchGitHubRepositorySlice({
+							fetch,
+							token,
+							fullName,
+							authorId,
+							weekStart: weekStart.toISOString(),
+							weekEnd: weekEnd.toISOString(),
+							previousStart: previousStart.toISOString()
+						})
+				})
 			],
-			{ concurrency: 2 }
+			{ concurrency: 3 }
 		);
-		const coreResponse = yield* Schema.decodeUnknown(CoreResponseSchema)(coreBody).pipe(
-			Effect.mapError((cause) => new GitHubGraphQLError('core response parsing', cause))
+		const accountResponse = yield* Schema.decodeUnknown(CoreResponseSchema)(accountBody).pipe(
+			Effect.mapError((cause) => new GitHubGraphQLError('account response parsing', cause))
 		);
 		const searchResponse = yield* Schema.decodeUnknown(SearchResponseSchema)(searchBody).pipe(
 			Effect.mapError((cause) => new GitHubGraphQLError('search response parsing', cause))
 		);
-		if (coreResponse.errors?.length || coreResponse.data == null) {
+		if (accountResponse.errors?.length || accountResponse.data == null) {
 			return yield* Effect.fail(
-				new GitHubGraphQLError('core dashboard response', coreResponse.errors)
+				new GitHubGraphQLError('account dashboard response', accountResponse.errors)
 			);
 		}
 		if (searchResponse.errors?.length || searchResponse.data == null) {
@@ -635,23 +774,9 @@ export function fetchGitHubIntelligence(
 				new GitHubGraphQLError('dashboard search response', searchResponse.errors)
 			);
 		}
-		const core = coreResponse.data;
+		const account = accountResponse.data;
 		const searches = searchResponse.data;
-		const decodedRepositories = core.viewer.repositories.nodes.filter(
-			(repository) => repository !== null
-		);
-		const repositories: RepositoryIntelligenceInput[] = [];
-		for (const repository of decodedRepositories) {
-			const additionalCommits = yield* fetchRemainingCommits(
-				fetch,
-				token,
-				repository,
-				authorId,
-				weekStart.toISOString(),
-				weekEnd.toISOString()
-			);
-			repositories.push(toRepository(repository, additionalCommits));
-		}
+		const repositories = repositoryCollection.repositories;
 		const collaborationConnections = [
 			searches.authoredPullRequests,
 			searches.mergedPullRequests,
@@ -691,46 +816,28 @@ export function fetchGitHubIntelligence(
 					: []
 			)
 		].sort((left, right) => right.occurredAt.localeCompare(left.occurredAt));
-		const releases = decodedRepositories.flatMap((repository) =>
-			repository.releases.nodes.flatMap((release) => {
-				if (release === null || release.isDraft) return [];
-				const occurredAt = release.publishedAt ?? release.createdAt;
-				return occurredAt >= weekStart.toISOString() && occurredAt < weekEnd.toISOString()
-					? [
-							{
-								name: release.name ?? release.tagName,
-								tagName: release.tagName,
-								repository: repository.nameWithOwner,
-								url: release.url,
-								createdAt: release.createdAt,
-								publishedAt: release.publishedAt,
-								isPrerelease: release.isPrerelease
-							}
-						]
-					: [];
-			})
-		);
-		const previousReleaseCount = decodedRepositories.reduce(
-			(total, repository) =>
-				total +
-				repository.releases.nodes.filter((release) => {
-					if (release === null || release.isDraft) return false;
-					const occurredAt = release.publishedAt ?? release.createdAt;
-					return occurredAt >= previousStart.toISOString() && occurredAt < weekStart.toISOString();
-				}).length,
-			0
-		);
+		const releases = repositoryCollection.releases;
+		const previousReleaseCount = repositoryCollection.previousReleaseCount;
 		return {
 			repositories,
-			contributionDays: core.viewer.year.contributionCalendar.weeks.flatMap((week) =>
+			repositoryCollection: {
+				totalRepositories: repositoryInventory.length,
+				privateRepositories: repositoryInventory.filter((repository) => repository.isPrivate)
+					.length,
+				publicRepositories: repositoryInventory.filter((repository) => !repository.isPrivate)
+					.length,
+				freshRepositories: repositoryCollection.freshRepositories,
+				staleRepositories: repositoryCollection.staleRepositories
+			},
+			contributionDays: account.viewer.year.contributionCalendar.weeks.flatMap((week) =>
 				week.contributionDays.map((day) => ({
 					date: day.date,
 					count: day.contributionCount
 				}))
 			),
-			totalYearContributions: core.viewer.year.contributionCalendar.totalContributions,
-			restrictedWeekContributions: core.viewer.current.restrictedContributionsCount,
-			previousWeekContributions: core.viewer.previous.contributionCalendar.totalContributions,
+			totalYearContributions: account.viewer.year.contributionCalendar.totalContributions,
+			restrictedWeekContributions: account.viewer.current.restrictedContributionsCount,
+			previousWeekContributions: account.viewer.previous.contributionCalendar.totalContributions,
 			collaboration: {
 				authoredPullRequests: searches.authoredPullRequests.issueCount,
 				mergedPullRequests: searches.mergedPullRequests.issueCount,
@@ -765,7 +872,7 @@ export function fetchGitHubIntelligence(
 					previous: { total: 0, successful: 0, failed: 0, cancelled: 0, other: 0 }
 				}
 			},
-			rateLimit: core.rateLimit
+			rateLimit: account.rateLimit
 		};
 	});
 }

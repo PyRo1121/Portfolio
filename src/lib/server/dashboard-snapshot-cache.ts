@@ -228,6 +228,15 @@ const DashboardSnapshotSchema = Schema.Struct({
 			openIssues: Schema.Number,
 			openPullRequests: Schema.Number
 		}),
+		repositoryCollection: Schema.optional(
+			Schema.Struct({
+				state: Schema.Union(Schema.Literal('Observed'), Schema.Literal('Unavailable')),
+				totalRepositories: Schema.Number,
+				freshRepositories: Schema.Number,
+				staleRepositories: Schema.Array(Schema.String),
+				detail: Schema.String
+			})
+		),
 		comparison: Schema.Struct({
 			currentCommits: Schema.Number,
 			previousCommits: Schema.Number,
@@ -344,6 +353,13 @@ export class DashboardSnapshotCache {
 				...envelope.snapshot,
 				intelligence: {
 					...envelope.snapshot.intelligence,
+					repositoryCollection: envelope.snapshot.intelligence.repositoryCollection ?? {
+						state: 'Unavailable',
+						totalRepositories: envelope.snapshot.intelligence.account.ownedRepositories,
+						freshRepositories: 0,
+						staleRepositories: [],
+						detail: 'Repository collection health is unavailable for this legacy snapshot.'
+					},
 					repositories: envelope.snapshot.intelligence.repositories.map((repository) => ({
 						...repository,
 						imageUrl: repository.imageUrl ?? envelope.snapshot.profile.avatarUrl

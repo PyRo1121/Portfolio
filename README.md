@@ -10,7 +10,7 @@ npm ci
 npm run dev
 ```
 
-Set `GITHUB_USERNAME` and `GITHUB_TOKEN` in `.env`. The token stays server-side. When authorized, Weeknote uses GitHub GraphQL to include owned private repositories and their visible default-branch commits.
+Set `GITHUB_USERNAME` in `.env`, but keep `GITHUB_TOKEN` outside the repository tree or in a credential manager. For the local mode-`0600` credential file, run `GITHUB_TOKEN="$(cat ~/.config/weeknote/github-token)" npm run dev`. The token stays server-side. When authorized, Weeknote uses GitHub GraphQL to include owned private repositories and their visible default-branch commits.
 
 ## Cloudflare deployment
 
@@ -41,7 +41,7 @@ Use `wrangler secret put GITHUB_TOKEN` or `wrangler secret put CLOUDFLARE_API_TO
 - Cached private data renders immediately while one single-flight background refresh runs. On Cloudflare, warm refreshes use the execution context so the document response can close immediately.
 - If GitHub is temporarily unavailable, Weeknote keeps the last-known-good live snapshot and labels it cached. Demo intelligence is used only when authentication is absent; a first authenticated cold start shows a skeleton until a verified snapshot is available.
 - Private dashboard responses use `Cache-Control: private, no-store`; private repository data is never intentionally placed in a shared HTTP cache.
-- GitHub GraphQL collection is divided into core repository/commit data and search/outcome data to stay below GitHub's query timeout.
+- GitHub GraphQL collection uses a small account query, an isolated search/outcome query, and independently cached per-repository slices refreshed at concurrency six with a 15-second request timeout. A failed repository may reuse only same-window last-known-good evidence; without a matching slice, the full refresh fails and preserves the prior dashboard snapshot.
 - Cloudflare inventory counts are labeled **Provisioned**; Workers, D1, and KV analytics and D1 physical storage are labeled **Measured** only after a successful API read. Permission gaps and unsupported response shapes remain **Unavailable**, never zero.
 - Cloudflare collection has a separate cache envelope and refresh lifecycle, so Cloudflare failures cannot replace or invalidate GitHub evidence.
 - Career records are stored in a dedicated D1 database, scoped by the exact normalized Access owner email, and parsed server-side before every mutation. Stage transitions append dated evidence rather than overwriting history silently.
