@@ -13,20 +13,24 @@
 		UserFocus
 	} from 'phosphor-svelte';
 	import { careerStages, type CareerSnapshot } from '$lib/domain/career-accountability';
+	import type { CareerAccountabilityReview } from '$lib/domain/career-accountability-review';
 	import { createCareerAccountabilityView } from '$lib/domain/career-workspace-view';
+	import AccountabilityReview from './AccountabilityReview.svelte';
 
-	type CareerPanel = 'pipeline' | 'commitments' | 'stories';
+	type CareerPanel = 'review' | 'pipeline' | 'commitments' | 'stories';
 	type Props = {
 		readonly snapshot: CareerSnapshot | null;
+		readonly review: CareerAccountabilityReview | null;
 		readonly accessReason: string;
 		readonly today: string;
 		readonly actionMessage: string;
 	};
 
-	let { snapshot, accessReason, today, actionMessage }: Props = $props();
-	let mobilePanel = $state<CareerPanel>('pipeline');
+	let { snapshot, review, accessReason, today, actionMessage }: Props = $props();
+	let mobilePanel = $state<CareerPanel>('review');
 	const view = $derived(snapshot === null ? null : createCareerAccountabilityView(snapshot, today));
 	const panels: ReadonlyArray<{ readonly id: CareerPanel; readonly label: string }> = [
+		{ id: 'review', label: 'Review' },
 		{ id: 'pipeline', label: 'Pipeline' },
 		{ id: 'commitments', label: 'Commitments' },
 		{ id: 'stories', label: 'Stories' }
@@ -78,235 +82,254 @@
 				>
 			</section>
 		{/if}
+		<nav class="career-mode-switch" aria-label="Career workspace mode">
+			<button
+				type="button"
+				class={mobilePanel === 'review' ? 'active' : ''}
+				aria-pressed={mobilePanel === 'review'}
+				onclick={() => (mobilePanel = 'review')}>Review</button
+			><button
+				type="button"
+				class={mobilePanel === 'review' ? '' : 'active'}
+				aria-pressed={mobilePanel !== 'review'}
+				onclick={() => (mobilePanel = 'pipeline')}>Manage</button
+			>
+		</nav>
 		{#if actionMessage}<p class="career-message" aria-live="polite">{actionMessage}</p>{/if}
 	</header>
 
 	{#if snapshot !== null && view !== null}
-		<section
-			class={mobilePanel === 'pipeline' ? 'career-pipeline panel-visible' : 'career-pipeline'}
-		>
-			<header>
-				<div>
-					<span>Opportunity pipeline</span><small>Deliberate applications over volume</small>
+		{#if mobilePanel === 'review'}
+			<AccountabilityReview {review} />
+		{:else}
+			<section
+				class={mobilePanel === 'pipeline' ? 'career-pipeline panel-visible' : 'career-pipeline'}
+			>
+				<header>
+					<div>
+						<span>Opportunity pipeline</span><small>Deliberate applications over volume</small>
+					</div>
+					<details class="career-create">
+						<summary><Plus size={13} /> Add opportunity</summary>
+						<form method="POST" action="?/createOpportunity" use:enhance>
+							<label>Company<input name="company" maxlength="180" required /></label>
+							<label>Role<input name="role" maxlength="180" required /></label>
+							<label>Job URL<input name="jobUrl" type="url" maxlength="2048" /></label>
+							<label
+								>Stage<select name="stage"
+									>{#each careerStages as stage (stage)}<option>{stage}</option>{/each}</select
+								></label
+							>
+							<label class="wide">Next action<input name="nextAction" maxlength="180" /></label>
+							<label>Due<input name="nextActionDue" type="date" /></label>
+							<label>Contact<input name="contact" maxlength="180" /></label>
+							<label>Résumé version<input name="resumeVersion" maxlength="180" /></label>
+							<label class="wide"
+								>Private notes<textarea name="notes" maxlength="2000"></textarea></label
+							>
+							<button type="submit">Save opportunity</button>
+						</form>
+					</details>
+				</header>
+				<div class="pipeline-columns">
+					{#each view.columns as column (column.stage)}
+						<article class={column.opportunities.length === 0 ? 'empty-column' : ''}>
+							<header>
+								<span>{column.stage}</span><strong>{column.opportunities.length}</strong>
+							</header>
+							<div>
+								{#each column.opportunities as opportunity (opportunity.id)}
+									<section class="opportunity-card">
+										<div>
+											<strong>{opportunity.company}</strong><span>{opportunity.role}</span>
+											{#if opportunity.jobUrl}<a
+													href={opportunity.jobUrl}
+													target="_blank"
+													rel="external noreferrer"
+													aria-label={`Open ${opportunity.company} role`}
+													><ArrowUpRight size={13} /></a
+												>{/if}
+										</div>
+										{#if opportunity.nextAction}<p>{opportunity.nextAction}</p>{/if}
+										{#if opportunity.nextActionDue}<time
+												class={opportunity.nextActionDue < today ? 'overdue' : ''}
+												datetime={opportunity.nextActionDue}
+												><CalendarBlank size={12} /> {opportunity.nextActionDue}</time
+											>{/if}
+										<details class="opportunity-edit">
+											<summary><PencilSimple size={12} /> Edit details</summary>
+											<form
+												method="POST"
+												action="?/updateOpportunity"
+												aria-label={`Edit ${opportunity.company}`}
+												use:enhance={enhanceOpportunityEdit}
+											>
+												<input type="hidden" name="id" value={opportunity.id} />
+												<label
+													>Company<input
+														name="company"
+														value={opportunity.company}
+														maxlength="180"
+														required
+													/></label
+												>
+												<label
+													>Role<input
+														name="role"
+														value={opportunity.role}
+														maxlength="180"
+														required
+													/></label
+												>
+												<label
+													>Job URL<input
+														name="jobUrl"
+														type="url"
+														value={opportunity.jobUrl ?? ''}
+														maxlength="2048"
+													/></label
+												>
+												<label
+													>Stage<select name="stage"
+														>{#each careerStages as stage (stage)}<option
+																selected={stage === opportunity.stage}>{stage}</option
+															>{/each}</select
+													></label
+												>
+												<label class="wide"
+													>Next action<input
+														name="nextAction"
+														value={opportunity.nextAction ?? ''}
+														maxlength="180"
+													/></label
+												>
+												<label
+													>Due<input
+														name="nextActionDue"
+														type="date"
+														value={opportunity.nextActionDue ?? ''}
+													/></label
+												>
+												<label
+													>Contact<input
+														name="contact"
+														value={opportunity.contact ?? ''}
+														maxlength="180"
+													/></label
+												>
+												<label
+													>Résumé version<input
+														name="resumeVersion"
+														value={opportunity.resumeVersion ?? ''}
+														maxlength="180"
+													/></label
+												>
+												<label class="wide"
+													>Private notes<textarea name="notes" maxlength="2000"
+														>{opportunity.notes ?? ''}</textarea
+													></label
+												>
+												<div class="edit-actions">
+													<button type="button" onclick={closeOpportunityEditor}>Close</button>
+													<button type="submit">Save changes</button>
+												</div>
+											</form>
+										</details>
+										<form method="POST" action="?/transitionOpportunity" use:enhance>
+											<input type="hidden" name="id" value={opportunity.id} />
+											<select name="stage" aria-label={`Move ${opportunity.company} to stage`}>
+												{#each careerStages as stage (stage)}<option
+														selected={stage === opportunity.stage}>{stage}</option
+													>{/each}
+											</select><button type="submit">Move</button>
+										</form>
+									</section>
+								{:else}<p class="empty">No roles</p>{/each}
+							</div>
+						</article>
+					{/each}
 				</div>
-				<details class="career-create">
-					<summary><Plus size={13} /> Add opportunity</summary>
-					<form method="POST" action="?/createOpportunity" use:enhance>
-						<label>Company<input name="company" maxlength="180" required /></label>
-						<label>Role<input name="role" maxlength="180" required /></label>
-						<label>Job URL<input name="jobUrl" type="url" maxlength="2048" /></label>
-						<label
-							>Stage<select name="stage"
-								>{#each careerStages as stage (stage)}<option>{stage}</option>{/each}</select
-							></label
+			</section>
+
+			<section
+				class={mobilePanel === 'commitments'
+					? 'career-commitments panel-visible'
+					: 'career-commitments'}
+			>
+				<header><span>Two-track commitment</span><small>Build + career</small></header>
+				<form class="commitment-form" method="POST" action="?/createCommitment" use:enhance>
+					<select name="kind" aria-label="Commitment type"
+						><option>Build</option><option>Career</option></select
+					>
+					<input name="text" maxlength="180" placeholder="One concrete finish" required />
+					<input name="dueOn" type="date" aria-label="Commitment due date" />
+					<button type="submit"><Plus size={13} /> Add</button>
+				</form>
+				<div class="commitment-list">
+					{#each view.openCommitments as commitment (commitment.id)}
+						<article>
+							<span>{commitment.kind}</span><strong>{commitment.text}</strong>
+							{#if commitment.dueOn}<time datetime={commitment.dueOn}>{commitment.dueOn}</time>{/if}
+							<form method="POST" action="?/setCommitmentStatus" use:enhance>
+								<input type="hidden" name="id" value={commitment.id} />
+								<input type="hidden" name="status" value="Done" />
+								<button type="submit"><CheckCircle size={14} /> Done</button>
+							</form>
+						</article>
+					{:else}<p class="empty">Set one build commitment and one career commitment.</p>{/each}
+				</div>
+				<footer class="follow-up-reminders">
+					<header>
+						<div><Target size={14} /><span>Follow-up reminders</span></div>
+						<small>Dashboard · recalculated daily</small>
+					</header>
+					<div>
+						{#each view.followUpReminders as reminder (reminder.opportunityId)}
+							<article>
+								<span class={reminder.tone}>{reminder.label}</span>
+								<strong>{reminder.company}</strong>
+								<p>{reminder.action}</p>
+							</article>
+						{:else}<p class="empty">Add a next action to create a dashboard reminder.</p>{/each}
+					</div>
+				</footer>
+			</section>
+
+			<section
+				class={mobilePanel === 'stories' ? 'career-stories panel-visible' : 'career-stories'}
+			>
+				<header><span>Interview story bank</span><small>Problem → action → outcome</small></header>
+				<details class="story-create">
+					<summary><BookOpen size={13} /> Draft a story</summary>
+					<form method="POST" action="?/createStory" use:enhance>
+						<input name="title" maxlength="180" placeholder="Story title" required />
+						<textarea name="problem" maxlength="2000" placeholder="Problem" required></textarea>
+						<textarea name="action" maxlength="2000" placeholder="Action" required></textarea>
+						<textarea name="outcome" maxlength="2000" placeholder="Outcome" required></textarea>
+						<input name="evidenceUrl" type="url" maxlength="2048" placeholder="Evidence URL" />
+						<select name="visibility" aria-label="Story visibility"
+							><option>Private</option><option>ShareDraft</option></select
 						>
-						<label class="wide">Next action<input name="nextAction" maxlength="180" /></label>
-						<label>Due<input name="nextActionDue" type="date" /></label>
-						<label>Contact<input name="contact" maxlength="180" /></label>
-						<label>Résumé version<input name="resumeVersion" maxlength="180" /></label>
-						<label class="wide"
-							>Private notes<textarea name="notes" maxlength="2000"></textarea></label
-						>
-						<button type="submit">Save opportunity</button>
+						<button type="submit">Save story</button>
 					</form>
 				</details>
-			</header>
-			<div class="pipeline-columns">
-				{#each view.columns as column (column.stage)}
-					<article class={column.opportunities.length === 0 ? 'empty-column' : ''}>
-						<header>
-							<span>{column.stage}</span><strong>{column.opportunities.length}</strong>
-						</header>
-						<div>
-							{#each column.opportunities as opportunity (opportunity.id)}
-								<section class="opportunity-card">
-									<div>
-										<strong>{opportunity.company}</strong><span>{opportunity.role}</span>
-										{#if opportunity.jobUrl}<a
-												href={opportunity.jobUrl}
-												target="_blank"
-												rel="external noreferrer"
-												aria-label={`Open ${opportunity.company} role`}
-												><ArrowUpRight size={13} /></a
-											>{/if}
-									</div>
-									{#if opportunity.nextAction}<p>{opportunity.nextAction}</p>{/if}
-									{#if opportunity.nextActionDue}<time
-											class={opportunity.nextActionDue < today ? 'overdue' : ''}
-											datetime={opportunity.nextActionDue}
-											><CalendarBlank size={12} /> {opportunity.nextActionDue}</time
-										>{/if}
-									<details class="opportunity-edit">
-										<summary><PencilSimple size={12} /> Edit details</summary>
-										<form
-											method="POST"
-											action="?/updateOpportunity"
-											aria-label={`Edit ${opportunity.company}`}
-											use:enhance={enhanceOpportunityEdit}
-										>
-											<input type="hidden" name="id" value={opportunity.id} />
-											<label
-												>Company<input
-													name="company"
-													value={opportunity.company}
-													maxlength="180"
-													required
-												/></label
-											>
-											<label
-												>Role<input
-													name="role"
-													value={opportunity.role}
-													maxlength="180"
-													required
-												/></label
-											>
-											<label
-												>Job URL<input
-													name="jobUrl"
-													type="url"
-													value={opportunity.jobUrl ?? ''}
-													maxlength="2048"
-												/></label
-											>
-											<label
-												>Stage<select name="stage"
-													>{#each careerStages as stage (stage)}<option
-															selected={stage === opportunity.stage}>{stage}</option
-														>{/each}</select
-												></label
-											>
-											<label class="wide"
-												>Next action<input
-													name="nextAction"
-													value={opportunity.nextAction ?? ''}
-													maxlength="180"
-												/></label
-											>
-											<label
-												>Due<input
-													name="nextActionDue"
-													type="date"
-													value={opportunity.nextActionDue ?? ''}
-												/></label
-											>
-											<label
-												>Contact<input
-													name="contact"
-													value={opportunity.contact ?? ''}
-													maxlength="180"
-												/></label
-											>
-											<label
-												>Résumé version<input
-													name="resumeVersion"
-													value={opportunity.resumeVersion ?? ''}
-													maxlength="180"
-												/></label
-											>
-											<label class="wide"
-												>Private notes<textarea name="notes" maxlength="2000"
-													>{opportunity.notes ?? ''}</textarea
-												></label
-											>
-											<div class="edit-actions">
-												<button type="button" onclick={closeOpportunityEditor}>Close</button>
-												<button type="submit">Save changes</button>
-											</div>
-										</form>
-									</details>
-									<form method="POST" action="?/transitionOpportunity" use:enhance>
-										<input type="hidden" name="id" value={opportunity.id} />
-										<select name="stage" aria-label={`Move ${opportunity.company} to stage`}>
-											{#each careerStages as stage (stage)}<option
-													selected={stage === opportunity.stage}>{stage}</option
-												>{/each}
-										</select><button type="submit">Move</button>
-									</form>
-								</section>
-							{:else}<p class="empty">No roles</p>{/each}
-						</div>
-					</article>
-				{/each}
-			</div>
-		</section>
-
-		<section
-			class={mobilePanel === 'commitments'
-				? 'career-commitments panel-visible'
-				: 'career-commitments'}
-		>
-			<header><span>Two-track commitment</span><small>Build + career</small></header>
-			<form class="commitment-form" method="POST" action="?/createCommitment" use:enhance>
-				<select name="kind" aria-label="Commitment type"
-					><option>Build</option><option>Career</option></select
-				>
-				<input name="text" maxlength="180" placeholder="One concrete finish" required />
-				<input name="dueOn" type="date" aria-label="Commitment due date" />
-				<button type="submit"><Plus size={13} /> Add</button>
-			</form>
-			<div class="commitment-list">
-				{#each view.openCommitments as commitment (commitment.id)}
-					<article>
-						<span>{commitment.kind}</span><strong>{commitment.text}</strong>
-						{#if commitment.dueOn}<time datetime={commitment.dueOn}>{commitment.dueOn}</time>{/if}
-						<form method="POST" action="?/setCommitmentStatus" use:enhance>
-							<input type="hidden" name="id" value={commitment.id} />
-							<input type="hidden" name="status" value="Done" />
-							<button type="submit"><CheckCircle size={14} /> Done</button>
-						</form>
-					</article>
-				{:else}<p class="empty">Set one build commitment and one career commitment.</p>{/each}
-			</div>
-			<footer class="follow-up-reminders">
-				<header>
-					<div><Target size={14} /><span>Follow-up reminders</span></div>
-					<small>Dashboard · recalculated daily</small>
-				</header>
-				<div>
-					{#each view.followUpReminders as reminder (reminder.opportunityId)}
+				<div class="story-list">
+					{#each snapshot.stories as story (story.id)}
 						<article>
-							<span class={reminder.tone}>{reminder.label}</span>
-							<strong>{reminder.company}</strong>
-							<p>{reminder.action}</p>
+							<span>{story.visibility}</span><strong>{story.title}</strong>
+							<p>{story.outcome}</p>
+							{#if story.evidenceUrl}<a
+									href={story.evidenceUrl}
+									target="_blank"
+									rel="external noreferrer">Evidence <ArrowUpRight size={12} /></a
+								>{/if}
 						</article>
-					{:else}<p class="empty">Add a next action to create a dashboard reminder.</p>{/each}
+					{:else}<p class="empty">
+							Turn the next shipped feature into an interview-ready story.
+						</p>{/each}
 				</div>
-			</footer>
-		</section>
-
-		<section class={mobilePanel === 'stories' ? 'career-stories panel-visible' : 'career-stories'}>
-			<header><span>Interview story bank</span><small>Problem → action → outcome</small></header>
-			<details class="story-create">
-				<summary><BookOpen size={13} /> Draft a story</summary>
-				<form method="POST" action="?/createStory" use:enhance>
-					<input name="title" maxlength="180" placeholder="Story title" required />
-					<textarea name="problem" maxlength="2000" placeholder="Problem" required></textarea>
-					<textarea name="action" maxlength="2000" placeholder="Action" required></textarea>
-					<textarea name="outcome" maxlength="2000" placeholder="Outcome" required></textarea>
-					<input name="evidenceUrl" type="url" maxlength="2048" placeholder="Evidence URL" />
-					<select name="visibility" aria-label="Story visibility"
-						><option>Private</option><option>ShareDraft</option></select
-					>
-					<button type="submit">Save story</button>
-				</form>
-			</details>
-			<div class="story-list">
-				{#each snapshot.stories as story (story.id)}
-					<article>
-						<span>{story.visibility}</span><strong>{story.title}</strong>
-						<p>{story.outcome}</p>
-						{#if story.evidenceUrl}<a
-								href={story.evidenceUrl}
-								target="_blank"
-								rel="external noreferrer">Evidence <ArrowUpRight size={12} /></a
-							>{/if}
-					</article>
-				{:else}<p class="empty">
-						Turn the next shipped feature into an interview-ready story.
-					</p>{/each}
-			</div>
-		</section>
+			</section>
+		{/if}
 	{/if}
 </div>
 
@@ -373,6 +396,34 @@
 	.career-overview > section {
 		display: flex;
 		gap: clamp(1rem, 2.5vw, 2.8rem);
+	}
+	.career-mode-switch {
+		position: absolute;
+		top: 0.7rem;
+		right: 0.8rem;
+		display: flex;
+		border: 1px solid var(--line);
+	}
+	.career-mode-switch button {
+		padding: 0.42rem 0.58rem;
+		border: 0;
+		border-right: 1px solid var(--line);
+		background: transparent;
+		color: var(--muted);
+		font: 520 0.45rem/1 var(--mono);
+		text-transform: uppercase;
+		cursor: pointer;
+	}
+	.career-mode-switch button:last-child {
+		border-right: 0;
+	}
+	.career-mode-switch button.active {
+		background: var(--accent);
+		color: var(--bg);
+	}
+	:global(.career-screen > .accountability-review) {
+		grid-column: 1 / -1;
+		grid-row: 2 / 4;
 	}
 	.career-overview section div {
 		display: grid;
@@ -751,6 +802,13 @@
 		}
 		:global(.career-screen .workspace-pages) {
 			display: flex;
+		}
+		.career-mode-switch {
+			display: none;
+		}
+		:global(.career-screen > .accountability-review) {
+			grid-column: 1;
+			grid-row: 3;
 		}
 		.career-overview {
 			grid-column: 1;
