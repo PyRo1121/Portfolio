@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted — 2026-08-14.
+Superseded in part by [ADR 0009](0009-public-read-owner-write-boundary.md). The dedicated store and owner-scoped mutations remain accepted; reads are now public.
 
 ## Context
 

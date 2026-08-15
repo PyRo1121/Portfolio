@@ -3,16 +3,16 @@
 	import { resolve } from '$app/paths';
 	import type { SubmitFunction } from '@sveltejs/kit';
 	import {
-		ArrowUpRight,
-		BookOpen,
-		Briefcase,
-		CalendarBlank,
-		CheckCircle,
-		DownloadSimple,
-		PencilSimple,
-		Plus,
-		Target,
-		UserFocus
+		ArrowUpRightIcon as ArrowUpRight,
+		BookOpenIcon as BookOpen,
+		BriefcaseIcon as Briefcase,
+		CalendarBlankIcon as CalendarBlank,
+		CheckCircleIcon as CheckCircle,
+		DownloadSimpleIcon as DownloadSimple,
+		PencilSimpleIcon as PencilSimple,
+		PlusIcon as Plus,
+		TargetIcon as Target,
+		UserFocusIcon as UserFocus
 	} from 'phosphor-svelte';
 	import { careerStages, type CareerSnapshot } from '$lib/domain/career-accountability';
 	import type { CareerAccountabilityReview } from '$lib/domain/career-review';
@@ -69,7 +69,7 @@
 
 	<header class="career-overview">
 		<div>
-			<span><Briefcase size={14} weight="fill" /> Owner-only records</span>
+			<span><Briefcase size={14} weight="fill" /> Public records</span>
 			<h1>Career</h1>
 			<p>Applications, follow-ups, commitments, and interview stories.</p>
 		</div>
@@ -84,7 +84,7 @@
 			</section>
 		{:else}
 			<section class="career-locked">
-				<UserFocus size={20} weight="duotone" /><strong>Owner-only workspace</strong><span
+				<UserFocus size={20} weight="duotone" /><strong>Career records unavailable</strong><span
 					>{accessReason}</span
 				>
 			</section>
@@ -131,9 +131,7 @@
 							<label>Due<input name="nextActionDue" type="date" /></label>
 							<label>Contact<input name="contact" maxlength="180" /></label>
 							<label>Résumé version<input name="resumeVersion" maxlength="180" /></label>
-							<label class="wide"
-								>Private notes<textarea name="notes" maxlength="2000"></textarea></label
-							>
+							<label class="wide">Notes<textarea name="notes" maxlength="2000"></textarea></label>
 							<button type="submit">Save opportunity</button>
 						</form>
 					</details>
@@ -232,7 +230,7 @@
 													/></label
 												>
 												<label class="wide"
-													>Private notes<textarea name="notes" maxlength="2000"
+													>Notes<textarea name="notes" maxlength="2000"
 														>{opportunity.notes ?? ''}</textarea
 													></label
 												>

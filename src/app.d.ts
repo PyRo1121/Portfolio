@@ -17,6 +17,7 @@ declare global {
 		// interface Error {}
 		// interface Locals {}
 		interface PageData {
+			ownerAuthorized: boolean;
 			career: CareerSnapshot | null;
 			ownerProjects: OwnerProjectSnapshot | null;
 			ownerProjectAccess: {

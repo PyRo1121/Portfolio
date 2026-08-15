@@ -492,7 +492,7 @@
 					</section>
 				{/if}
 			{:else}
-				<p class="dossier-missing">Add a project to build its private dossier.</p>
+				<p class="dossier-missing">Add a project to build its evidence dossier.</p>
 			{/if}
 		</main>
 

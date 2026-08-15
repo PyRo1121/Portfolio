@@ -3,6 +3,7 @@
 		ArrowClockwiseIcon as ArrowClockwise,
 		CommandIcon as Command,
 		GithubLogoIcon as GithubLogo,
+		GlobeSimpleIcon as GlobeSimple,
 		LockSimpleIcon as LockSimple
 	} from 'phosphor-svelte';
 	import { invalidateAll } from '$app/navigation';
@@ -42,7 +43,8 @@
 	import { createOwnerProjectNavigationSignal } from '$lib/domain/owner-project-navigation';
 	import { DashboardView } from '$lib/state/dashboard-view.svelte';
 
-	type PrivatePageData = {
+	type DashboardPageData = {
+		readonly ownerAuthorized: boolean;
 		readonly career: CareerSnapshot | null;
 		readonly ownerProjects: OwnerProjectSnapshot | null;
 		readonly ownerProjectAccess: {
@@ -71,7 +73,7 @@
 		readonly ownerProjectMessage?: string;
 	};
 	type PageProps = Omit<GeneratedPageProps, 'data' | 'form'> & {
-		readonly data: GeneratedPageProps['data'] & PrivatePageData;
+		readonly data: GeneratedPageProps['data'] & DashboardPageData;
 		readonly form: ActionData | null;
 	};
 
@@ -115,11 +117,12 @@
 		};
 	});
 	const status = $derived.by(() => {
+		const audience = data.ownerAuthorized ? 'Owner' : 'Public';
 		if (refreshState === 'Refreshing')
-			return snapshot === null ? 'Warming cache' : 'Private · refreshing';
+			return snapshot === null ? 'Warming cache' : `${audience} · refreshing`;
 		if (refreshState === 'Unavailable')
-			return snapshot === null ? 'GitHub delayed' : 'Private · cached';
-		return 'Private · current';
+			return snapshot === null ? 'GitHub delayed' : `${audience} · cached`;
+		return `${audience} · current`;
 	});
 
 	$effect(() => {
@@ -188,7 +191,7 @@
 	<title>{snapshot?.profile.login ?? 'Weeknote'} / Weeknote</title>
 	<meta
 		name="description"
-		content="A private dashboard for GitHub activity, Cloudflare usage, and career records."
+		content="A public, evidence-backed dashboard for GitHub activity, Cloudflare delivery, and career records."
 	/>
 </svelte:head>
 <a class="skip-link" href="#workspace-stage">Skip to dashboard</a>
@@ -224,7 +227,9 @@
 				class="connection"
 				title={refreshMessage}
 			>
-				<i></i><LockSimple size={12} />{status}
+				<i></i>{#if data.ownerAuthorized}<LockSimple size={12} />{:else}<GlobeSimple
+						size={12}
+					/>{/if}{status}
 			</span><button
 				type="button"
 				onclick={() => dashboardView.toggleCommand()}

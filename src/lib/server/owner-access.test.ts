@@ -1,5 +1,21 @@
 import { describe, expect, it } from 'vitest';
-import { resolveOwnerAccess } from './owner-access';
+import { configuredOwnerEmail, isOwnerMutationPath, resolveOwnerAccess } from './owner-access';
+
+describe('configuredOwnerEmail', () => {
+	it('normalizes a configured public-read identity', () => {
+		expect(configuredOwnerEmail(' OLEN@LATHAM.CLOUD ')).toBe('olen@latham.cloud');
+		expect(configuredOwnerEmail('  ')).toBeNull();
+		expect(configuredOwnerEmail(undefined)).toBeNull();
+	});
+});
+
+describe('isOwnerMutationPath', () => {
+	it('accepts only the Access-protected owner route', () => {
+		expect(isOwnerMutationPath('/owner')).toBe(true);
+		expect(isOwnerMutationPath('/')).toBe(false);
+		expect(isOwnerMutationPath('/career/portfolio.md')).toBe(false);
+	});
+});
 
 describe('resolveOwnerAccess', () => {
 	it('allows only the exact configured Access identity with an assertion', () => {

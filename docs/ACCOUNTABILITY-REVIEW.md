@@ -1,6 +1,6 @@
 # Accountability Review evidence contract
 
-The private Career workspace opens on a decision-first Accountability Review. It connects engineering evidence to two deliberate commitments without converting activity into a productivity or hiring score.
+The publicly readable Career workspace opens on a decision-first Accountability Review. It connects engineering evidence to two deliberate commitments without converting activity into a productivity or hiring score.
 
 ## Strongest retained outcome
 
@@ -17,7 +17,7 @@ Repository verification is a separate claim. It is **Observed** only when a reta
 
 ## Two-track commitments
 
-The review selects one open Build commitment and one open Career commitment from the private Career D1 database. The earliest due date wins; the most recently updated record breaks ties. A missing commitment is **Unavailable**, not complete.
+The review selects one open Build commitment and one open Career commitment from the owner-scoped Career D1 database. The earliest due date wins; the most recently updated record breaks ties. A missing commitment is **Unavailable**, not complete.
 
 Due labels and follow-up warnings use the browser-resolved viewer-local date. Overdue and due-today opportunity actions appear as warnings. Future actions remain visible as the next scheduled follow-up.
 
@@ -30,7 +30,7 @@ The coverage map remains lane-based and is never summed into a score:
 - **Automated verification — Observed:** a successful retained workflow matches the selected repository.
 - **Runtime operation — Measured:** Cloudflare reports a Worker request metric. This is account-level evidence unless deployment linkage is collected.
 - **Data platform — Provisioned:** Cloudflare inventories D1 databases. Provisioning does not prove ownership of the selected artifact.
-- **Outcome communication — Observed:** a private interview story is recorded. It remains self-authored evidence and links externally only when its GitHub outcome was server-verified and stored as an Observed association. Legacy free-form links remain Unavailable.
+- **Outcome communication — Observed:** an interview story is recorded. Story visibility controls inclusion in the public Markdown export, while the dashboard itself is publicly readable. A story links externally only when its GitHub outcome was server-verified and stored as an Observed association. Legacy free-form links remain Unavailable.
 
 ## Role relevance
 

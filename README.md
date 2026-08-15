@@ -15,7 +15,7 @@ Set `GITHUB_USERNAME` in `.env`, but keep GitHub credentials outside the reposit
 
 ## Cloudflare deployment
 
-The production application runs as the `weeknote` Cloudflare Worker at `https://gh.latham.cloud`, protected by Cloudflare Access for the exact owner email. Static assets use Workers Static Assets; independently versioned GitHub and Cloudflare snapshots use `WEEKNOTE_CACHE`; mutable owner-scoped opportunities, commitments, and interview stories use the dedicated `CAREER_DB` D1 binding; confirmed cross-provider project mappings use the separate `OWNER_DB` D1 binding; `GITHUB_TOKEN`, `GITHUB_CHECKS_APP_PRIVATE_KEY`, and `CLOUDFLARE_API_TOKEN` are Worker secrets.
+The production application runs as the `weeknote` Cloudflare Worker at `https://gh.latham.cloud`. The dashboard is publicly readable; editing is available at the Cloudflare Access-protected `/owner` route for the exact owner email. Static assets use Workers Static Assets; independently versioned GitHub and Cloudflare snapshots use `WEEKNOTE_CACHE`; mutable owner-scoped opportunities, commitments, and interview stories use the dedicated `CAREER_DB` D1 binding; confirmed cross-provider project mappings use the separate `OWNER_DB` D1 binding; `GITHUB_TOKEN`, `GITHUB_CHECKS_APP_PRIVATE_KEY`, and `CLOUDFLARE_API_TOKEN` remain server-only Worker secrets.
 
 ```bash
 npm run cf:types
@@ -24,7 +24,7 @@ npm run deploy
 
 The deploy command applies pending `OWNER_DB` migrations before uploading the Worker. Career migrations remain an explicit `npm run db:migrate:career:remote` operation because that existing database currently has a separate Cloudflare API authorization boundary.
 
-Use `wrangler secret put GITHUB_TOKEN`, `wrangler secret put GITHUB_CHECKS_APP_PRIVATE_KEY`, or `wrangler secret put CLOUDFLARE_API_TOKEN` to rotate production credentials. Never add credential values to `wrangler.jsonc`. The non-secret GitHub App and installation IDs remain ordinary Worker variables. Keep the Access application and its exact-account-owner allow policy in place before attaching another hostname.
+Use `wrangler secret put GITHUB_TOKEN`, `wrangler secret put GITHUB_CHECKS_APP_PRIVATE_KEY`, or `wrangler secret put CLOUDFLARE_API_TOKEN` to rotate production credentials. Never add credential values to `wrangler.jsonc`. The non-secret GitHub App and installation IDs remain ordinary Worker variables. Keep `/owner` behind its exact-account-owner Access policy: mutations require both that protected path and the verified Access identity.
 
 ## Data model
 
@@ -50,8 +50,8 @@ Use `wrangler secret put GITHUB_TOKEN`, `wrangler secret put GITHUB_CHECKS_APP_P
 - Verification totals include only default-branch push/dispatch runs. Actions jobs use the fine-grained PAT; bounded, job-linked check annotations use a one-hour token minted from a private least-privilege GitHub App. Authentication or permission gaps remain **Unavailable** and never become an inferred failure cause.
 - Cloudflare inventory counts and exact Worker, D1, KV, and R2 resource identities are labeled **Provisioned** only after successful API parsing. Workers, D1, and KV analytics and D1 physical storage are labeled **Measured** only after a successful API read. Permission gaps and unsupported response shapes remain **Unavailable**, never zero.
 - Cloudflare collection has a separate cache envelope and refresh lifecycle, so Cloudflare failures cannot replace or invalidate GitHub evidence.
-- Career records are stored in a dedicated D1 database, scoped by the exact normalized Access owner email, and parsed server-side before every mutation. Stage transitions append dated evidence rather than overwriting history silently.
-- The Career workspace opens on a decision-first Accountability Review, then exposes deliberate opportunities, editable private context, one build and one job-search commitment, and private or sanitized interview story drafts. Due-date reminders are derived in the dashboard each viewer-local day; Weeknote does not claim an external notification was delivered or reward application spam.
+- Career records are stored in a dedicated D1 database and scoped by the normalized configured owner email for public reads. Every mutation additionally requires the exact `/owner` path and verified Access identity. Stage transitions append dated evidence rather than overwriting history silently.
+- The publicly readable Career workspace opens on a decision-first Accountability Review, then exposes deliberate opportunities, owner-editable context, one build and one job-search commitment, and interview story drafts. Due-date reminders are derived in the dashboard each viewer-local day; Weeknote does not claim an external notification was delivered or reward application spam.
 - Accountability Review selection, evidence states, and inference limits are documented in [`docs/ACCOUNTABILITY-REVIEW.md`](docs/ACCOUNTABILITY-REVIEW.md).
 - Story edits remain owner-scoped. GitHub links become Observed only after exact server-side matching to a retained Live outcome and durable D1 association; legacy links remain Unavailable. The Markdown export includes only records explicitly marked `ShareDraft`. Its allowlist and exclusions are documented in [`docs/PORTFOLIO-EXPORT.md`](docs/PORTFOLIO-EXPORT.md).
 - Future evidence-backed improvements and their formulas are tracked in [`docs/EVIDENCE-ROADMAP.md`](docs/EVIDENCE-ROADMAP.md).
