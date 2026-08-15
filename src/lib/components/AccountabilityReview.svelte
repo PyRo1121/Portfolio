@@ -1,15 +1,12 @@
 <script lang="ts">
-	import {
-		ArrowUpRight,
-		Briefcase,
-		CheckCircle,
-		ClockCountdown,
-		Crosshair,
-		WarningCircle
-	} from 'phosphor-svelte';
+	import { ArrowUpRight, Briefcase, Crosshair, Info, WarningCircle } from 'phosphor-svelte';
 	import type { CareerAccountabilityReview } from '$lib/domain/career-accountability-review';
 
-	type Props = { readonly review: CareerAccountabilityReview | null };
+	type DirectCareerAccountabilityReview = CareerAccountabilityReview & {
+		readonly outcome: CareerAccountabilityReview['outcome'] & { readonly kindLabel: string };
+		readonly boundaryNote: string;
+	};
+	type Props = { readonly review: DirectCareerAccountabilityReview | null };
 	let { review }: Props = $props();
 </script>
 
@@ -31,7 +28,7 @@
 				<strong class={review.outcome.state.toLowerCase()}>{review.outcome.state}</strong>
 			</header>
 			<div class="outcome-copy">
-				<span>GitHub outcome</span>
+				<span>{review.outcome.kindLabel}</span>
 				<h2>{review.outcome.headline}</h2>
 				<p>{review.outcome.detail}</p>
 				{#if review.outcome.evidence}<a
@@ -54,7 +51,7 @@
 					>{/if}
 			</div>
 			<footer>
-				<span>Why this item</span>
+				<span>Selection basis</span>
 				<p>{review.outcome.selectionFormula}</p>
 			</footer>
 		</section>
@@ -91,8 +88,8 @@
 
 		<section class="review-coverage">
 			<header>
-				<div><CheckCircle size={14} /><span>Evidence coverage</span></div>
-				<small>Coverage map · not a score</small>
+				<div><Info size={14} /><span>Evidence coverage</span></div>
+				<small>State and source for each lane</small>
 			</header>
 			<div>
 				{#each review.coverage as lane (lane.id)}
@@ -113,13 +110,19 @@
 
 		<section class="review-relevance">
 			<header>
-				<div><ClockCountdown size={14} /><span>Due now</span></div>
+				<div><Info size={14} /><span>Evidence boundaries</span></div>
 				<small>{review.date}</small>
 			</header>
 			<div class="relevance-copy">
-				<span class={review.relevance.state.toLowerCase()}>{review.relevance.state}</span>
-				<strong>{review.relevance.headline}</strong>
-				<p>{review.relevance.limitation}</p>
+				<ul>
+					{#each review.coverage.filter( (lane) => ['typescript', 'verification', 'operations'].includes(lane.id) ) as lane (lane.id)}
+						<li>
+							<strong>{lane.label}</strong><span class={lane.state.toLowerCase()}>{lane.state}</span
+							>
+						</li>
+					{/each}
+				</ul>
+				<p>{review.boundaryNote}</p>
 			</div>
 			<div class="follow-up-warning">
 				<span>Overdue follow-ups</span>
@@ -165,10 +168,9 @@
 		gap: 0.6rem;
 		padding: 0.62rem 0.72rem;
 		border-bottom: 1px solid var(--line);
-		font: 520 0.48rem/1.2 var(--mono);
+		font: 570 0.68rem/1.2 var(--sans);
 		color: var(--muted);
-		text-transform: uppercase;
-		letter-spacing: 0.055em;
+		letter-spacing: -0.01em;
 	}
 	.accountability-review section > header div {
 		display: flex;
@@ -177,9 +179,8 @@
 	}
 	.accountability-review section > header > strong,
 	.accountability-review article > span,
-	.relevance-copy > span,
 	.outcome-verification > span {
-		font: 560 0.44rem/1 var(--mono);
+		font: 560 0.52rem/1 var(--mono);
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
 	}
@@ -213,15 +214,15 @@
 	.follow-up-warning > span,
 	.outcome-verification > strong,
 	.review-outcome footer span {
-		font: 540 0.46rem/1 var(--mono);
+		font: 540 0.56rem/1 var(--mono);
 		color: var(--accent);
 		text-transform: uppercase;
 		letter-spacing: 0.055em;
 	}
 	.outcome-copy h2 {
-		max-width: 18ch;
+		max-width: 26ch;
 		margin: 0;
-		font-size: clamp(1.65rem, 3.2vw, 3.4rem);
+		font-size: clamp(1.55rem, 2.5vw, 2.6rem);
 		font-weight: 610;
 		line-height: 0.98;
 		letter-spacing: -0.055em;
@@ -233,7 +234,7 @@
 	.relevance-copy p,
 	.follow-up-warning p {
 		margin: 0;
-		font: 450 0.49rem/1.42 var(--mono);
+		font: 450 0.62rem/1.48 var(--mono);
 		color: var(--muted);
 	}
 	.outcome-copy a,
@@ -243,7 +244,7 @@
 		align-items: center;
 		gap: 0.3rem;
 		color: var(--accent);
-		font: 520 0.46rem/1 var(--mono);
+		font: 520 0.57rem/1 var(--mono);
 		text-decoration: none;
 	}
 	.outcome-verification {
@@ -285,7 +286,7 @@
 		line-height: 1.25;
 	}
 	.review-commitments time {
-		font: 480 0.45rem/1 var(--mono);
+		font: 500 0.56rem/1 var(--mono);
 		color: var(--muted);
 	}
 	.review-coverage {
@@ -308,7 +309,7 @@
 		border-bottom: 1px solid var(--line);
 	}
 	.review-coverage article strong {
-		font-size: 0.61rem;
+		font-size: 0.72rem;
 	}
 	.review-coverage article a {
 		position: absolute;
@@ -323,13 +324,34 @@
 	}
 	.relevance-copy {
 		display: grid;
-		gap: 0.42rem;
-		padding: 0.68rem;
+		gap: 0.6rem;
+		padding: 0.72rem;
 		border-bottom: 1px solid var(--line);
 	}
-	.relevance-copy strong {
-		font-size: 0.71rem;
+	.relevance-copy ul {
+		display: grid;
+		gap: 1px;
+		margin: 0;
+		padding: 0;
+		background: var(--line);
+		list-style: none;
+	}
+	.relevance-copy li {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.75rem;
+		padding: 0.5rem 0.58rem;
+		background: var(--high);
+	}
+	.relevance-copy li strong {
+		font-size: 0.68rem;
 		line-height: 1.25;
+	}
+	.relevance-copy li span {
+		font: 560 0.5rem/1 var(--mono);
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
 	}
 	.follow-up-warning {
 		min-height: 0;
@@ -350,7 +372,7 @@
 		grid-column: 2;
 		grid-row: 1 / 3;
 		color: #d18070;
-		font: 540 0.43rem/1 var(--mono);
+		font: 540 0.52rem/1 var(--mono);
 		text-transform: uppercase;
 	}
 	.follow-up-warning .clear {
@@ -365,7 +387,7 @@
 	}
 	.follow-up-warning footer span {
 		color: var(--accent);
-		font: 520 0.44rem/1 var(--mono);
+		font: 520 0.54rem/1 var(--mono);
 		text-transform: uppercase;
 	}
 	.review-unavailable {

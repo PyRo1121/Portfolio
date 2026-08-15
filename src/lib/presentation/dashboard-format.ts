@@ -25,7 +25,10 @@ export function formatPercent(value: number): string {
 
 /** Format a signed delta with an explicit sign. */
 export function formatSigned(value: number): string {
-	return `${value > 0 ? '+' : value < 0 ? '−' : ''}${formatInteger(Math.abs(value))}`;
+	let sign = '';
+	if (value > 0) sign = '+';
+	if (value < 0) sign = '−';
+	return `${sign}${formatInteger(Math.abs(value))}`;
 }
 
 /** Format repository disk usage with an appropriate binary unit. */

@@ -10,9 +10,8 @@ const snapshot = createDemoIntelligence(
 describe('createCraftIntelligence', () => {
 	it('separates observed and inferred quality signals', () => {
 		const craft = createCraftIntelligence(snapshot);
-		expect(craft.score).toBeGreaterThanOrEqual(0);
-		expect(craft.score).toBeLessThanOrEqual(100);
 		expect(craft.observed.successfulChecks).toBe(7);
+		expect(craft.observed.failedChecks).toBeGreaterThanOrEqual(0);
 		expect(craft.inferred.categories.reduce((total, category) => total + category.commits, 0)).toBe(
 			snapshot.intelligence.commits.length
 		);

@@ -319,14 +319,6 @@ const DashboardSnapshotSchema = Schema.Struct({
 			previousOutcomes: Schema.Number,
 			outcomeDelta: Schema.Number,
 			workflowPassRate: Schema.NullOr(Schema.Number),
-			score: Schema.Number,
-			scoreBreakdown: Schema.Struct({
-				outcomes: Schema.Number,
-				verification: Schema.Number,
-				coverage: Schema.Number
-			}),
-			label: Schema.String,
-			message: Schema.String,
 			artifacts: Schema.Array(DeliveryArtifactSchema),
 			workflows: WorkflowCoverageSchema
 		}),

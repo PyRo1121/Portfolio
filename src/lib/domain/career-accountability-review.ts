@@ -1,3 +1,4 @@
+import { formatGitHubArtifactTitle } from '$lib/presentation/github-artifact-title';
 import type { CareerCommitment, CareerSnapshot, CareerStory } from './career-accountability';
 import {
 	createCareerAccountabilityView,
@@ -28,6 +29,7 @@ type AccountabilityEvidenceLink = {
 
 type AccountabilityOutcome = {
 	readonly state: 'Observed' | 'Unavailable';
+	readonly kindLabel: string;
 	readonly headline: string;
 	readonly detail: string;
 	readonly repository: string | null;
@@ -65,11 +67,7 @@ export type CareerAccountabilityReview = {
 	readonly followUpWarnings: ReadonlyArray<CareerFollowUpReminder>;
 	readonly nextFollowUp: CareerFollowUpReminder | null;
 	readonly coverage: ReadonlyArray<AccountabilityCoverageLane>;
-	readonly relevance: {
-		readonly state: 'Inferred' | 'Unavailable';
-		readonly headline: string;
-		readonly limitation: string;
-	};
+	readonly boundaryNote: string;
 };
 
 const DAY_IN_MILLISECONDS = 86_400_000;
@@ -87,10 +85,16 @@ function successfulWorkflowFor(
 	);
 }
 
+function outcomeKindLabel(artifact: DeliveryArtifact): string {
+	if (artifact.kind === 'PullRequest') return 'Merged pull request';
+	if (artifact.kind === 'Issue') return 'Closed issue';
+	if (artifact.kind === 'Release')
+		return artifact.detail.includes('prerelease') ? 'Prerelease published' : 'Release published';
+	return 'GitHub outcome';
+}
+
 function outcomeHeadline(artifact: DeliveryArtifact): string {
-	if (artifact.kind === 'Release') return `I published “${artifact.title}”.`;
-	if (artifact.kind === 'PullRequest') return `I shipped “${artifact.title}”.`;
-	return `I closed “${artifact.title}”.`;
+	return formatGitHubArtifactTitle(artifact.title);
 }
 
 function createOutcome(snapshot: GitHubDashboardSnapshot): AccountabilityOutcome {
@@ -98,6 +102,7 @@ function createOutcome(snapshot: GitHubDashboardSnapshot): AccountabilityOutcome
 	if (artifact === null) {
 		return {
 			state: 'Unavailable',
+			kindLabel: 'GitHub outcome',
 			headline: 'No delivery outcome is available for this rolling window.',
 			detail: 'Commits are not promoted to outcomes without a merged PR, closed issue, or release.',
 			repository: null,
@@ -117,6 +122,7 @@ function createOutcome(snapshot: GitHubDashboardSnapshot): AccountabilityOutcome
 	);
 	return {
 		state: 'Observed',
+		kindLabel: outcomeKindLabel(artifact),
 		headline: outcomeHeadline(artifact),
 		detail: `${artifact.detail} · ${artifact.repository}`,
 		repository: artifact.repository,
@@ -323,34 +329,10 @@ function coverageLanes(
 	];
 }
 
-function relevanceNarrative(
-	outcome: AccountabilityOutcome,
-	coverage: ReadonlyArray<AccountabilityCoverageLane>
-): CareerAccountabilityReview['relevance'] {
-	if (outcome.state === 'Unavailable') {
-		return {
-			state: 'Unavailable',
-			headline: 'Role relevance needs one observed delivery outcome.',
-			limitation: 'Commit activity alone is not presented as product ownership.'
-		};
-	}
-	const typescript = coverage.find((lane) => lane.id === 'typescript')?.state === 'Observed';
-	const verification = coverage.find((lane) => lane.id === 'verification')?.state === 'Observed';
-	const operations = coverage.find((lane) => lane.id === 'operations')?.state === 'Measured';
-	const supportingEvidence = [
-		typescript ? 'TypeScript repository evidence' : null,
-		verification ? 'a successful same-repository workflow' : null,
-		operations ? 'measured account-level runtime operation' : null
-	].filter((value): value is string => value !== null);
-	return {
-		state: 'Inferred',
-		headline:
-			supportingEvidence.length === 0
-				? 'This is an observed product outcome; supporting full-stack lanes remain incomplete.'
-				: `This supports a product-oriented full-stack narrative through ${supportingEvidence.join(', ')}.`,
-		limitation:
-			'Coverage is not a hiring score. Changed-file paths and outcome-to-deployment linkage are not collected, so frontend, backend, and data ownership are not attributed to this artifact.'
-	};
+function evidenceBoundaryNote(outcome: AccountabilityOutcome): string {
+	return outcome.state === 'Unavailable'
+		? 'Commit activity is not treated as an outcome without a retained merged pull request, closed issue, release, or prerelease.'
+		: 'Changed-file paths and outcome-to-deployment linkage are not collected. Account-level Cloudflare evidence is not attributed to this GitHub artifact.';
 }
 
 /** Build one decision-first private accountability review from existing evidence boundaries. */
@@ -373,6 +355,6 @@ export function createCareerAccountabilityReview(
 		),
 		nextFollowUp: workspace.followUpReminders[0] ?? null,
 		coverage,
-		relevance: relevanceNarrative(outcome, coverage)
+		boundaryNote: evidenceBoundaryNote(outcome)
 	};
 }

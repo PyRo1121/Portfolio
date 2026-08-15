@@ -153,7 +153,7 @@ describe('career accountability review', () => {
 			repository: 'octocat/signal-garden',
 			verification: { state: 'Unavailable' }
 		});
-		expect(review.outcome.headline).toContain('I shipped');
+		expect(review.outcome.headline).not.toMatch(/^I\s/);
 		expect(review.buildCommitment).toMatchObject({
 			state: 'Observed',
 			text: 'Publish one case study',
@@ -177,8 +177,8 @@ describe('career accountability review', () => {
 		expect(review.coverage.find((lane) => lane.id === 'data')).toMatchObject({
 			state: 'Provisioned'
 		});
-		expect(review.relevance).toMatchObject({ state: 'Inferred' });
-		expect(review.relevance.limitation).toContain('not a hiring score');
+		expect(review.boundaryNote).toContain('outcome-to-deployment linkage');
+		expect(review.boundaryNote).toContain('not attributed');
 	});
 
 	it('does not promote commits into an outcome when delivery artifacts are absent', () => {
@@ -196,6 +196,6 @@ describe('career accountability review', () => {
 			'2026-08-14'
 		);
 		expect(review.outcome).toMatchObject({ state: 'Unavailable', evidence: null });
-		expect(review.relevance).toMatchObject({ state: 'Unavailable' });
+		expect(review.boundaryNote).toContain('Commit activity is not treated as an outcome');
 	});
 });
