@@ -17,7 +17,7 @@
 		<div class="skeleton-cells"><i></i><i></i><i></i></div>
 	</section>
 	<section class="skeleton-visual">
-		<header><span>Warming private cache</span><small>GitHub intelligence</small></header>
+		<header><span>Loading saved dashboard</span><small>GitHub data</small></header>
 		<div class="skeleton-ring"></div>
 		<div class="skeleton-bars">
 			{#each bars as height, index (index)}<i style={`--height:${height}`}></i>{/each}

@@ -37,8 +37,8 @@
 	const storyView = $derived(snapshot === null ? null : createCareerStoryView(snapshot));
 	const portfolioExportUrl = resolve('/career/portfolio.md');
 	const panels: ReadonlyArray<{ readonly id: CareerPanel; readonly label: string }> = [
-		{ id: 'review', label: 'Review' },
-		{ id: 'pipeline', label: 'Pipeline' },
+		{ id: 'review', label: 'Summary' },
+		{ id: 'pipeline', label: 'Opportunities' },
 		{ id: 'commitments', label: 'Commitments' },
 		{ id: 'stories', label: 'Stories' }
 	];
@@ -69,9 +69,9 @@
 
 	<header class="career-overview">
 		<div>
-			<span><Briefcase size={14} weight="fill" /> Private accountability</span>
-			<h1>Get hired.</h1>
-			<p>Ship evidence. Tell the story. Put it in front of startup teams.</p>
+			<span><Briefcase size={14} weight="fill" /> Owner-only records</span>
+			<h1>Career</h1>
+			<p>Applications, follow-ups, commitments, and interview stories.</p>
 		</div>
 		{#if snapshot !== null && view !== null}
 			<section aria-label="Career summary">
@@ -114,7 +114,7 @@
 			>
 				<header>
 					<div>
-						<span>Opportunity pipeline</span><small>Deliberate applications over volume</small>
+						<span>Opportunities</span><small>Applications and follow-ups</small>
 					</div>
 					<details class="career-create">
 						<summary><Plus size={13} /> Add opportunity</summary>
@@ -263,7 +263,7 @@
 					? 'career-commitments panel-visible'
 					: 'career-commitments'}
 			>
-				<header><span>Two-track commitment</span><small>Build + career</small></header>
+				<header><span>Current commitments</span><small>Build + career</small></header>
 				<form class="commitment-form" method="POST" action="?/createCommitment" use:enhance>
 					<select name="kind" aria-label="Commitment type"
 						><option>Build</option><option>Career</option></select
@@ -287,7 +287,7 @@
 				</div>
 				<footer class="follow-up-reminders">
 					<header>
-						<div><Target size={14} /><span>Follow-up reminders</span></div>
+						<div><Target size={14} /><span>Follow-ups due</span></div>
 						<small>Dashboard · recalculated daily</small>
 					</header>
 					<div>
@@ -306,7 +306,7 @@
 				class={mobilePanel === 'stories' ? 'career-stories panel-visible' : 'career-stories'}
 			>
 				<header>
-					<div><span>Interview story bank</span><small>Problem → action → outcome</small></div>
+					<div><span>Interview stories</span><small>Problem → action → outcome</small></div>
 					{#if storyView !== null && storyView.canExport}
 						<a
 							class="story-export"
@@ -430,7 +430,7 @@
 							</details>
 						</article>
 					{:else}<p class="empty">
-							Turn the next shipped feature into an interview-ready story.
+							Add an interview story when an outcome is ready to discuss.
 						</p>{/each}
 				</div>
 			</section>

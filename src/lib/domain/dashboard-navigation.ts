@@ -30,7 +30,7 @@ export function createWorkspaceSignals(
 		},
 		craft: {
 			value: String(craft.score),
-			label: 'signal',
+			label: 'score',
 			tone: craft.score < 68 ? 'attention' : 'neutral'
 		},
 		repositories: {

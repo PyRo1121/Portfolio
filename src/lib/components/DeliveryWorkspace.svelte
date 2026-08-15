@@ -27,8 +27,8 @@
 	}> = [
 		{ id: 'outcomes', label: 'Outcomes' },
 		{ id: 'checks', label: 'Checks' },
-		{ id: 'trail', label: 'Trail' },
-		{ id: 'repos', label: 'Repos' }
+		{ id: 'trail', label: 'GitHub links' },
+		{ id: 'repos', label: 'By repository' }
 	];
 	const delivery = $derived(snapshot.intelligence.delivery);
 	const workflow = $derived(delivery.workflows.current);
@@ -72,9 +72,11 @@
 			fetchpriority="high"
 			referrerpolicy="no-referrer"
 		/>
-		<header><span>{snapshot.period.label}</span><small>Evidence-backed delivery</small></header>
+		<header>
+			<span>{snapshot.period.label}</span><small>Merged work, releases, and checks</small>
+		</header>
 		<div class="delivery-score__value">
-			<strong>{delivery.score}</strong><span>delivery signal</span>
+			<strong>{delivery.score}</strong><span>delivery score</span>
 		</div>
 		<div class="delivery-message">
 			<span>{delivery.label}</span>
@@ -85,7 +87,7 @@
 				>{formatSigned(delivery.outcomeDelta)} vs prior window</strong
 			>
 		</div>
-		<div class="score-formula" aria-label="Delivery signal formula">
+		<div class="score-formula" aria-label="Delivery score formula">
 			<div><span>Outcomes</span><strong>{delivery.scoreBreakdown.outcomes}/56</strong></div>
 			<div><span>Verification</span><strong>{delivery.scoreBreakdown.verification}/34</strong></div>
 			<div><span>Coverage</span><strong>{delivery.scoreBreakdown.coverage}/10</strong></div>
@@ -93,7 +95,7 @@
 	</section>
 
 	<section class={mobilePanel === 'outcomes' ? 'outcome-panel panel-visible' : 'outcome-panel'}>
-		<header><span>Outcomes landed</span><small>Authored GitHub artifacts</small></header>
+		<header><span>Completed outcomes</span><small>Authored GitHub records</small></header>
 		<div class="outcome-metrics">
 			<div>
 				<GitMerge size={20} weight="light" /><strong
@@ -108,7 +110,7 @@
 			<div>
 				<Package size={20} weight="light" />
 				<strong>{formatInteger(delivery.prereleaseBuilds)}</strong>
-				<span>Dev builds</span>
+				<span>Prereleases</span>
 				<small>{formatInteger(delivery.releases)} stable releases</small>
 			</div>
 		</div>
@@ -190,7 +192,9 @@
 	</section>
 
 	<section class={mobilePanel === 'trail' ? 'delivery-trail panel-visible' : 'delivery-trail'}>
-		<header><span>Evidence trail</span><small>Open any artifact on GitHub</small></header>
+		<header>
+			<span>GitHub records</span><small>Pull requests, issues, releases, and runs</small>
+		</header>
 		<div class="artifact-list">
 			{#each artifacts as artifact (artifact.url)}
 				<a href={artifact.url} target="_blank" rel="external noreferrer">
@@ -204,7 +208,7 @@
 						>{formatRelativeTime(artifact.occurredAt, snapshot.generatedAt)}</time
 					>
 				</a>
-			{:else}<p>No delivery artifacts landed in this rolling window yet.</p>{/each}
+			{:else}<p>No completed outcomes or workflow runs in this seven-day window.</p>{/each}
 		</div>
 	</section>
 
@@ -213,7 +217,7 @@
 			? 'repository-verification panel-visible'
 			: 'repository-verification'}
 	>
-		<header><span>Checks by workstream</span><small>Exact Actions run totals</small></header>
+		<header><span>Checks by repository</span><small>GitHub Actions run totals</small></header>
 		<div>
 			{#each workflow.repositories.slice(0, 6) as repository (repository.repository)}
 				<article>

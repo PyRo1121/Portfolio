@@ -146,7 +146,7 @@
 	<title>{snapshot?.profile.login ?? 'Weeknote'} / Weeknote</title>
 	<meta
 		name="description"
-		content="A private engineering accountability, delivery, and career intelligence desk."
+		content="A private dashboard for GitHub activity, Cloudflare usage, and career records."
 	/>
 </svelte:head>
 <a class="skip-link" href="#workspace-stage">Skip to dashboard</a>
@@ -499,6 +499,9 @@
 		font: 520 0.6rem/1 var(--mono);
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
+	}
+	:global(.workspace-label-compact) {
+		display: none;
 	}
 	:global(.workspace-link__signal) {
 		display: grid;
@@ -1109,36 +1112,9 @@
 	:global(.today-summary-grid strong) {
 		font-size: 1rem;
 	}
-	:global(.today-pulse-panel) {
-		grid-column: 2 / 4;
-		display: grid;
-		grid-template-rows: auto minmax(0, 1fr) auto;
-	}
-	:global(.today-pulse-panel > header) {
-		text-transform: none !important;
-		letter-spacing: 0 !important;
-	}
-	:global(.today-pulse-panel > header span) {
-		font: 590 0.74rem/1.2 var(--sans);
-		color: var(--ink);
-		letter-spacing: -0.015em;
-	}
-	:global(.today-pulse-panel > header small) {
-		font: 500 0.63rem/1.2 var(--mono);
-		color: var(--muted);
-	}
-	:global(.today-pulse-panel footer) {
-		display: flex;
-		justify-content: space-between;
-		padding: 0.55rem 0.75rem;
-		border-top: 1px solid var(--line);
-		font: 500 0.58rem/1 var(--mono);
-		color: var(--muted);
-	}
-	:global(.today-pulse-panel footer strong) {
-		color: var(--ink);
-	}
 	:global(.today-change-panel) {
+		grid-column: 4;
+		grid-row: 1;
 		display: grid;
 		grid-template-rows: auto minmax(0, 1fr) auto;
 	}
@@ -1177,6 +1153,30 @@
 	:global(.today-commits) {
 		display: grid;
 		grid-template-rows: auto minmax(0, 1fr);
+	}
+	:global(.today-hourly-panel) {
+		grid-column: 2 / 4;
+		grid-row: 1;
+		grid-template-rows: auto minmax(0, 1fr) auto;
+	}
+	:global(.today-workstreams) {
+		grid-column: 2 / 4;
+		grid-row: 2;
+	}
+	:global(.today-commits) {
+		grid-column: 4;
+		grid-row: 2;
+	}
+	:global(.today-hourly-panel footer) {
+		display: flex;
+		justify-content: space-between;
+		padding: 0.55rem 0.75rem;
+		border-top: 1px solid var(--line);
+		font: 500 0.6rem/1 var(--mono);
+		color: var(--muted);
+	}
+	:global(.today-hourly-panel footer strong) {
+		color: var(--ink);
 	}
 	:global(.today-hours) {
 		display: grid;
@@ -2759,6 +2759,12 @@
 		}
 		:global(.workspace-link strong) {
 			font-size: 0.5rem;
+		}
+		:global(.workspace-label-full) {
+			display: none;
+		}
+		:global(.workspace-label-compact) {
+			display: inline;
 		}
 		:global(.today-screen),
 		:global(.week-screen),

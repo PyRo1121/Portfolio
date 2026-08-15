@@ -49,7 +49,7 @@
 <div class="ledger-screen">
 	<header class="ledger-toolbar">
 		<div>
-			<span>Commit ledger</span><strong
+			<span>Commits</span><strong
 				>{formatInteger(snapshot.totals.commits)} commits · {formatCompact(snapshot.totals.churn)} lines
 				moved</strong
 			>
@@ -75,7 +75,7 @@
 				>
 			</div>
 			<div>
-				<span>Change mass</span><strong
+				<span>Lines changed</span><strong
 					>+{formatCompact(selectedDay?.additions ?? 0)} / −{formatCompact(
 						selectedDay?.deletions ?? 0
 					)}</strong
@@ -123,7 +123,7 @@
 					>
 				</div>
 				<a href={selectedCommit.url} target="_blank" rel="external noreferrer"
-					>Open evidence <ArrowUpRight size={13} /></a
+					>Open on GitHub <ArrowUpRight size={13} /></a
 				>
 			</aside>
 		{/if}
