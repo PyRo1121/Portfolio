@@ -36,7 +36,7 @@ function accountResponse() {
 	};
 }
 
-function searchResponse() {
+function searchResponse(overrides: Readonly<Record<string, unknown>> = {}) {
 	const empty = { issueCount: 0, nodes: [] };
 	return {
 		data: {
@@ -46,11 +46,41 @@ function searchResponse() {
 			authoredIssues: empty,
 			commentedItems: empty,
 			currentMergedPullRequests: empty,
+			currentMaintainerMergedPullRequests: empty,
 			currentClosedIssues: empty,
 			previousMergedPullRequests: empty,
+			previousMaintainerMergedPullRequests: empty,
 			previousClosedIssues: empty,
+			...overrides,
 			rateLimit: { cost: 9, limit: 5000, remaining: 4891, resetAt: '2026-08-14T21:00:00Z' }
 		}
+	};
+}
+
+function pullRequestSearchResult(input: {
+	readonly repository: string;
+	readonly number: number;
+	readonly author: string;
+	readonly authorType: 'User' | 'Bot';
+	readonly mergedBy: string;
+	readonly mergedAt: string;
+}) {
+	return {
+		__typename: 'PullRequest',
+		title: `Merge ${input.repository} #${input.number}`,
+		number: input.number,
+		url: `https://github.com/${input.repository}/pull/${input.number}`,
+		state: 'MERGED',
+		createdAt: '2026-08-10T10:00:00Z',
+		mergedAt: input.mergedAt,
+		additions: 10,
+		deletions: 2,
+		changedFiles: 2,
+		comments: { totalCount: 0 },
+		reviews: { totalCount: 1 },
+		author: { __typename: input.authorType, login: input.author },
+		mergedBy: { __typename: 'User', login: input.mergedBy },
+		repository: { nameWithOwner: input.repository, isPrivate: false }
 	};
 }
 
@@ -145,12 +175,18 @@ function parsePayload(init: RequestInit | undefined): GraphQLPayload {
 	}
 }
 
+type GitHubFetchOptions = {
+	readonly failingRepository?: string;
+	readonly paginatedRepository?: string;
+	readonly failingPaginationRepository?: string;
+	readonly searchResponse?: unknown;
+	readonly searchVariables?: Array<Record<string, unknown>>;
+};
+
 function githubFetch(
 	accountQueries: string[],
 	repositoryQueries: string[],
-	failingRepository: string | null,
-	paginatedRepository: string | null = null,
-	failingPaginationRepository: string | null = null
+	options: GitHubFetchOptions = {}
 ): typeof globalThis.fetch {
 	return (async (_input: RequestInfo | URL, init?: RequestInit) => {
 		const payload = parsePayload(init);
@@ -158,17 +194,20 @@ function githubFetch(
 			accountQueries.push(payload.query);
 			return Response.json(accountResponse());
 		}
-		if (payload.query.includes('GitHubSignalSearches')) return Response.json(searchResponse());
+		if (payload.query.includes('GitHubSignalSearches')) {
+			options.searchVariables?.push(payload.variables);
+			return Response.json(options.searchResponse ?? searchResponse());
+		}
 		if (payload.query.includes('GitHubRepositorySlice')) {
 			const fullName = `${String(payload.variables['owner'])}/${String(payload.variables['name'])}`;
 			repositoryQueries.push(fullName);
-			return fullName === failingRepository
+			return fullName === options.failingRepository
 				? new Response('upstream timeout', { status: 502 })
-				: Response.json(repositoryResponse(fullName, fullName === paginatedRepository));
+				: Response.json(repositoryResponse(fullName, fullName === options.paginatedRepository));
 		}
 		if (payload.query.includes('RepositoryCommitPage')) {
 			const fullName = `${String(payload.variables['owner'])}/${String(payload.variables['name'])}`;
-			return fullName === failingPaginationRepository
+			return fullName === options.failingPaginationRepository
 				? new Response('pagination timeout', { status: 502 })
 				: Response.json(commitPageResponse(fullName));
 		}
@@ -201,6 +240,79 @@ const requestWindow = {
 };
 
 describe('incremental GitHub GraphQL intelligence', () => {
+	it('includes authored and owner-merged pull requests without double counting', async () => {
+		const ownerAuthored = pullRequestSearchResult({
+			repository: 'octocat/product',
+			number: 1,
+			author: 'octocat',
+			authorType: 'User',
+			mergedBy: 'octocat',
+			mergedAt: '2026-08-14T12:00:00Z'
+		});
+		const automated = pullRequestSearchResult({
+			repository: 'octocat/product',
+			number: 2,
+			author: 'renovate',
+			authorType: 'Bot',
+			mergedBy: 'octocat',
+			mergedAt: '2026-08-14T13:00:00Z'
+		});
+		const mergedBySomeoneElse = pullRequestSearchResult({
+			repository: 'octocat/product',
+			number: 3,
+			author: 'contributor',
+			authorType: 'User',
+			mergedBy: 'maintainer',
+			mergedAt: '2026-08-14T14:00:00Z'
+		});
+		const previousAutomated = pullRequestSearchResult({
+			repository: 'octocat/product',
+			number: 4,
+			author: 'dependabot',
+			authorType: 'Bot',
+			mergedBy: 'octocat',
+			mergedAt: '2026-08-07T13:00:00Z'
+		});
+		const searchVariables: Array<Record<string, unknown>> = [];
+		const intelligence = await Effect.runPromise(
+			fetchGitHubIntelligence({
+				...requestWindow,
+				fetch: githubFetch([], [], {
+					searchVariables,
+					searchResponse: searchResponse({
+						currentMergedPullRequests: { issueCount: 1, nodes: [ownerAuthored] },
+						currentMaintainerMergedPullRequests: {
+							issueCount: 3,
+							nodes: [ownerAuthored, automated, mergedBySomeoneElse]
+						},
+						previousMaintainerMergedPullRequests: {
+							issueCount: 1,
+							nodes: [previousAutomated]
+						}
+					})
+				}),
+				repositoryCache: cacheFixture()
+			})
+		);
+
+		expect(intelligence.delivery).toMatchObject({
+			mergedPullRequests: 2,
+			authoredMergedPullRequests: 1,
+			maintainerMergedPullRequests: 1,
+			automatedMergedPullRequests: 1,
+			mergedPullRequestsTruncated: false,
+			previousMergedPullRequests: 1
+		});
+		expect(intelligence.delivery.outcomes).toMatchObject([
+			{ number: 2, responsibility: 'Automated' },
+			{ number: 1, responsibility: 'Authored' }
+		]);
+		expect(searchVariables).toHaveLength(1);
+		expect(searchVariables[0]?.['currentMaintainerMergedPullRequests']).toContain(
+			'is:pr user:octocat is:merged'
+		);
+	});
+
 	it('uses a small account query and retains one failed repository slice', async () => {
 		const cache = cacheFixture();
 		const accountQueries: string[] = [];
@@ -208,7 +320,9 @@ describe('incremental GitHub GraphQL intelligence', () => {
 		const first = await Effect.runPromise(
 			fetchGitHubIntelligence({
 				...requestWindow,
-				fetch: githubFetch(accountQueries, repositoryQueries, null, 'octocat/product'),
+				fetch: githubFetch(accountQueries, repositoryQueries, {
+					paginatedRepository: 'octocat/product'
+				}),
 				repositoryCache: cache
 			})
 		);
@@ -226,7 +340,7 @@ describe('incremental GitHub GraphQL intelligence', () => {
 		const second = await Effect.runPromise(
 			fetchGitHubIntelligence({
 				...requestWindow,
-				fetch: githubFetch([], [], 'octocat/product-private'),
+				fetch: githubFetch([], [], { failingRepository: 'octocat/product-private' }),
 				repositoryCache: cache
 			})
 		);
@@ -246,7 +360,10 @@ describe('incremental GitHub GraphQL intelligence', () => {
 		const paginationFailure = await Effect.runPromise(
 			fetchGitHubIntelligence({
 				...requestWindow,
-				fetch: githubFetch([], [], null, 'octocat/product', 'octocat/product'),
+				fetch: githubFetch([], [], {
+					paginatedRepository: 'octocat/product',
+					failingPaginationRepository: 'octocat/product'
+				}),
 				repositoryCache: cache
 			})
 		);

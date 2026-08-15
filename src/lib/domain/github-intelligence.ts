@@ -169,6 +169,7 @@ export type DeliveryOutcomeInput = {
 	readonly url: string;
 	readonly occurredAt: string;
 	readonly isPrivate: boolean;
+	readonly responsibility: 'Authored' | 'Maintainer' | 'Automated';
 };
 
 /** A published GitHub release in the rolling window. */
@@ -286,6 +287,10 @@ export type GitHubIntelligenceInput = {
 	};
 	readonly delivery: {
 		readonly mergedPullRequests: number;
+		readonly authoredMergedPullRequests: number;
+		readonly maintainerMergedPullRequests: number;
+		readonly automatedMergedPullRequests: number;
+		readonly mergedPullRequestsTruncated: boolean;
 		readonly closedIssues: number;
 		readonly previousMergedPullRequests: number;
 		readonly previousClosedIssues: number;
@@ -365,6 +370,10 @@ export type DeliveryArtifact = {
 /** Transparent outcome and verification metrics for the rolling window. */
 export type DeliveryIntelligence = {
 	readonly mergedPullRequests: number;
+	readonly authoredMergedPullRequests: number;
+	readonly maintainerMergedPullRequests: number;
+	readonly automatedMergedPullRequests: number;
+	readonly mergedPullRequestsTruncated: boolean;
 	readonly closedIssues: number;
 	readonly releases: number;
 	readonly prereleaseBuilds: number;
@@ -685,7 +694,11 @@ function buildDelivery(input: GitHubIntelligenceInput['delivery']): DeliveryInte
 		url: outcome.url,
 		occurredAt: outcome.occurredAt,
 		status: 'shipped',
-		detail: `${outcome.kind === 'PullRequest' ? 'PR' : 'Issue'} #${outcome.number}`
+		detail: `${outcome.kind === 'PullRequest' ? 'PR' : 'Issue'} #${outcome.number}${
+			outcome.kind === 'PullRequest' && outcome.responsibility !== 'Authored'
+				? ` · ${outcome.responsibility === 'Automated' ? 'automated update' : 'maintainer merge'}`
+				: ''
+		}`
 	}));
 	const releaseArtifacts: DeliveryArtifact[] = input.releases.map((release) => ({
 		kind: 'Release',
@@ -707,6 +720,10 @@ function buildDelivery(input: GitHubIntelligenceInput['delivery']): DeliveryInte
 	}));
 	return {
 		mergedPullRequests: input.mergedPullRequests,
+		authoredMergedPullRequests: input.authoredMergedPullRequests,
+		maintainerMergedPullRequests: input.maintainerMergedPullRequests,
+		automatedMergedPullRequests: input.automatedMergedPullRequests,
+		mergedPullRequestsTruncated: input.mergedPullRequestsTruncated,
 		closedIssues: input.closedIssues,
 		releases,
 		prereleaseBuilds,
@@ -717,7 +734,7 @@ function buildDelivery(input: GitHubIntelligenceInput['delivery']): DeliveryInte
 		artifacts: [
 			...outcomeArtifacts
 				.sort((left, right) => right.occurredAt.localeCompare(left.occurredAt))
-				.slice(0, 2),
+				.slice(0, 4),
 			...releaseArtifacts
 				.sort((left, right) => right.occurredAt.localeCompare(left.occurredAt))
 				.slice(0, 2),
@@ -958,6 +975,10 @@ export function createDemoIntelligence(base: WeeklySnapshot): GitHubDashboardSna
 		},
 		delivery: {
 			mergedPullRequests: 2,
+			authoredMergedPullRequests: 1,
+			maintainerMergedPullRequests: 1,
+			automatedMergedPullRequests: 1,
+			mergedPullRequestsTruncated: false,
 			closedIssues: 1,
 			previousMergedPullRequests: 1,
 			previousClosedIssues: 1,
@@ -969,7 +990,8 @@ export function createDemoIntelligence(base: WeeklySnapshot): GitHubDashboardSna
 					repository: `${base.profile.login}/signal-garden`,
 					url: base.profile.profileUrl,
 					occurredAt: new Date(start.getTime() + 5 * DAY_IN_MS).toISOString(),
-					isPrivate: true
+					isPrivate: true,
+					responsibility: 'Automated'
 				}
 			],
 			releases: [],

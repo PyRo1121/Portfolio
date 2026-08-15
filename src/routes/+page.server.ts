@@ -157,10 +157,7 @@ export const load: PageServerLoad = async ({ platform, request, setHeaders }) =>
 		return {
 			snapshot: cached.snapshot,
 			cache: { _tag: 'Cached' as const, cachedAt: cached.cachedAt },
-			refresh: Promise.resolve<DashboardRefreshResult>({
-				_tag: 'Current',
-				checkedAt: now.toISOString()
-			}),
+			refresh,
 			...cloudflareData,
 			...careerPageData
 		};

@@ -31,8 +31,8 @@ Use `wrangler secret put GITHUB_TOKEN`, `wrangler secret put GITHUB_CHECKS_APP_P
 - Commit additions, deletions, changed files, timestamps, and messages come from GitHub's `Commit` GraphQL object.
 - Repository inventory includes private/public visibility, language mass, open issues and pull requests, stars, forks, and disk usage.
 - Contribution memory uses GitHub's contribution calendar for the previous twelve months.
-- Delivery outcomes use authored merged pull requests, authored closed issues, and non-draft repository releases inside the rolling window.
-- Stable releases and prerelease development builds remain separate and are weighted differently.
+- Delivery outcomes deduplicate pull requests authored by the configured GitHub user with pull requests that user merged in owned repositories, regardless of whether a person or automation created them. The UI separates authored, maintainer, and automated merges.
+- Authored closed issues and non-draft repository releases remain eligible outcomes; stable releases and prerelease development builds remain separate.
 - Verification uses authenticated GitHub Actions runs on active repositories' default branches, attributed to the configured GitHub user. Coverage gaps and result truncation are exposed.
 - Today uses the viewer-local date at snapshot generation time and derives exact hourly, repository, commit, and change-mass signals from the collected commit evidence.
 - Craft separates observed evidence (checks, reverts, files, change size) from commit-message inference (feature/fix/refactor/test/docs mix). Missing coverage, code-scanning, and normalized lint evidence is explicitly labeled unavailable.

@@ -126,6 +126,29 @@ describe('DashboardSnapshotCache', () => {
 		});
 	});
 
+	it('hydrates legacy delivery snapshots with an authored-only merge breakdown', async () => {
+		const { cache, values } = cacheFixture();
+		await cache.refresh('octocat', null, new Date(), async () => liveSnapshot());
+		const [key] = values.keys();
+		expect(key).toBeDefined();
+		const envelope = parseJson<{
+			snapshot: { intelligence: { delivery: Record<string, unknown> } };
+		}>(values.get(key!)!);
+		delete envelope.snapshot.intelligence.delivery['authoredMergedPullRequests'];
+		delete envelope.snapshot.intelligence.delivery['maintainerMergedPullRequests'];
+		delete envelope.snapshot.intelligence.delivery['automatedMergedPullRequests'];
+		delete envelope.snapshot.intelligence.delivery['mergedPullRequestsTruncated'];
+		values.set(key!, JSON.stringify(envelope));
+
+		expect((await cache.read('octocat'))?.snapshot.intelligence.delivery).toMatchObject({
+			mergedPullRequests: 2,
+			authoredMergedPullRequests: 2,
+			maintainerMergedPullRequests: 0,
+			automatedMergedPullRequests: 0,
+			mergedPullRequestsTruncated: false
+		});
+	});
+
 	it('shares one in-flight refresh across concurrent callers', async () => {
 		const { cache } = cacheFixture();
 		let calls = 0;

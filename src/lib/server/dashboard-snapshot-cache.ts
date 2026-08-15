@@ -312,6 +312,10 @@ const DashboardSnapshotSchema = Schema.Struct({
 		}),
 		delivery: Schema.Struct({
 			mergedPullRequests: Schema.Number,
+			authoredMergedPullRequests: Schema.optional(Schema.Number),
+			maintainerMergedPullRequests: Schema.optional(Schema.Number),
+			automatedMergedPullRequests: Schema.optional(Schema.Number),
+			mergedPullRequestsTruncated: Schema.optional(Schema.Boolean),
 			closedIssues: Schema.Number,
 			releases: Schema.Number,
 			prereleaseBuilds: Schema.Number,
@@ -404,7 +408,8 @@ export class DashboardSnapshotCache {
 							oldestStaleAt: storedCollection.oldestStaleAt ?? null,
 							graphQL: storedCollection.graphQL ?? unavailableGraphQL
 						};
-			const storedWorkflows = envelope.snapshot.intelligence.delivery.workflows;
+			const storedDelivery = envelope.snapshot.intelligence.delivery;
+			const storedWorkflows = storedDelivery.workflows;
 			const unavailableAnnotations: WorkflowAnnotationCoverageInput = {
 				state: 'Unavailable',
 				targetedRuns: 0,
@@ -418,7 +423,12 @@ export class DashboardSnapshotCache {
 					...envelope.snapshot.intelligence,
 					repositoryCollection,
 					delivery: {
-						...envelope.snapshot.intelligence.delivery,
+						...storedDelivery,
+						authoredMergedPullRequests:
+							storedDelivery.authoredMergedPullRequests ?? storedDelivery.mergedPullRequests,
+						maintainerMergedPullRequests: storedDelivery.maintainerMergedPullRequests ?? 0,
+						automatedMergedPullRequests: storedDelivery.automatedMergedPullRequests ?? 0,
+						mergedPullRequestsTruncated: storedDelivery.mergedPullRequestsTruncated ?? false,
 						workflows: {
 							...storedWorkflows,
 							current: {
