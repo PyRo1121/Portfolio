@@ -1,17 +1,18 @@
 <script lang="ts">
 	import {
-		ArrowDownRight,
-		ArrowUpRight,
-		CheckCircle,
-		CircleNotch,
-		GitMerge,
-		Package,
-		WarningCircle,
-		XCircle
+		ArrowDownRightIcon as ArrowDownRight,
+		ArrowUpRightIcon as ArrowUpRight,
+		CheckCircleIcon as CheckCircle,
+		CircleNotchIcon as CircleNotch,
+		GitMergeIcon as GitMerge,
+		PackageIcon as Package,
+		WarningCircleIcon as WarningCircle,
+		XCircleIcon as XCircle
 	} from 'phosphor-svelte';
 	import type { DeliveryArtifact, GitHubDashboardSnapshot } from '$lib/domain/github-intelligence';
 	import { workflowAnnotationCoverage } from '$lib/domain/dashboard-workflow-annotations';
 	import { formatInteger, formatRelativeTime } from '$lib/presentation/dashboard-format';
+	import { deliveryMergeBreakdown } from '$lib/presentation/delivery-merge-breakdown';
 	import { formatGitHubArtifactTitle } from '$lib/presentation/github-artifact-title';
 
 	type Props = { readonly snapshot: GitHubDashboardSnapshot };
@@ -28,6 +29,7 @@
 		{ id: 'repos', label: 'By repository' }
 	];
 	const delivery = $derived(snapshot.intelligence.delivery);
+	const mergeBreakdown = $derived(deliveryMergeBreakdown(delivery));
 	const workflow = $derived(delivery.workflows.current);
 	const artifacts = $derived(delivery.artifacts.slice(0, 8));
 	const verificationTotal = $derived(workflow.successful + workflow.failed);
@@ -105,12 +107,22 @@
 	</section>
 
 	<section class={mobilePanel === 'outcomes' ? 'outcome-panel panel-visible' : 'outcome-panel'}>
-		<header><span>Completed outcomes</span><small>Authored GitHub records</small></header>
+		<header>
+			<span>Completed outcomes</span><small>Authored work and maintainer decisions</small>
+		</header>
 		<div class="outcome-metrics">
 			<div>
 				<GitMerge size={20} weight="light" /><strong
 					>{formatInteger(delivery.mergedPullRequests)}</strong
 				><span>Merged PRs</span>
+				<small
+					>{formatInteger(mergeBreakdown.authored)} authored · {formatInteger(
+						mergeBreakdown.maintainer
+					)} maintainer{mergeBreakdown.automated > 0
+						? ` · ${formatInteger(mergeBreakdown.automated)} automated`
+						: ''}</small
+				>
+				{#if mergeBreakdown.truncated}<small>At least; GitHub result cap reached</small>{/if}
 			</div>
 			<div>
 				<CheckCircle size={20} weight="light" /><strong

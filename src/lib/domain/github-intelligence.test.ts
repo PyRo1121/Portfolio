@@ -79,6 +79,10 @@ describe('createGitHubDashboardSnapshot', () => {
 			},
 			delivery: {
 				mergedPullRequests: 1,
+				authoredMergedPullRequests: 1,
+				maintainerMergedPullRequests: 0,
+				automatedMergedPullRequests: 0,
+				mergedPullRequestsTruncated: false,
 				closedIssues: 0,
 				previousMergedPullRequests: 0,
 				previousClosedIssues: 0,
@@ -90,7 +94,8 @@ describe('createGitHubDashboardSnapshot', () => {
 						repository: 'octocat/private-work',
 						url: 'https://github.com/octocat/private-work/pull/1',
 						occurredAt: now.toISOString(),
-						isPrivate: true
+						isPrivate: true,
+						responsibility: 'Authored'
 					}
 				],
 				releases: [],
