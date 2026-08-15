@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted — 2026-08-15
+Superseded in part by [ADR 0009](0009-public-read-owner-write-boundary.md). The registry and exact-ID joins remain accepted; reads are now public.
 
 ## Context
 

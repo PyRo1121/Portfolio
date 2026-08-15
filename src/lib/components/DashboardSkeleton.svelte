@@ -31,7 +31,7 @@
 	<footer>
 		<p>
 			{failed
-				? message || 'GitHub refresh is delayed. No private snapshot has been cached yet.'
+				? message || 'GitHub refresh is delayed. No verified snapshot has been cached yet.'
 				: 'Loading the first verified snapshot. Later visits open instantly from the last-known-good cache.'}
 		</p>
 		{#if failed}<button type="button" onclick={onRetry}>Try refresh again</button>{/if}

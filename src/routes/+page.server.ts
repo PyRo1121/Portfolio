@@ -20,7 +20,11 @@ import {
 	parseRemoveOwnerProjectResource,
 	parseUpdateOwnerProject
 } from '$lib/domain/owner-project';
-import { resolveOwnerAccess } from '$lib/server/owner-access';
+import {
+	configuredOwnerEmail,
+	isOwnerMutationPath,
+	resolveOwnerAccess
+} from '$lib/server/owner-access';
 import {
 	createCareerCommitment,
 	createCareerOpportunity,
@@ -71,21 +75,27 @@ export const load: PageServerLoad = async ({ platform, request, setHeaders }) =>
 			env['GITHUB_CHECKS_APP_PRIVATE_KEY']?.trim()
 	});
 
-	const careerAccess = resolveOwnerAccess(
-		request.headers,
+	const expectedOwnerEmail = configuredOwnerEmail(
 		platform.env.CAREER_OWNER_EMAIL?.trim() || env['CAREER_OWNER_EMAIL']?.trim()
 	);
+	const ownerAccess = resolveOwnerAccess(request.headers, expectedOwnerEmail ?? undefined);
+	const ownerAuthorized = ownerAccess._tag === 'Allowed';
 	let careerData: App.PageData['careerAccess'];
 	let career: App.PageData['career'] = null;
-	if (careerAccess._tag === 'Denied') {
-		careerData = { _tag: 'Unavailable', reason: careerAccess.reason };
+	if (expectedOwnerEmail === null) {
+		careerData = { _tag: 'Unavailable', reason: 'Owner identity configuration is unavailable.' };
 	} else {
 		const careerExit = await Effect.runPromiseExit(
-			loadCareerSnapshot(platform.env.CAREER_DB, careerAccess.ownerEmail, now)
+			loadCareerSnapshot(platform.env.CAREER_DB, expectedOwnerEmail, now)
 		);
 		if (careerExit._tag === 'Success') {
 			career = careerExit.value;
-			careerData = { _tag: 'Current', reason: 'Exact-owner Access identity verified.' };
+			careerData = {
+				_tag: 'Current',
+				reason: ownerAuthorized
+					? 'Owner Access identity verified; editing is available.'
+					: 'Public read-only records; editing requires owner Access.'
+			};
 		} else {
 			careerData = {
 				_tag: 'Unavailable',
@@ -93,20 +103,25 @@ export const load: PageServerLoad = async ({ platform, request, setHeaders }) =>
 			};
 		}
 	}
-	const careerPageData = { career, careerAccess: careerData };
+	const careerPageData = { career, careerAccess: careerData, ownerAuthorized };
 	let ownerProjects: App.PageData['ownerProjects'] = null;
 	let ownerProjectAccess: App.PageData['ownerProjectAccess'];
-	if (careerAccess._tag === 'Denied') {
-		ownerProjectAccess = { _tag: 'Unavailable', reason: careerAccess.reason };
+	if (expectedOwnerEmail === null) {
+		ownerProjectAccess = {
+			_tag: 'Unavailable',
+			reason: 'Owner identity configuration is unavailable.'
+		};
 	} else {
 		const ownerProjectExit = await Effect.runPromiseExit(
-			loadOwnerProjectSnapshot(platform.env.OWNER_DB, careerAccess.ownerEmail)
+			loadOwnerProjectSnapshot(platform.env.OWNER_DB, expectedOwnerEmail)
 		);
 		if (ownerProjectExit._tag === 'Success') {
 			ownerProjects = ownerProjectExit.value;
 			ownerProjectAccess = {
 				_tag: 'Current',
-				reason: 'Exact-owner Access identity verified.'
+				reason: ownerAuthorized
+					? 'Owner Access identity verified; editing is available.'
+					: 'Public read-only records; editing requires owner Access.'
 			};
 		} else {
 			console.warn('Owner project registry load failed:', ownerProjectExit.cause);
@@ -262,6 +277,12 @@ export const load: PageServerLoad = async ({ platform, request, setHeaders }) =>
 type CareerActionEvent = RequestEvent;
 
 function actionAccess(event: CareerActionEvent) {
+	if (!isOwnerMutationPath(event.url.pathname)) {
+		return {
+			_tag: 'Denied' as const,
+			reason: 'Editing is available only through the Access-protected owner route.'
+		};
+	}
 	if (event.platform === undefined) {
 		return { _tag: 'Denied' as const, reason: 'Career storage is unavailable.' };
 	}

@@ -1,6 +1,6 @@
 # Sanitized portfolio export contract
 
-The Career Story Bank can download an owner-only Markdown draft from `/career/portfolio.md`. Cloudflare Access protects the hostname, and the endpoint independently requires the exact configured owner email plus an Access assertion.
+The Career Story Bank publishes a sanitized Markdown draft at `/career/portfolio.md`. The endpoint is publicly readable, scopes its D1 query by the normalized configured owner email, and includes only the explicit allowlist below.
 
 ## Explicit inclusion
 
@@ -29,7 +29,7 @@ The export never reads or renders:
 - stage history;
 - GitHub, Cloudflare, or Access credentials.
 
-The generated file identifies itself as a draft and instructs the owner to review it before sharing. Marking a story ShareDraft is an export decision, not publication; the endpoint remains private and produces no public URL.
+The generated file identifies itself as a draft and instructs the owner to review it before sharing. Marking a story `ShareDraft` is now a publication decision because the export has a public URL. Records marked `Private` remain excluded.
 
 ## HTTP behavior
 

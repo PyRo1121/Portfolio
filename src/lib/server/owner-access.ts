@@ -1,3 +1,14 @@
+/** Normalize the configured owner identity used to scope public reads and private writes. */
+export function configuredOwnerEmail(value: string | undefined): string | null {
+	const normalized = value?.trim().toLocaleLowerCase();
+	return normalized === undefined || normalized.length === 0 ? null : normalized;
+}
+
+/** Restrict mutable owner operations to the path protected by Cloudflare Access. */
+export function isOwnerMutationPath(pathname: string): boolean {
+	return pathname === '/owner';
+}
+
 /** Result of enforcing the exact-owner Cloudflare Access boundary. */
 export type OwnerAccessDecision =
 	| { readonly _tag: 'Allowed'; readonly ownerEmail: string }
@@ -6,10 +17,10 @@ export type OwnerAccessDecision =
 /** Resolve the authenticated owner from Cloudflare Access headers. */
 export function resolveOwnerAccess(
 	headers: Headers,
-	configuredOwnerEmail: string | undefined
+	expectedOwnerEmail: string | undefined
 ): OwnerAccessDecision {
-	const expected = configuredOwnerEmail?.trim().toLocaleLowerCase();
-	if (expected === undefined || expected.length === 0) {
+	const expected = configuredOwnerEmail(expectedOwnerEmail);
+	if (expected === null) {
 		return { _tag: 'Denied', reason: 'Owner identity configuration is unavailable.' };
 	}
 	const assertion = headers.get('cf-access-jwt-assertion')?.trim();
