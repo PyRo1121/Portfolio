@@ -8,7 +8,7 @@
 	"preview_urls": false,
 	"routes": [
 		{
-			"pattern": "gh.latham.cloud",
+			"pattern": "latham.cloud",
 			"custom_domain": true
 		}
 	],

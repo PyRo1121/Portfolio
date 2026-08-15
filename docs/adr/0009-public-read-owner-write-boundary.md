@@ -6,15 +6,15 @@ Accepted
 
 ## Context
 
-Weeknote originally placed the entire `gh.latham.cloud` hostname behind Cloudflare Access. The owner has explicitly chosen to publish the complete dashboard, including evidence collected from private GitHub repositories, Career records, project mappings, and Cloudflare account evidence. Canonical GitHub links still apply GitHub's own repository authorization.
+Weeknote originally placed the entire `latham.cloud` hostname behind Cloudflare Access. The owner has explicitly chosen to publish the complete dashboard, including evidence collected from private GitHub repositories, Career records, project mappings, and Cloudflare account evidence. Canonical GitHub links still apply GitHub's own repository authorization.
 
 Making the root hostname public must not make D1 mutations public. An unprotected request can also supply arbitrary request headers, so the application cannot treat the mere presence of Access-shaped headers on the public route as authorization.
 
 ## Decision
 
-- `https://gh.latham.cloud/` is publicly readable.
+- `https://latham.cloud/` is publicly readable.
 - Public reads remain server-rendered from authenticated provider collectors and owner-scoped D1 records. Provider credentials never enter application responses.
-- `https://gh.latham.cloud/owner` is the editing surface and remains protected by Cloudflare Access for exactly `olen@latham.cloud`.
+- `https://latham.cloud/owner` is the editing surface and remains protected by Cloudflare Access for exactly `olen@latham.cloud`.
 - Every Career and owner-project mutation requires both:
   1. the exact `/owner` request path; and
   2. the Access assertion plus normalized configured owner email.

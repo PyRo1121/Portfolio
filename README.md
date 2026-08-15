@@ -15,7 +15,7 @@ Set `GITHUB_USERNAME` in `.env`, but keep GitHub credentials outside the reposit
 
 ## Cloudflare deployment
 
-The production application runs as the `weeknote` Cloudflare Worker at `https://gh.latham.cloud`. The dashboard is publicly readable; editing is available at the Cloudflare Access-protected `/owner` route for the exact owner email. Static assets use Workers Static Assets; independently versioned GitHub and Cloudflare snapshots use `WEEKNOTE_CACHE`; mutable owner-scoped opportunities, commitments, and interview stories use the dedicated `CAREER_DB` D1 binding; confirmed cross-provider project mappings use the separate `OWNER_DB` D1 binding; `GITHUB_TOKEN`, `GITHUB_CHECKS_APP_PRIVATE_KEY`, and `CLOUDFLARE_API_TOKEN` remain server-only Worker secrets.
+The production application runs as the `weeknote` Cloudflare Worker at `https://latham.cloud`. The dashboard is publicly readable; editing is available at the Cloudflare Access-protected `/owner` route for the exact owner email. Static assets use Workers Static Assets; independently versioned GitHub and Cloudflare snapshots use `WEEKNOTE_CACHE`; mutable owner-scoped opportunities, commitments, and interview stories use the dedicated `CAREER_DB` D1 binding; confirmed cross-provider project mappings use the separate `OWNER_DB` D1 binding; `GITHUB_TOKEN`, `GITHUB_CHECKS_APP_PRIVATE_KEY`, and `CLOUDFLARE_API_TOKEN` remain server-only Worker secrets.
 
 ```bash
 npm run cf:types
