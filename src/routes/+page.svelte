@@ -14,7 +14,7 @@
 	import TodayWorkspace from '$lib/components/TodayWorkspace.svelte';
 	import WorkspaceRail from '$lib/components/WorkspaceRail.svelte';
 	import type { CareerSnapshot } from '$lib/domain/career-accountability';
-	import { createCareerAccountabilityReview } from '$lib/domain/career-accountability-review';
+	import { createCareerAccountabilityReview } from '$lib/domain/career-review';
 	import { createCareerNavigationSignal } from '$lib/domain/career-navigation';
 	import { createCareerStoryEvidenceOptions } from '$lib/domain/career-story-evidence';
 	import type {
@@ -741,72 +741,13 @@
 		font: 500 0.63rem/1.2 var(--mono);
 		color: var(--muted);
 	}
-	:global(.weekly-change-bars) {
-		display: grid;
-		min-height: 0;
-		grid-template-columns: repeat(7, minmax(0, 1fr));
-		gap: clamp(0.35rem, 1vw, 0.8rem);
-		padding: 0.8rem;
-		background-image: linear-gradient(
-			to bottom,
-			transparent calc(50% - 1px),
-			var(--strong) 50%,
-			transparent calc(50% + 1px)
-		);
-	}
-	:global(.weekly-change-bars button) {
-		display: grid;
+	:global(.weekly-change-chart),
+	:global(.weekly-commit-chart) {
+		position: relative;
 		min-width: 0;
 		min-height: 0;
-		grid-template-rows: minmax(0, 1fr) minmax(0, 1fr) auto;
-		gap: 1px;
-		padding: 0;
-		border: 0;
-		background: transparent;
-		color: var(--muted);
-		cursor: pointer;
-	}
-	:global(.weekly-change-bars button:hover),
-	:global(.weekly-change-bars button.selected) {
-		background: rgb(216 165 74 / 6%);
-	}
-	:global(.weekly-change-bars button:focus-visible) {
-		outline: 1px solid var(--accent);
-		outline-offset: 2px;
-	}
-	:global(.weekly-change-bar) {
-		display: flex;
-		min-height: 0;
-		justify-content: center;
-	}
-	:global(.weekly-change-bar i) {
-		display: block;
-		width: min(58%, 1.65rem);
-		min-height: 1px;
-		transition:
-			height 160ms ease,
-			width 160ms ease;
-	}
-	:global(.weekly-change-bar--added) {
-		align-items: flex-end;
-	}
-	:global(.weekly-change-bar--added i) {
-		background: var(--accent);
-	}
-	:global(.weekly-change-bar--removed) {
-		align-items: flex-start;
-	}
-	:global(.weekly-change-bar--removed i) {
-		background: var(--negative);
-		opacity: 0.72;
-	}
-	:global(.weekly-change-bars button.selected i) {
-		width: min(72%, 1.9rem);
-	}
-	:global(.weekly-change-bars button > span) {
-		padding: 0.45rem 0.2rem 0.1rem;
-		font: 550 0.62rem/1 var(--mono);
-		text-align: center;
+		overflow: hidden;
+		padding: 0.2rem 0.25rem 0;
 	}
 	:global(.weekly-changes-meta) {
 		display: flex;
@@ -832,45 +773,6 @@
 		min-height: 0;
 		grid-template-rows: auto minmax(0, 1fr);
 		background: var(--surface);
-	}
-	:global(.rhythm-bars) {
-		display: grid;
-		min-height: 0;
-		grid-template-columns: repeat(7, 1fr);
-		gap: 0.45rem;
-		padding: 0.7rem;
-		background-image: repeating-linear-gradient(
-			to bottom,
-			transparent 0,
-			transparent calc(25% - 1px),
-			var(--line) 25%
-		);
-	}
-	:global(.rhythm-bar) {
-		display: grid;
-		min-height: 0;
-		grid-template-rows: auto minmax(0, 1fr) auto;
-		gap: 0.3rem;
-		text-align: center;
-	}
-	:global(.rhythm-bar strong),
-	:global(.rhythm-bar span) {
-		font: 500 0.62rem/1 var(--mono);
-		color: var(--muted);
-	}
-	:global(.rhythm-bar > div) {
-		display: flex;
-		min-height: 0;
-		align-items: flex-end;
-		padding-inline: 18%;
-	}
-	:global(.rhythm-bar i) {
-		display: block;
-		width: 100%;
-		min-height: 2px;
-		background: var(--accent);
-		transform-origin: bottom;
-		animation: grow 0.7s var(--ease) both;
 	}
 	:global(.composition-panel) {
 		grid-template-rows: auto minmax(0, 1fr);
@@ -2688,14 +2590,6 @@
 			transform: none;
 		}
 	}
-	@keyframes grow {
-		from {
-			transform: scaleY(0);
-		}
-		to {
-			transform: scaleY(1);
-		}
-	}
 	@keyframes spin {
 		to {
 			transform: rotate(360deg);
@@ -2998,7 +2892,6 @@
 	}
 	@media (prefers-reduced-motion: reduce) {
 		.stage > section.active,
-		:global(.rhythm-bar i),
 		:global(.spinning) {
 			animation: none;
 		}

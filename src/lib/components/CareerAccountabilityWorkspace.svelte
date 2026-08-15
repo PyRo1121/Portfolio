@@ -15,7 +15,7 @@
 		UserFocus
 	} from 'phosphor-svelte';
 	import { careerStages, type CareerSnapshot } from '$lib/domain/career-accountability';
-	import type { CareerAccountabilityReview } from '$lib/domain/career-accountability-review';
+	import type { CareerAccountabilityReview } from '$lib/domain/career-review';
 	import type { CareerStoryEvidenceOption } from '$lib/domain/career-story-evidence';
 	import { createCareerStoryView } from '$lib/domain/career-story-view';
 	import { createCareerAccountabilityView } from '$lib/domain/career-workspace-view';

@@ -1,12 +1,8 @@
 <script lang="ts">
 	import { ArrowUpRight, Briefcase, Crosshair, Info, WarningCircle } from 'phosphor-svelte';
-	import type { CareerAccountabilityReview } from '$lib/domain/career-accountability-review';
+	import type { CareerAccountabilityReview } from '$lib/domain/career-review';
 
-	type DirectCareerAccountabilityReview = CareerAccountabilityReview & {
-		readonly outcome: CareerAccountabilityReview['outcome'] & { readonly kindLabel: string };
-		readonly boundaryNote: string;
-	};
-	type Props = { readonly review: DirectCareerAccountabilityReview | null };
+	type Props = { readonly review: CareerAccountabilityReview | null };
 	let { review }: Props = $props();
 </script>
 
