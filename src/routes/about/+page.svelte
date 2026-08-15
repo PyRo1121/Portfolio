@@ -76,6 +76,7 @@
 		background: #0b0d0e;
 		color: #f0f0eb;
 		font-family: 'Geist Variable', sans-serif;
+		overflow: auto;
 	}
 	.about-page {
 		box-sizing: border-box;
