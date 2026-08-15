@@ -51,7 +51,7 @@
 			>
 		{/each}
 	</nav>
-	<section class="today-summary">
+	<section class="today-summary" aria-labelledby="today-heading">
 		<img
 			class="today-portrait"
 			src={snapshot.profile.avatarUrl}
@@ -62,6 +62,7 @@
 			referrerpolicy="no-referrer"
 		/>
 		<header>
+			<h1 id="today-heading">Olen Latham’s engineering activity</h1>
 			<span>{today.label}</span><small title={projection.timeZone}
 				>{projection.timeLabel} · default branches</small
 			>
