@@ -48,9 +48,11 @@ function searchResponse(overrides: Readonly<Record<string, unknown>> = {}) {
 			currentMergedPullRequests: empty,
 			currentMaintainerMergedPullRequests: empty,
 			currentClosedIssues: empty,
+			currentMaintainerClosedIssues: empty,
 			previousMergedPullRequests: empty,
 			previousMaintainerMergedPullRequests: empty,
 			previousClosedIssues: empty,
+			previousMaintainerClosedIssues: empty,
 			...overrides,
 			rateLimit: { cost: 9, limit: 5000, remaining: 4891, resetAt: '2026-08-14T21:00:00Z' }
 		}
@@ -80,6 +82,47 @@ function pullRequestSearchResult(input: {
 		reviews: { totalCount: 1 },
 		author: { __typename: input.authorType, login: input.author },
 		mergedBy: { __typename: 'User', login: input.mergedBy },
+		repository: { nameWithOwner: input.repository, isPrivate: false }
+	};
+}
+
+function issueSearchResult(input: {
+	readonly repository: string;
+	readonly number: number;
+	readonly author: string;
+	readonly closedAt: string;
+	readonly closedBy: string;
+	readonly closerMergedBy?: string;
+}) {
+	return {
+		__typename: 'Issue',
+		title: `Close ${input.repository} #${input.number}`,
+		number: input.number,
+		url: `https://github.com/${input.repository}/issues/${input.number}`,
+		state: 'CLOSED',
+		createdAt: '2026-08-10T10:00:00Z',
+		closedAt: input.closedAt,
+		comments: { totalCount: 1 },
+		author: { __typename: 'User', login: input.author },
+		timelineItems: {
+			nodes: [
+				{
+					__typename: 'ClosedEvent',
+					createdAt: input.closedAt,
+					actor: { __typename: 'User', login: input.closedBy },
+					closer:
+						input.closerMergedBy === undefined
+							? null
+							: {
+									__typename: 'PullRequest',
+									number: 99,
+									url: `https://github.com/${input.repository}/pull/99`,
+									mergedAt: input.closedAt,
+									mergedBy: { __typename: 'User', login: input.closerMergedBy }
+								}
+				}
+			]
+		},
 		repository: { nameWithOwner: input.repository, isPrivate: false }
 	};
 }
@@ -311,6 +354,75 @@ describe('incremental GitHub GraphQL intelligence', () => {
 		expect(searchVariables[0]?.['currentMaintainerMergedPullRequests']).toContain(
 			'is:pr user:octocat is:merged'
 		);
+	});
+
+	it('includes issues authored, closed, or closed through a pull request by the owner', async () => {
+		const authored = issueSearchResult({
+			repository: 'octocat/product',
+			number: 10,
+			author: 'octocat',
+			closedAt: '2026-08-14T11:00:00Z',
+			closedBy: 'maintainer'
+		});
+		const closedByOwner = issueSearchResult({
+			repository: 'octocat/product',
+			number: 11,
+			author: 'contributor',
+			closedAt: '2026-08-14T12:00:00Z',
+			closedBy: 'octocat'
+		});
+		const closedByOwnerPullRequest = issueSearchResult({
+			repository: 'octocat/product',
+			number: 12,
+			author: 'contributor',
+			closedAt: '2026-08-14T13:00:00Z',
+			closedBy: 'github-actions',
+			closerMergedBy: 'octocat'
+		});
+		const unrelated = issueSearchResult({
+			repository: 'octocat/product',
+			number: 13,
+			author: 'contributor',
+			closedAt: '2026-08-14T14:00:00Z',
+			closedBy: 'maintainer'
+		});
+		const previous = issueSearchResult({
+			repository: 'octocat/product',
+			number: 14,
+			author: 'contributor',
+			closedAt: '2026-08-07T12:00:00Z',
+			closedBy: 'octocat'
+		});
+		const intelligence = await Effect.runPromise(
+			fetchGitHubIntelligence({
+				...requestWindow,
+				fetch: githubFetch([], [], {
+					searchResponse: searchResponse({
+						currentClosedIssues: { issueCount: 1, nodes: [authored] },
+						currentMaintainerClosedIssues: {
+							issueCount: 4,
+							nodes: [authored, closedByOwner, closedByOwnerPullRequest, unrelated]
+						},
+						previousMaintainerClosedIssues: { issueCount: 1, nodes: [previous] }
+					})
+				}),
+				repositoryCache: cacheFixture()
+			})
+		);
+
+		expect(intelligence.delivery).toMatchObject({
+			closedIssues: 3,
+			authoredClosedIssues: 1,
+			ownerClosedIssues: 1,
+			pullRequestClosedIssues: 1,
+			closedIssuesTruncated: false,
+			previousClosedIssues: 1
+		});
+		expect(intelligence.delivery.outcomes).toMatchObject([
+			{ number: 12, responsibility: 'ClosedByPullRequest' },
+			{ number: 11, responsibility: 'ClosedByOwner' },
+			{ number: 10, responsibility: 'Authored' }
+		]);
 	});
 
 	it('uses a small account query and retains one failed repository slice', async () => {

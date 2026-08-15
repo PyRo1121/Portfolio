@@ -138,6 +138,10 @@ describe('DashboardSnapshotCache', () => {
 		delete envelope.snapshot.intelligence.delivery['maintainerMergedPullRequests'];
 		delete envelope.snapshot.intelligence.delivery['automatedMergedPullRequests'];
 		delete envelope.snapshot.intelligence.delivery['mergedPullRequestsTruncated'];
+		delete envelope.snapshot.intelligence.delivery['authoredClosedIssues'];
+		delete envelope.snapshot.intelligence.delivery['ownerClosedIssues'];
+		delete envelope.snapshot.intelligence.delivery['pullRequestClosedIssues'];
+		delete envelope.snapshot.intelligence.delivery['closedIssuesTruncated'];
 		values.set(key!, JSON.stringify(envelope));
 
 		expect((await cache.read('octocat'))?.snapshot.intelligence.delivery).toMatchObject({
@@ -145,7 +149,12 @@ describe('DashboardSnapshotCache', () => {
 			authoredMergedPullRequests: 2,
 			maintainerMergedPullRequests: 0,
 			automatedMergedPullRequests: 0,
-			mergedPullRequestsTruncated: false
+			mergedPullRequestsTruncated: false,
+			closedIssues: 1,
+			authoredClosedIssues: 1,
+			ownerClosedIssues: 0,
+			pullRequestClosedIssues: 0,
+			closedIssuesTruncated: false
 		});
 	});
 

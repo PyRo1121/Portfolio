@@ -317,6 +317,10 @@ const DashboardSnapshotSchema = Schema.Struct({
 			automatedMergedPullRequests: Schema.optional(Schema.Number),
 			mergedPullRequestsTruncated: Schema.optional(Schema.Boolean),
 			closedIssues: Schema.Number,
+			authoredClosedIssues: Schema.optional(Schema.Number),
+			ownerClosedIssues: Schema.optional(Schema.Number),
+			pullRequestClosedIssues: Schema.optional(Schema.Number),
+			closedIssuesTruncated: Schema.optional(Schema.Boolean),
 			releases: Schema.Number,
 			prereleaseBuilds: Schema.Number,
 			outcomes: Schema.Number,
@@ -429,6 +433,11 @@ export class DashboardSnapshotCache {
 						maintainerMergedPullRequests: storedDelivery.maintainerMergedPullRequests ?? 0,
 						automatedMergedPullRequests: storedDelivery.automatedMergedPullRequests ?? 0,
 						mergedPullRequestsTruncated: storedDelivery.mergedPullRequestsTruncated ?? false,
+						authoredClosedIssues:
+							storedDelivery.authoredClosedIssues ?? storedDelivery.closedIssues,
+						ownerClosedIssues: storedDelivery.ownerClosedIssues ?? 0,
+						pullRequestClosedIssues: storedDelivery.pullRequestClosedIssues ?? 0,
+						closedIssuesTruncated: storedDelivery.closedIssuesTruncated ?? false,
 						workflows: {
 							...storedWorkflows,
 							current: {

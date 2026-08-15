@@ -148,6 +148,21 @@ const PullRequestSearchResultSchema = Schema.Struct({
 	repository: SearchRepositorySchema
 });
 
+const ClosedEventCloserSchema = Schema.Struct({
+	__typename: Schema.String,
+	number: Schema.optional(Schema.Number),
+	url: Schema.optional(Schema.String),
+	mergedAt: Schema.optional(Schema.NullOr(Schema.String)),
+	mergedBy: Schema.optional(Schema.NullOr(SearchActorSchema))
+});
+
+const ClosedEventSchema = Schema.Struct({
+	__typename: Schema.Literal('ClosedEvent'),
+	createdAt: Schema.String,
+	actor: Schema.NullOr(SearchActorSchema),
+	closer: Schema.NullOr(ClosedEventCloserSchema)
+});
+
 const IssueSearchResultSchema = Schema.Struct({
 	__typename: Schema.Literal('Issue'),
 	title: Schema.String,
@@ -158,6 +173,7 @@ const IssueSearchResultSchema = Schema.Struct({
 	closedAt: Schema.NullOr(Schema.String),
 	comments: Schema.Struct({ totalCount: Schema.Number }),
 	author: Schema.NullOr(SearchActorSchema),
+	timelineItems: Schema.Struct({ nodes: Schema.Array(Schema.NullOr(ClosedEventSchema)) }),
 	repository: SearchRepositorySchema
 });
 
@@ -192,9 +208,11 @@ const SearchDataSchema = Schema.Struct({
 	currentMergedPullRequests: SearchConnectionSchema,
 	currentMaintainerMergedPullRequests: SearchConnectionSchema,
 	currentClosedIssues: SearchConnectionSchema,
+	currentMaintainerClosedIssues: SearchConnectionSchema,
 	previousMergedPullRequests: SearchConnectionSchema,
 	previousMaintainerMergedPullRequests: SearchConnectionSchema,
 	previousClosedIssues: SearchConnectionSchema,
+	previousMaintainerClosedIssues: SearchConnectionSchema,
 	rateLimit: GraphQLRateLimitSchema
 });
 
@@ -282,9 +300,11 @@ query GitHubSignalSearches(
   $currentMergedPullRequests: String!
   $currentMaintainerMergedPullRequests: String!
   $currentClosedIssues: String!
+  $currentMaintainerClosedIssues: String!
   $previousMergedPullRequests: String!
   $previousMaintainerMergedPullRequests: String!
   $previousClosedIssues: String!
+  $previousMaintainerClosedIssues: String!
 ) {
   authoredPullRequests: search(query: $authoredPullRequests, type: ISSUE, first: ${SEARCH_PAGE_SIZE}) { ...SearchFields }
   mergedPullRequests: search(query: $mergedPullRequests, type: ISSUE, first: ${SEARCH_PAGE_SIZE}) { ...SearchFields }
@@ -293,10 +313,12 @@ query GitHubSignalSearches(
   commentedItems: search(query: $commentedItems, type: ISSUE, first: ${SEARCH_PAGE_SIZE}) { ...SearchFields }
   currentMergedPullRequests: search(query: $currentMergedPullRequests, type: ISSUE, first: 100) { ...SearchFields }
   currentMaintainerMergedPullRequests: search(query: $currentMaintainerMergedPullRequests, type: ISSUE, first: 100) { ...SearchFields }
-  currentClosedIssues: search(query: $currentClosedIssues, type: ISSUE, first: ${SEARCH_PAGE_SIZE}) { ...SearchFields }
+  currentClosedIssues: search(query: $currentClosedIssues, type: ISSUE, first: 100) { ...SearchFields }
+  currentMaintainerClosedIssues: search(query: $currentMaintainerClosedIssues, type: ISSUE, first: 100) { ...SearchFields }
   previousMergedPullRequests: search(query: $previousMergedPullRequests, type: ISSUE, first: 100) { ...SearchFields }
   previousMaintainerMergedPullRequests: search(query: $previousMaintainerMergedPullRequests, type: ISSUE, first: 100) { ...SearchFields }
-  previousClosedIssues: search(query: $previousClosedIssues, type: ISSUE, first: 1) { ...SearchFields }
+  previousClosedIssues: search(query: $previousClosedIssues, type: ISSUE, first: 100) { ...SearchFields }
+  previousMaintainerClosedIssues: search(query: $previousMaintainerClosedIssues, type: ISSUE, first: 100) { ...SearchFields }
   rateLimit { cost limit remaining resetAt }
 }
 
@@ -316,6 +338,22 @@ fragment SearchFields on SearchResultItemConnection {
       title number url state createdAt closedAt
       comments { totalCount }
       author { __typename login }
+      timelineItems(itemTypes: [CLOSED_EVENT], last: 1) {
+        nodes {
+          __typename
+          ... on ClosedEvent {
+            createdAt
+            actor { __typename login }
+            closer {
+              __typename
+              ... on PullRequest {
+                number url mergedAt
+                mergedBy { __typename login }
+              }
+            }
+          }
+        }
+      }
       repository { nameWithOwner isPrivate }
     }
   }
@@ -755,6 +793,7 @@ function collectCollaborationItems(
 
 type SearchResult = Schema.Schema.Type<typeof SearchResultSchema>;
 type PullRequestSearchResult = Extract<SearchResult, { readonly __typename: 'PullRequest' }>;
+type IssueSearchResult = Extract<SearchResult, { readonly __typename: 'Issue' }>;
 
 type DeliveryPullRequestCollection = {
 	readonly outcomes: ReadonlyArray<DeliveryOutcomeInput>;
@@ -820,6 +859,79 @@ function collectDeliveryPullRequests(
 	};
 }
 
+type DeliveryIssueCollection = {
+	readonly outcomes: ReadonlyArray<DeliveryOutcomeInput>;
+	readonly closedIssues: number;
+	readonly authoredClosedIssues: number;
+	readonly ownerClosedIssues: number;
+	readonly pullRequestClosedIssues: number;
+	readonly truncated: boolean;
+};
+
+function issueNodes(connection: SearchConnection): ReadonlyArray<IssueSearchResult> {
+	return connection.nodes.flatMap((item) =>
+		item?.__typename === 'Issue' && item.closedAt !== null ? [item] : []
+	);
+}
+
+function issueResponsibility(
+	issue: IssueSearchResult,
+	username: string
+): DeliveryOutcomeInput['responsibility'] | null {
+	if (sameLogin(issue.author?.login, username)) return 'Authored';
+	const closedEvent = issue.timelineItems.nodes[0];
+	if (sameLogin(closedEvent?.actor?.login, username)) return 'ClosedByOwner';
+	if (
+		closedEvent?.closer?.__typename === 'PullRequest' &&
+		sameLogin(closedEvent.closer.mergedBy?.login, username)
+	) {
+		return 'ClosedByPullRequest';
+	}
+	return null;
+}
+
+function collectDeliveryIssues(
+	authored: SearchConnection,
+	maintained: SearchConnection,
+	username: string
+): DeliveryIssueCollection {
+	const closed = new Map<string, IssueSearchResult>();
+	for (const issue of issueNodes(authored)) closed.set(issue.url, issue);
+	for (const issue of issueNodes(maintained)) {
+		if (issueResponsibility(issue, username) !== null) closed.set(issue.url, issue);
+	}
+	const outcomes = [...closed.values()]
+		.map((issue): DeliveryOutcomeInput | null => {
+			const responsibility = issueResponsibility(issue, username);
+			return responsibility === null
+				? null
+				: {
+						kind: 'Issue',
+						title: issue.title,
+						number: issue.number,
+						repository: issue.repository.nameWithOwner,
+						url: issue.url,
+						occurredAt: issue.closedAt ?? issue.createdAt,
+						isPrivate: issue.repository.isPrivate,
+						responsibility
+					};
+		})
+		.filter((outcome): outcome is DeliveryOutcomeInput => outcome !== null)
+		.sort((left, right) => right.occurredAt.localeCompare(left.occurredAt));
+	return {
+		outcomes,
+		closedIssues: outcomes.length,
+		authoredClosedIssues: outcomes.filter((outcome) => outcome.responsibility === 'Authored')
+			.length,
+		ownerClosedIssues: outcomes.filter((outcome) => outcome.responsibility === 'ClosedByOwner')
+			.length,
+		pullRequestClosedIssues: outcomes.filter(
+			(outcome) => outcome.responsibility === 'ClosedByPullRequest'
+		).length,
+		truncated: authored.issueCount > 100 || maintained.issueCount > 100
+	};
+}
+
 function isoDate(date: Date): string {
 	return date.toISOString().slice(0, 10);
 }
@@ -875,9 +987,11 @@ export function fetchGitHubIntelligence(
 		currentMergedPullRequests: `is:pr author:${username} merged:${weekStart.toISOString()}..${weekEnd.toISOString()}`,
 		currentMaintainerMergedPullRequests: `is:pr user:${username} is:merged merged:${weekStart.toISOString()}..${weekEnd.toISOString()}`,
 		currentClosedIssues: `is:issue author:${username} closed:${weekStart.toISOString()}..${weekEnd.toISOString()}`,
+		currentMaintainerClosedIssues: `is:issue user:${username} is:closed closed:${weekStart.toISOString()}..${weekEnd.toISOString()}`,
 		previousMergedPullRequests: `is:pr author:${username} merged:${previousStart.toISOString()}..${weekStart.toISOString()}`,
 		previousMaintainerMergedPullRequests: `is:pr user:${username} is:merged merged:${previousStart.toISOString()}..${weekStart.toISOString()}`,
-		previousClosedIssues: `is:issue author:${username} closed:${previousStart.toISOString()}..${weekStart.toISOString()}`
+		previousClosedIssues: `is:issue author:${username} closed:${previousStart.toISOString()}..${weekStart.toISOString()}`,
+		previousMaintainerClosedIssues: `is:issue user:${username} is:closed closed:${previousStart.toISOString()}..${weekStart.toISOString()}`
 	};
 
 	return Effect.gen(function* () {
@@ -946,24 +1060,17 @@ export function fetchGitHubIntelligence(
 			searches.previousMaintainerMergedPullRequests,
 			username
 		);
-		const issueOutcomes: ReadonlyArray<DeliveryOutcomeInput> =
-			searches.currentClosedIssues.nodes.flatMap((item) =>
-				item?.__typename === 'Issue' && item.closedAt !== null
-					? [
-							{
-								kind: 'Issue' as const,
-								title: item.title,
-								number: item.number,
-								repository: item.repository.nameWithOwner,
-								url: item.url,
-								occurredAt: item.closedAt,
-								isPrivate: item.repository.isPrivate,
-								responsibility: 'Authored' as const
-							}
-						]
-					: []
-			);
-		const deliveryOutcomes = [...currentPullRequests.outcomes, ...issueOutcomes].sort(
+		const currentIssues = collectDeliveryIssues(
+			searches.currentClosedIssues,
+			searches.currentMaintainerClosedIssues,
+			username
+		);
+		const previousIssues = collectDeliveryIssues(
+			searches.previousClosedIssues,
+			searches.previousMaintainerClosedIssues,
+			username
+		);
+		const deliveryOutcomes = [...currentPullRequests.outcomes, ...currentIssues.outcomes].sort(
 			(left, right) => right.occurredAt.localeCompare(left.occurredAt)
 		);
 		const releases = repositoryCollection.releases;
@@ -1005,9 +1112,13 @@ export function fetchGitHubIntelligence(
 				maintainerMergedPullRequests: currentPullRequests.maintainerMergedPullRequests,
 				automatedMergedPullRequests: currentPullRequests.automatedMergedPullRequests,
 				mergedPullRequestsTruncated: currentPullRequests.truncated,
-				closedIssues: searches.currentClosedIssues.issueCount,
+				closedIssues: currentIssues.closedIssues,
+				authoredClosedIssues: currentIssues.authoredClosedIssues,
+				ownerClosedIssues: currentIssues.ownerClosedIssues,
+				pullRequestClosedIssues: currentIssues.pullRequestClosedIssues,
+				closedIssuesTruncated: currentIssues.truncated,
 				previousMergedPullRequests: previousPullRequests.mergedPullRequests,
-				previousClosedIssues: searches.previousClosedIssues.issueCount,
+				previousClosedIssues: previousIssues.closedIssues,
 				outcomes: deliveryOutcomes,
 				releases,
 				previousReleaseCount,
