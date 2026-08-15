@@ -107,20 +107,21 @@ function todayNarrative(
 ): Pick<TodayIntelligence, 'labelText' | 'message'> {
 	if (commits === 0) {
 		return {
-			labelText: 'A clear runway',
-			message:
-				'Nothing has landed on an owned default branch today. One useful finish is enough to start the signal.'
+			labelText: 'No commits yet',
+			message: 'No commits have reached an owned default branch today.'
 		};
 	}
 	const labelText =
 		paceDelta > 5
-			? 'A high-output day'
+			? 'Above the recent daily average'
 			: paceDelta >= 0
-				? 'Ahead of your recent pace'
-				: 'A focused, lighter day';
+				? 'At or above the recent daily average'
+				: 'Below the recent daily average';
+	const commitLabel = commits === 1 ? 'commit' : 'commits';
+	const repositoryLabel = repositories === 1 ? 'repository' : 'repositories';
 	return {
 		labelText,
-		message: `${commits} commits landed across ${repositories} workstreams, moving ${changes.toLocaleString()} lines.`
+		message: `${commits} ${commitLabel} across ${repositories} ${repositoryLabel}, with ${changes.toLocaleString()} lines added or removed.`
 	};
 }
 

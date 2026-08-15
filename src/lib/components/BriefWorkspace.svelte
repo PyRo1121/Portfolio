@@ -17,9 +17,9 @@
 	let { snapshot, projection, onSelectRepository }: Props = $props();
 	let mobilePanel = $state<WeekMobilePanel>('signals');
 	const mobilePanels: ReadonlyArray<{ readonly id: WeekMobilePanel; readonly label: string }> = [
-		{ id: 'terrain', label: 'Terrain' },
-		{ id: 'signals', label: 'Signals' },
-		{ id: 'work', label: 'Workstreams' }
+		{ id: 'terrain', label: 'Changes' },
+		{ id: 'signals', label: 'Breakdown' },
+		{ id: 'work', label: 'Repositories' }
 	];
 	const activeRepositories = $derived(
 		snapshot.intelligence.repositories.filter((repository) => repository.commits > 0).slice(0, 6)
@@ -57,28 +57,28 @@
 		<header>
 			<div>
 				<span>{projection.periodLabel}</span>
-				<h1>This week</h1>
+				<h1>Last 7 days</h1>
 			</div>
-			<p title={projection.timeZone}>Collected evidence · viewed in {projection.timeLabel}</p>
+			<p title={projection.timeZone}>GitHub data · times in {projection.timeLabel}</p>
 		</header>
 		<div class="headline-metric">
 			<strong><AnimatedNumber value={snapshot.totals.commits} /></strong>
 			<span>commits</span>
 		</div>
 		<div class="motivation-line">
-			<span>Momentum {momentum.score}</span>
+			<span>Activity score {momentum.score}</span>
 			<strong>{momentum.label}</strong>
 			<p>{momentum.message}</p>
 		</div>
 		<div class="summary-stats">
-			<div><span>Lines moved</span><strong>{formatCompact(snapshot.totals.churn)}</strong></div>
+			<div><span>Lines changed</span><strong>{formatCompact(snapshot.totals.churn)}</strong></div>
 			<div>
 				<span>Active repos</span><strong
 					>{formatInteger(snapshot.intelligence.account.activeRepositories)}</strong
 				>
 			</div>
 			<div class="comparison">
-				<span>vs last week</span>
+				<span>vs prior 7 days</span>
 				<strong>
 					{#if comparison.direction === 'up'}<ArrowUpRight
 							size={15}
@@ -94,7 +94,7 @@
 	</section>
 
 	<section class={mobilePanel === 'terrain' ? 'terrain-panel panel-visible' : 'terrain-panel'}>
-		<header><span>Change mass</span><small>Additions / deletions by day</small></header>
+		<header><span>Changes by day</span><small>Lines added and removed</small></header>
 		<ChangeTerrain days={projection.days} />
 		<div class="terrain-meta">
 			<span
@@ -107,7 +107,7 @@
 
 	<div class={mobilePanel === 'signals' ? 'signal-column panel-visible' : 'signal-column'}>
 		<section class="rhythm-panel">
-			<header><span>Daily rhythm</span><small>Commits</small></header>
+			<header><span>Commits by day</span><small>Last 7 days</small></header>
 			<div class="rhythm-bars">
 				{#each projection.days as day (day.date)}
 					<div class="rhythm-bar">
@@ -144,7 +144,7 @@
 
 	<section class={mobilePanel === 'work' ? 'workstream-panel panel-visible' : 'workstream-panel'}>
 		<header>
-			<span>Active workstreams</span>
+			<span>Active repositories</span>
 			<small>Repository / commits / diff / files / share</small>
 		</header>
 		<div class="compact-workstreams">

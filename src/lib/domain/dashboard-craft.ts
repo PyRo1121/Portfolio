@@ -109,13 +109,14 @@ export function createCraftIntelligence(snapshot: GitHubDashboardSnapshot): Craf
 	);
 	const label =
 		workflow.workflowPassRate !== null && workflow.workflowPassRate < 70
-			? 'Quality signal needs attention'
+			? 'Workflow failures present'
 			: score >= 82
-				? 'Strong engineering hygiene'
+				? 'Strong available quality data'
 				: score >= 65
-					? 'Healthy craft signal'
-					: 'Useful quality evidence is forming';
-	const message = `${focusedCommits} of ${commits.length} commits were review-sized; ${workflow.workflows.current.failed} default-branch checks failed.`;
+					? 'Moderate available quality data'
+					: 'Limited available quality data';
+	const commitLabel = commits.length === 1 ? 'commit' : 'commits';
+	const message = `${focusedCommits} of ${commits.length} ${commitLabel} met the review-size threshold; ${workflow.workflows.current.failed} default-branch checks failed.`;
 
 	return {
 		observed: {

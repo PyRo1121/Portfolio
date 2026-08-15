@@ -10,19 +10,17 @@
 		formatSigned
 	} from '$lib/presentation/dashboard-format';
 	import AnimatedNumber from './AnimatedNumber.svelte';
-	import TodayPulse from './TodayPulse.svelte';
 
 	type Props = {
 		readonly snapshot: GitHubDashboardSnapshot;
 		readonly projection: ViewerActivityProjection;
 	};
-	type TodayMobilePanel = 'pulse' | 'change' | 'rhythm' | 'work' | 'commits';
+	type TodayMobilePanel = 'change' | 'rhythm' | 'work' | 'commits';
 	let { snapshot, projection }: Props = $props();
 	const mobilePanels: ReadonlyArray<{ readonly id: TodayMobilePanel; readonly label: string }> = [
-		{ id: 'pulse', label: 'Hours' },
-		{ id: 'change', label: 'Change' },
-		{ id: 'rhythm', label: 'Rhythm' },
-		{ id: 'work', label: 'Work' },
+		{ id: 'change', label: 'Changes' },
+		{ id: 'rhythm', label: 'Hours' },
+		{ id: 'work', label: 'Repositories' },
 		{ id: 'commits', label: 'Commits' }
 	];
 	const today = $derived(createTodayIntelligence(snapshot, projection));
@@ -69,7 +67,9 @@
 			>
 		</header>
 		<div class="today-total">
-			<strong><AnimatedNumber value={today.commits} /></strong><span>commits today</span>
+			<strong><AnimatedNumber value={today.commits} /></strong><span
+				>{today.commits === 1 ? 'commit today' : 'commits today'}</span
+			>
 		</div>
 		<div class="today-message">
 			<span>{today.labelText}</span>
@@ -83,28 +83,9 @@
 	</section>
 
 	<section
-		class={mobilePanel === 'pulse' ? 'today-pulse-panel panel-visible' : 'today-pulse-panel'}
-	>
-		<header><span>Today by hour</span><small>Interactive viewer-local clock</small></header>
-		<TodayPulse
-			{today}
-			timeLabel={projection.timeLabel}
-			selectedHour={displayedHour}
-			onSelectHour={(hour) => (selectedHour = hour)}
-		/>
-		<footer>
-			<span>Peak <strong>{today.peakHour}</strong></span><span
-				>Activity span <strong
-					>{today.activitySpanHours === null ? '—' : `${today.activitySpanHours}h`}</strong
-				></span
-			>
-		</footer>
-	</section>
-
-	<section
 		class={mobilePanel === 'change' ? 'today-change-panel panel-visible' : 'today-change-panel'}
 	>
-		<header><span>Change mass</span><small>Today only</small></header>
+		<header><span>Changes</span><small>Current local day</small></header>
 		<div class="today-change-grid">
 			<div><span>Added</span><strong>+{formatCompact(today.additions)}</strong></div>
 			<div><span>Removed</span><strong>−{formatCompact(today.deletions)}</strong></div>
@@ -127,10 +108,10 @@
 		class={mobilePanel === 'rhythm' ? 'today-hourly-panel panel-visible' : 'today-hourly-panel'}
 	>
 		<header>
-			<span>Hourly rhythm</span><small
+			<span>Commits by hour</span><small
 				>{hourLabel(displayedHour)}
 				{projection.timeLabel} · {today.hourlyCommits[displayedHour] ?? 0}
-				commits</small
+				{(today.hourlyCommits[displayedHour] ?? 0) === 1 ? 'commit' : 'commits'}</small
 			>
 		</header>
 		<div class="today-hours" role="list" aria-label={`Commits by hour in ${projection.timeZone}`}>
@@ -138,6 +119,7 @@
 				<button
 					type="button"
 					class={hour === displayedHour ? 'selected active' : commits > 0 ? 'active' : ''}
+					onpointerenter={() => (selectedHour = hour)}
 					onclick={() => (selectedHour = hour)}
 					onfocus={() => (selectedHour = hour)}
 					aria-label={`${hourLabel(hour)} ${projection.timeLabel}, ${commits} commits`}
@@ -150,11 +132,18 @@
 				</button>
 			{/each}
 		</div>
+		<footer>
+			<span>Peak hour <strong>{today.peakHour}</strong></span><span
+				>Active span <strong
+					>{today.activitySpanHours === null ? '—' : `${today.activitySpanHours}h`}</strong
+				></span
+			>
+		</footer>
 	</section>
 
 	<section class={mobilePanel === 'work' ? 'today-workstreams panel-visible' : 'today-workstreams'}>
 		<header>
-			<span>Today’s workstreams</span><small>Repository / commits / diff / files / share</small>
+			<span>Active repositories</span><small>Commits / lines changed / files / share</small>
 		</header>
 		<div>
 			{#each today.repositories.slice(0, 5) as repository (repository.fullName)}
@@ -165,12 +154,12 @@
 					><span>{formatInteger(repository.changedFiles)} files</span>
 					<div><i style={`transform:scaleX(${repository.share})`}></i></div>
 				</article>
-			{:else}<p>No default-branch workstreams yet today.</p>{/each}
+			{:else}<p>No default-branch repositories have commits today.</p>{/each}
 		</div>
 	</section>
 
 	<section class={mobilePanel === 'commits' ? 'today-commits panel-visible' : 'today-commits'}>
-		<header><span>Latest today</span><small>Exact commit evidence</small></header>
+		<header><span>Recent commits</span><small>Open on GitHub</small></header>
 		<div>
 			{#each today.recentCommits as commit (commit.sha)}
 				<a href={commit.url} target="_blank" rel="external noreferrer"

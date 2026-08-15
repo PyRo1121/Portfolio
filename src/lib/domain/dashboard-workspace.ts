@@ -18,48 +18,60 @@ export type WorkspaceDefinition = {
 
 /** Ordered dashboard workspace configuration. */
 export const workspaceDefinitions: ReadonlyArray<WorkspaceDefinition> = [
-	{ id: 'today', index: 1, label: 'Today', description: 'The viewer-local day', shortcut: '1' },
-	{ id: 'brief', index: 2, label: 'Week', description: 'The essential signal', shortcut: '2' },
+	{
+		id: 'today',
+		index: 1,
+		label: 'Today',
+		description: 'Commits for the current local day',
+		shortcut: '1'
+	},
+	{
+		id: 'brief',
+		index: 2,
+		label: 'Week',
+		description: 'Activity from the last seven days',
+		shortcut: '2'
+	},
 	{
 		id: 'delivery',
 		index: 3,
-		label: 'Ship',
-		description: 'Outcomes and verification',
+		label: 'Delivery',
+		description: 'Pull requests, issues, releases, and checks',
 		shortcut: '3'
 	},
 	{
 		id: 'craft',
 		index: 4,
-		label: 'Craft',
-		description: 'Quality-adjacent evidence',
+		label: 'Quality',
+		description: 'Workflow, commit-size, and message data',
 		shortcut: '4'
 	},
 	{
 		id: 'repositories',
 		index: 5,
 		label: 'Repos',
-		description: 'Inspect the inventory',
+		description: 'Repository list and current activity',
 		shortcut: '5'
 	},
 	{
 		id: 'activity',
 		index: 6,
-		label: 'Ledger',
-		description: 'Exact commit history',
+		label: 'Commits',
+		description: 'Individual commit records',
 		shortcut: '6'
 	},
 	{
 		id: 'cloudflare',
 		index: 7,
-		label: 'Cloud',
-		description: 'Platform evidence',
+		label: 'Cloudflare',
+		description: 'Resources and measured usage',
 		shortcut: '7'
 	},
 	{
 		id: 'career',
 		index: 8,
 		label: 'Career',
-		description: 'Accountability pipeline',
+		description: 'Applications, commitments, and interview stories',
 		shortcut: '8'
 	}
 ];

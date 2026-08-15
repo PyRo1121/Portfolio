@@ -27,7 +27,7 @@
 		>
 			<header>
 				<MagnifyingGlass size={18} weight="light" aria-hidden="true" />
-				<span>Jump to an instrument</span>
+				<span>Open a section</span>
 				<button type="button" onclick={onClose} aria-label="Close command palette">
 					<X size={17} weight="bold" aria-hidden="true" />
 				</button>

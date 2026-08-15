@@ -10,17 +10,17 @@
 	let { snapshot }: Props = $props();
 	let mobilePanel = $state<CraftMobilePanel>('review');
 	const mobilePanels: ReadonlyArray<{ readonly id: CraftMobilePanel; readonly label: string }> = [
-		{ id: 'verify', label: 'Verify' },
-		{ id: 'review', label: 'Review' },
-		{ id: 'mix', label: 'Mix' },
-		{ id: 'discipline', label: 'Discipline' },
-		{ id: 'limits', label: 'Limits' }
+		{ id: 'verify', label: 'Checks' },
+		{ id: 'review', label: 'Commit size' },
+		{ id: 'mix', label: 'Commit types' },
+		{ id: 'discipline', label: 'Prefixes' },
+		{ id: 'limits', label: 'Missing data' }
 	];
 	const craft = $derived(createCraftIntelligence(snapshot));
 </script>
 
 <div class="craft-screen">
-	<nav class="workspace-pages" aria-label="Craft panels">
+	<nav class="workspace-pages" aria-label="Quality panels">
 		{#each mobilePanels as panel (panel.id)}
 			<button
 				type="button"
@@ -41,19 +41,19 @@
 			referrerpolicy="no-referrer"
 		/>
 		<header><span>Rolling 7 days</span><small>Observed + inferred</small></header>
-		<div><strong>{craft.score}</strong><span>craft signal</span></div>
+		<div><strong>{craft.score}</strong><span>quality evidence score</span></div>
 		<article>
 			<strong>{craft.label}</strong>
 			<p>{craft.message}</p>
 		</article>
-		<footer><span>Not a code-quality grade</span><strong>Formula-backed signal</strong></footer>
+		<footer><span>Not a code-quality grade</span><strong>Based on available data</strong></footer>
 	</section>
 
 	<section
 		class={mobilePanel === 'verify' ? 'craft-verification panel-visible' : 'craft-verification'}
 	>
 		<header>
-			<span>Observed verification</span><small>GitHub Actions · default branches</small>
+			<span>Workflow checks</span><small>GitHub Actions · default branches</small>
 		</header>
 		<div class="craft-verification-body">
 			<CraftCore {craft} />
@@ -85,10 +85,11 @@
 	<section
 		class={mobilePanel === 'review' ? 'reviewability-panel panel-visible' : 'reviewability-panel'}
 	>
-		<header><span>Observed reviewability</span><small>Commit shape</small></header>
+		<header><span>Commit size</span><small>Files and changed lines</small></header>
 		<div class="reviewability-grid">
 			<div>
-				<span>Focused commits</span><strong>{formatInteger(craft.observed.focusedCommits)}</strong
+				<span>Review-sized commits</span><strong
+					>{formatInteger(craft.observed.focusedCommits)}</strong
 				><small>≤8 files and ≤500 lines</small>
 			</div>
 			<div>
@@ -111,7 +112,7 @@
 
 	<section class={mobilePanel === 'mix' ? 'craft-mix panel-visible' : 'craft-mix'}>
 		<header>
-			<span>Inferred work mix</span><small
+			<span>Commit types</span><small
 				>{craft.inferred.categorizedCommitShare}% classified by message</small
 			>
 		</header>
@@ -136,7 +137,7 @@
 	<section
 		class={mobilePanel === 'discipline' ? 'commit-discipline panel-visible' : 'commit-discipline'}
 	>
-		<header><span>Inferred discipline</span><small>Commit messages only</small></header>
+		<header><span>Conventional prefixes</span><small>Inferred from commit messages</small></header>
 		<div class="discipline-value">
 			<strong>{craft.inferred.conventionalCommitShare}%</strong><span
 				>use a conventional prefix</span
@@ -149,7 +150,7 @@
 	</section>
 
 	<section class={mobilePanel === 'limits' ? 'quality-coverage panel-visible' : 'quality-coverage'}>
-		<header><span>Quality coverage</span><small>What Weeknote cannot prove</small></header>
+		<header><span>Missing quality data</span><small>Not currently collected</small></header>
 		<div>
 			{#each craft.unavailable as unavailable (unavailable)}<p><i></i>{unavailable}</p>{/each}
 		</div>

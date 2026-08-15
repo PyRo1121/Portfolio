@@ -16,7 +16,7 @@
 	const panels: ReadonlyArray<{ readonly id: CloudflarePanel; readonly label: string }> = [
 		{ id: 'inventory', label: 'Inventory' },
 		{ id: 'usage', label: 'Usage' },
-		{ id: 'health', label: 'Health' }
+		{ id: 'health', label: 'Data rules' }
 	];
 </script>
 
@@ -34,17 +34,17 @@
 
 	<header class="cloudflare-overview">
 		<div class="cloudflare-title">
-			<span><Cloud size={15} weight="fill" /> Account control plane</span>
+			<span><Cloud size={15} weight="fill" /> Account summary</span>
 			<h1>Cloudflare</h1>
-			<p>Provisioned inventory and measured seven-day platform evidence.</p>
+			<p>Account resources and measured usage from the last seven days.</p>
 		</div>
 		{#if snapshot === null}
 			<div class="cloudflare-empty">
 				<Warning size={22} weight="duotone" />
 				<strong
 					>{refreshState === 'Refreshing'
-						? 'Collecting account evidence'
-						: 'Evidence unavailable'}</strong
+						? 'Loading Cloudflare data'
+						: 'Cloudflare data unavailable'}</strong
 				>
 				<span>{message || 'No Cloudflare snapshot is cached yet.'}</span>
 			</div>
@@ -52,7 +52,7 @@
 			<div class="cloudflare-summary">
 				<div>
 					<strong>{snapshot.summary.availableProducts}/{snapshot.summary.totalProducts}</strong>
-					<span>products readable</span>
+					<span>products available</span>
 				</div>
 				<div>
 					<strong>{formatInteger(snapshot.summary.provisionedResources)}</strong>
@@ -60,12 +60,12 @@
 				</div>
 				<div>
 					<strong>{snapshot.summary.measuredMetrics}</strong>
-					<span>measured signals</span>
+					<span>metrics measured</span>
 				</div>
 			</div>
 			<div class="cloudflare-stamp">
 				<span class={refreshState === 'Unavailable' ? 'status status--warning' : 'status'}>
-					<i></i>{refreshState === 'Unavailable' ? 'Cached evidence' : 'Live collector'}
+					<i></i>{refreshState === 'Unavailable' ? 'Cached data' : 'Current data'}
 				</span>
 				<time datetime={snapshot.generatedAt}>{formatGeneratedAt(snapshot.generatedAt, 'UTC')}</time
 				>
@@ -79,7 +79,7 @@
 				? 'cloudflare-inventory panel-visible'
 				: 'cloudflare-inventory'}
 		>
-			<header><span>Provisioned surface</span><small>Account API · not usage</small></header>
+			<header><span>Resources</span><small>Account inventory · not usage</small></header>
 			<div class="product-grid">
 				{#each snapshot.products as product (product.id)}
 					<a href={product.evidenceUrl} target="_blank" rel="external noreferrer">
@@ -98,7 +98,7 @@
 		<section
 			class={mobilePanel === 'usage' ? 'cloudflare-usage panel-visible' : 'cloudflare-usage'}
 		>
-			<header><span>Measured usage</span><small>{snapshot.period.label}</small></header>
+			<header><span>Usage</span><small>{snapshot.period.label}</small></header>
 			<div class="metric-grid">
 				{#each snapshot.metrics as metric (metric.id)}
 					<a href={metric.evidenceUrl} target="_blank" rel="external noreferrer">
@@ -120,7 +120,7 @@
 		<aside
 			class={mobilePanel === 'health' ? 'cloudflare-health panel-visible' : 'cloudflare-health'}
 		>
-			<header><span>Evidence contract</span><small>Fail closed</small></header>
+			<header><span>Data handling</span><small>Collection rules</small></header>
 			<div class="health-list">
 				<div>
 					<ShieldCheck size={17} weight="duotone" /><span
@@ -131,14 +131,14 @@
 				</div>
 				<div>
 					<Database size={17} weight="duotone" /><span
-						><strong>Independent cache</strong><small
-							>Cloudflare failures cannot replace GitHub evidence.</small
+						><strong>Separate cache</strong><small
+							>Cloudflare failures cannot replace GitHub data.</small
 						></span
 					>
 				</div>
 				<div>
 					<Gauge size={17} weight="duotone" /><span
-						><strong>No synthetic zeroes</strong><small
+						><strong>Unavailable stays unavailable</strong><small
 							>{snapshot.summary.unavailableMetrics} unavailable metrics remain visibly unavailable.</small
 						></span
 					>

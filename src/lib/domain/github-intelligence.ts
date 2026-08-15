@@ -695,22 +695,23 @@ function buildDelivery(input: GitHubIntelligenceInput['delivery']): DeliveryInte
 	const score = Math.min(100, outcomeScore + verificationScore + breadthScore);
 	const label =
 		outcomes === 0
-			? 'Build-up window'
+			? 'No completed outcomes'
 			: workflowPassRate !== null && workflowPassRate < 75
-				? 'Shipping through friction'
+				? 'Workflow failures present'
 				: score >= 85
-					? 'High-confidence delivery'
+					? 'Strong outcome and check coverage'
 					: score >= 60
-						? 'Work is landing'
-						: 'Outcomes are moving';
+						? 'Completed outcomes present'
+						: 'Limited outcome coverage';
+	const outcomeLabel = outcomes === 1 ? 'completed outcome' : 'completed outcomes';
 	const message =
 		outcomes === 0
-			? 'No merged or closed artifacts yet. The commit trail shows work accumulating toward the next outcome.'
+			? 'No merged pull requests, closed issues, releases, or prereleases in this seven-day window.'
 			: workflowPassRate === null
-				? `${outcomes} delivery events landed. Verification data was unavailable for active repositories.`
+				? `${outcomes} ${outcomeLabel}. Workflow data was unavailable for active repositories.`
 				: input.workflows.current.failed > 0
-					? `${outcomes} delivery events landed. ${input.workflows.current.successful} checks passed; ${input.workflows.current.failed} need attention.`
-					: `${outcomes} delivery events landed with every completed check passing.`;
+					? `${outcomes} ${outcomeLabel}. ${input.workflows.current.successful} checks passed and ${input.workflows.current.failed} failed.`
+					: `${outcomes} ${outcomeLabel} with every completed check passing.`;
 	const outcomeArtifacts: DeliveryArtifact[] = input.outcomes.map((outcome) => ({
 		kind: outcome.kind,
 		title: outcome.title,

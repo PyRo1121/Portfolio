@@ -20,6 +20,16 @@
 	};
 
 	let { activeWorkspace, signals, onWorkspace }: Props = $props();
+	const compactLabels: Readonly<Record<DashboardWorkspace, string>> = {
+		today: 'Today',
+		brief: 'Week',
+		delivery: 'Deliver',
+		craft: 'Quality',
+		repositories: 'Repos',
+		activity: 'Commits',
+		cloudflare: 'Cloud',
+		career: 'Career'
+	};
 	const icons: Readonly<Record<DashboardWorkspace, Component>> = {
 		today: SunHorizon,
 		brief: SquaresFour,
@@ -32,7 +42,7 @@
 	};
 </script>
 
-<nav class="workspace-rail" aria-label="GitHub intelligence workspaces">
+<nav class="workspace-rail" aria-label="Dashboard sections">
 	{#each workspaceDefinitions as workspace (workspace.id)}
 		{@const Icon = icons[workspace.id]}
 		<button
@@ -50,7 +60,11 @@
 				aria-hidden="true"
 			/>
 			<span class="workspace-link__copy">
-				<strong>{workspace.label}</strong>
+				<strong
+					><span class="workspace-label-full">{workspace.label}</span><span
+						class="workspace-label-compact">{compactLabels[workspace.id]}</span
+					></strong
+				>
 				<small>{workspace.description}</small>
 			</span>
 			{#if signals !== null}

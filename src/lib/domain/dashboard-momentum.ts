@@ -36,20 +36,22 @@ export function createDashboardMomentum(
 	const score = Math.round(clamp(consistencyScore + focusScore + trendScore + todayScore, 0, 100));
 	const label =
 		score >= 82
-			? 'Exceptional momentum'
+			? 'Very active week'
 			: score >= 68
-				? 'Strong momentum'
+				? 'Active week'
 				: score >= 50
-					? 'A steady build rhythm'
-					: 'The next win is ready';
+					? 'Moderate activity'
+					: 'Light activity';
+	const todayCommitLabel = todayCommits === 1 ? 'commit' : 'commits';
+	const totalCommitLabel = snapshot.totals.commits === 1 ? 'commit' : 'commits';
 	const message =
 		todayCommits > 0
-			? `${todayCommits} commits landed today. Finish with one clean handoff while the context is warm.`
+			? `${todayCommits} ${todayCommitLabel} today; ${activeDays} active days in the current seven-day window.`
 			: activeDays >= 5
-				? `${activeDays} active days built this window. One deliberate commit today keeps the cadence alive.`
+				? `${activeDays} active days in the current seven-day window.`
 				: snapshot.totals.commits > 0
-					? `${snapshot.totals.commits} commits moved the work forward. Choose the smallest useful finish for today.`
-					: 'The window is clear. One useful commit is enough to start the signal.';
+					? `${snapshot.totals.commits} ${totalCommitLabel} across ${activeDays} active days in the current seven-day window.`
+					: 'No default-branch commits in the current seven-day window.';
 
 	return { score, label, message, activeDays, todayCommits };
 }

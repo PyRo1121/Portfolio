@@ -1,4 +1,4 @@
-# Weeknote — GitHub Intelligence Desk
+# Weeknote — GitHub Activity Dashboard
 
 A private-aware Svelte 5 dashboard for exploring weekly GitHub engineering activity, delivered outcomes, Cloudflare account evidence, and an exact-owner career accountability pipeline. It combines exact default-branch commit history, additions and deletions, repository inventory, merged work, releases, and GitHub Actions verification in a keyboard-navigable, viewport-contained workbench. Every workspace fits one screen; larger result sets use pagination rather than page scrolling.
 
@@ -56,10 +56,10 @@ Use `wrangler secret put GITHUB_TOKEN`, `wrangler secret put GITHUB_CHECKS_APP_P
 
 - `1` — Today
 - `2` — Week
-- `3` — Ship
-- `4` — Craft
+- `3` — Delivery
+- `4` — Quality
 - `5` — Repositories
-- `6` — Ledger
+- `6` — Commits
 - `7` — Cloudflare
 - `8` — Career
 - `Ctrl/⌘ + K` — command palette

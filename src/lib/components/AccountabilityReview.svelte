@@ -17,7 +17,7 @@
 	{#if review === null}
 		<section class="review-unavailable">
 			<WarningCircle size={22} weight="duotone" />
-			<span>Accountability review</span>
+			<span>Career review</span>
 			<strong>Review evidence is temporarily unavailable.</strong>
 			<p>
 				Career records and engineering evidence remain isolated rather than substituting stale
@@ -27,11 +27,11 @@
 	{:else}
 		<section class="review-outcome">
 			<header>
-				<div><Crosshair size={14} /><span>Strongest retained outcome</span></div>
+				<div><Crosshair size={14} /><span>Selected completed outcome</span></div>
 				<strong class={review.outcome.state.toLowerCase()}>{review.outcome.state}</strong>
 			</header>
 			<div class="outcome-copy">
-				<span>Today’s proof</span>
+				<span>GitHub outcome</span>
 				<h2>{review.outcome.headline}</h2>
 				<p>{review.outcome.detail}</p>
 				{#if review.outcome.evidence}<a
@@ -54,14 +54,16 @@
 					>{/if}
 			</div>
 			<footer>
-				<span>Selection formula</span>
+				<span>Why this item</span>
 				<p>{review.outcome.selectionFormula}</p>
 			</footer>
 		</section>
 
 		<section class="review-commitments">
 			<header>
-				<Briefcase size={14} /><span>Two-track commitment</span><small>One finish each</small>
+				<Briefcase size={14} /><span>Current commitments</span><small
+					>One build and one career item</small
+				>
 			</header>
 			<div>
 				<article>
@@ -89,7 +91,7 @@
 
 		<section class="review-coverage">
 			<header>
-				<div><CheckCircle size={14} /><span>Full-stack evidence chain</span></div>
+				<div><CheckCircle size={14} /><span>Evidence coverage</span></div>
 				<small>Coverage map · not a score</small>
 			</header>
 			<div>
@@ -111,7 +113,7 @@
 
 		<section class="review-relevance">
 			<header>
-				<div><ClockCountdown size={14} /><span>Accountability now</span></div>
+				<div><ClockCountdown size={14} /><span>Due now</span></div>
 				<small>{review.date}</small>
 			</header>
 			<div class="relevance-copy">
@@ -120,7 +122,7 @@
 				<p>{review.relevance.limitation}</p>
 			</div>
 			<div class="follow-up-warning">
-				<span>Follow-up warnings</span>
+				<span>Overdue follow-ups</span>
 				{#each review.followUpWarnings as warning (warning.opportunityId)}
 					<article>
 						<strong>{warning.company}</strong>

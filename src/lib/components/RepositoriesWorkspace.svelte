@@ -65,7 +65,7 @@
 <div class="repositories-screen">
 	<header class="screen-toolbar">
 		<div>
-			<span>Repository inventory</span><strong>{formatInteger(repositories.length)} results</strong>
+			<span>Repositories</span><strong>{formatInteger(repositories.length)} results</strong>
 			<small class={collectionEvidence.state.toLocaleLowerCase()}
 				>{collectionEvidence.state} · {collectionEvidence.detail}{#if oldestStaleAge}
 					Oldest retained
@@ -97,7 +97,7 @@
 	<div class="repository-layout">
 		<section class="repository-table">
 			<header>
-				<span>Repository</span><span>Language</span><span>Week</span><span>Updated</span>
+				<span>Repository</span><span>Language</span><span>7-day commits</span><span>Updated</span>
 			</header>
 			<div class="repository-rows">
 				{#each pageRepositories as repository (repository.fullName)}
@@ -180,7 +180,7 @@
 				<div class="inspector-primary">
 					<div><span>Commits</span><strong>{formatInteger(selected.commits)}</strong></div>
 					<div>
-						<span>Lines moved</span><strong
+						<span>Lines changed</span><strong
 							>{formatCompact(selected.additions + selected.deletions)}</strong
 						>
 					</div>
