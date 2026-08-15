@@ -120,20 +120,25 @@
 		</section>
 
 		<section class="composition-panel">
-			<header><span>Momentum</span><small>{momentum.activeDays}/7 active days</small></header>
-			<div class="momentum-instrument">
-				<div class="momentum-dial" style={`--momentum:${momentum.score * 3.6}deg`}>
-					<div><strong>{momentum.score}</strong><span>signal</span></div>
-				</div>
-				<div class="composition-stats">
+			<header><span>Change mix</span><small>Measured line movement</small></header>
+			<figure
+				class="change-mix"
+				aria-label={`${additionShare}% of measured line movement was additions`}
+			>
+				<div class="change-mix__values">
 					<div><span>Added</span><strong>+{formatCompact(snapshot.totals.additions)}</strong></div>
 					<div>
 						<span>Removed</span><strong>−{formatCompact(snapshot.totals.deletions)}</strong>
 					</div>
-					<div><span>Files touched</span><strong>{formatInteger(changedFiles)}</strong></div>
-					<div><span>Addition share</span><strong>{additionShare}%</strong></div>
 				</div>
-			</div>
+				<div class="change-mix__track" aria-hidden="true">
+					<i style={`width:${additionShare}%`}></i>
+				</div>
+				<figcaption>
+					<span><strong>{additionShare}%</strong> additions</span>
+					<span><strong>{formatInteger(changedFiles)}</strong> files touched</span>
+				</figcaption>
+			</figure>
 		</section>
 	</div>
 

@@ -742,9 +742,16 @@
 	:global(.rhythm-panel header span),
 	:global(.composition-panel header span),
 	:global(.workstream-panel header span) {
-		color: inherit;
-		text-transform: uppercase;
-		letter-spacing: 0.06em;
+		color: var(--ink);
+		font: 590 0.74rem/1.2 var(--sans);
+		letter-spacing: -0.015em;
+	}
+	:global(.terrain-panel header small),
+	:global(.rhythm-panel header small),
+	:global(.composition-panel header small),
+	:global(.workstream-panel header small) {
+		font: 500 0.63rem/1.2 var(--mono);
+		color: var(--muted);
 	}
 	:global(.terrain-panel .change-terrain) {
 		height: 100%;
@@ -817,67 +824,56 @@
 	:global(.composition-panel) {
 		grid-template-rows: auto minmax(0, 1fr);
 	}
-	:global(.momentum-instrument) {
+	:global(.change-mix) {
 		display: grid;
 		min-height: 0;
-		grid-template-columns: minmax(5.2rem, 0.7fr) minmax(0, 1.3fr);
-		align-items: center;
-		gap: 0.7rem;
-		padding: 0.45rem 0.8rem 0.65rem;
-	}
-	:global(.momentum-dial) {
-		position: relative;
-		display: grid;
-		width: clamp(4.5rem, 6vw, 6rem);
-		aspect-ratio: 1;
-		place-items: center;
-		border-radius: 50%;
-		background: conic-gradient(var(--accent) var(--momentum), rgba(239, 238, 233, 0.08) 0);
-		filter: drop-shadow(0 0 12px rgba(216, 165, 74, 0.1));
-		animation: dial-arrive 1.2s var(--ease) both;
-	}
-	:global(.momentum-dial::before) {
-		content: '';
-		position: absolute;
-		inset: 4px;
-		border-radius: 50%;
-		background: var(--surface);
-	}
-	:global(.momentum-dial > div) {
-		position: relative;
-		display: grid;
-		justify-items: center;
-		gap: 0.1rem;
-	}
-	:global(.momentum-dial strong) {
-		font-size: clamp(1.1rem, 2vw, 1.65rem);
-		font-weight: 560;
-		letter-spacing: -0.06em;
-	}
-	:global(.momentum-dial span) {
-		font: 500 0.55rem/1 var(--mono);
-		color: var(--muted);
-		text-transform: uppercase;
-	}
-	:global(.composition-stats) {
-		display: grid;
-		min-height: 0;
-		grid-template-columns: repeat(2, 1fr);
-		grid-template-rows: repeat(2, 1fr);
-		padding: 0;
-	}
-	:global(.composition-stats > div) {
-		display: grid;
 		align-content: center;
-		gap: 0.2rem;
+		gap: clamp(0.55rem, 1.2vh, 0.8rem);
+		margin: 0;
+		padding: 0.7rem 0.9rem 0.8rem;
 	}
-	:global(.composition-stats span) {
-		font: 500 0.6rem/1 var(--mono);
+	:global(.change-mix__values) {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 1rem;
+	}
+	:global(.change-mix__values > div) {
+		display: grid;
+		gap: 0.22rem;
+	}
+	:global(.change-mix__values > div:last-child) {
+		text-align: right;
+	}
+	:global(.change-mix__values span) {
+		font: 500 0.65rem/1 var(--mono);
 		color: var(--muted);
 	}
-	:global(.composition-stats strong) {
-		font-size: clamp(0.72rem, 1.2vw, 1rem);
-		font-weight: 560;
+	:global(.change-mix__values strong) {
+		font-size: clamp(0.92rem, 1.45vw, 1.25rem);
+		font-weight: 570;
+		letter-spacing: -0.035em;
+	}
+	:global(.change-mix__track) {
+		height: 0.42rem;
+		overflow: hidden;
+		border: 1px solid var(--strong);
+		background: var(--high);
+	}
+	:global(.change-mix__track i) {
+		display: block;
+		height: 100%;
+		background: var(--accent);
+	}
+	:global(.change-mix figcaption) {
+		display: flex;
+		justify-content: space-between;
+		gap: 0.75rem;
+		font: 500 0.65rem/1.25 var(--mono);
+		color: var(--muted);
+	}
+	:global(.change-mix figcaption strong) {
+		color: var(--ink);
+		font-weight: 620;
 	}
 	:global(.workstream-panel) {
 		grid-column: 2 / 4;
@@ -2552,16 +2548,6 @@
 			transform: scaleY(1);
 		}
 	}
-	@keyframes dial-arrive {
-		from {
-			opacity: 0;
-			transform: rotate(-72deg) scale(0.82);
-		}
-		to {
-			opacity: 1;
-			transform: rotate(0) scale(1);
-		}
-	}
 	@keyframes enter {
 		from {
 			opacity: 0;
@@ -2891,7 +2877,6 @@
 		:global(.craft-portrait),
 		:global(.rhythm-bar i),
 		:global(.motivation-line::before),
-		:global(.momentum-dial),
 		:global(.spinning) {
 			animation: none;
 		}
