@@ -4,6 +4,7 @@
 		CommandIcon as Command,
 		GithubLogoIcon as GithubLogo,
 		GlobeSimpleIcon as GlobeSimple,
+		XLogoIcon as XLogo,
 		LockSimpleIcon as LockSimple
 	} from 'phosphor-svelte';
 	import { invalidateAll } from '$app/navigation';
@@ -199,22 +200,43 @@
 <div class="app" {@attach dashboardView.attachApplication}>
 	<header class="topbar">
 		{#if snapshot === null}
-			<span class="brand"><GithubLogo size={18} weight="fill" /><span>weeknote</span></span>
+			<span class="brand"><GithubLogo size={18} weight="fill" /><span>Olen Latham</span></span>
 		{:else}
-			<a class="brand" href={snapshot.profile.profileUrl} target="_blank" rel="external noreferrer">
-				<span class="brand__portrait">
-					<img
-						src={snapshot.profile.avatarUrl}
-						alt=""
-						width="30"
-						height="30"
-						fetchpriority="high"
-					/>
-				</span>
-				<span class="brand__identity"
-					><strong>weeknote</strong><small>@{snapshot.profile.login}</small></span
+			<div class="brand-group">
+				<a
+					class="brand"
+					href="https://github.com/PyRo1121"
+					target="_blank"
+					rel="external noreferrer"
 				>
-			</a>
+					<span class="brand__portrait">
+						<img
+							src={snapshot.profile.avatarUrl}
+							alt=""
+							width="30"
+							height="30"
+							fetchpriority="high"
+						/>
+					</span>
+					<span class="brand__identity"><strong>Olen Latham</strong></span>
+				</a>
+				<nav class="social-links" aria-label="Social profiles">
+					<a
+						href="https://github.com/PyRo1121"
+						target="_blank"
+						rel="external noreferrer"
+						aria-label="Olen Latham on GitHub"
+						title="GitHub"><GithubLogo size={15} weight="fill" /></a
+					>
+					<a
+						href="https://x.com/PyRo1121"
+						target="_blank"
+						rel="external noreferrer"
+						aria-label="Olen Latham on X"
+						title="X"><XLogo size={15} weight="fill" /></a
+					>
+				</nav>
+			</div>
 		{/if}
 		<WorkspaceRail
 			activeWorkspace={dashboardView.activeWorkspace}
@@ -489,18 +511,38 @@
 		filter: saturate(1) contrast(1.04);
 		transform: scale(1.045);
 	}
+	.brand-group {
+		display: flex;
+		align-items: center;
+		gap: 0.55rem;
+	}
 	.brand__identity {
 		display: grid;
 		gap: 0.05rem;
+	}
+	.social-links {
+		display: flex;
+		align-items: center;
+		gap: 0.35rem;
+	}
+	.social-links a {
+		display: grid;
+		place-items: center;
+		width: 1.35rem;
+		height: 1.35rem;
+		border: 1px solid var(--line);
+		color: var(--muted);
+		text-decoration: none;
+	}
+	.social-links a:hover,
+	.social-links a:focus-visible {
+		border-color: var(--accent);
+		color: var(--accent);
 	}
 	.brand__identity strong {
 		font-size: 0.78rem;
 		font-weight: 680;
 		letter-spacing: -0.035em;
-	}
-	.brand__identity small {
-		font: 450 0.47rem/1 var(--mono);
-		color: var(--muted);
 	}
 	:global(.workspace-rail) {
 		display: flex;
@@ -2807,7 +2849,6 @@
 		}
 	}
 	@media (max-width: 640px) {
-		.brand__identity small,
 		.actions kbd {
 			display: none;
 		}
