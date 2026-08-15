@@ -58,7 +58,7 @@
 	},
 	"overrides": {
 		"@sveltejs/kit": {
-			"cookie": "2.0.1"
+			"cookie": "0.7.2"
 		}
 	}
 }
