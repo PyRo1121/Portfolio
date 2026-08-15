@@ -22,6 +22,8 @@ npm run cf:types
 npm run deploy
 ```
 
+The deploy command applies pending `OWNER_DB` migrations before uploading the Worker. Career migrations remain an explicit `npm run db:migrate:career:remote` operation because that existing database currently has a separate Cloudflare API authorization boundary.
+
 Use `wrangler secret put GITHUB_TOKEN`, `wrangler secret put GITHUB_CHECKS_APP_PRIVATE_KEY`, or `wrangler secret put CLOUDFLARE_API_TOKEN` to rotate production credentials. Never add credential values to `wrangler.jsonc`. The non-secret GitHub App and installation IDs remain ordinary Worker variables. Keep the Access application and its exact-account-owner allow policy in place before attaching another hostname.
 
 ## Data model
