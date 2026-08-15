@@ -3,7 +3,12 @@
 	import type { GitHubDashboardSnapshot } from '$lib/domain/github-intelligence';
 	import type { ViewerActivityProjection } from '$lib/domain/dashboard-viewer-time';
 	import { formatCompact, formatInteger, formatSigned } from '$lib/presentation/dashboard-format';
+	import {
+		createWeekChangeChartModel,
+		createWeekCommitChartModel
+	} from '$lib/presentation/week-chart-model';
 	import AnimatedNumber from './AnimatedNumber.svelte';
+	import WeekBarChart from './WeekBarChart.svelte';
 
 	type Props = {
 		readonly snapshot: GitHubDashboardSnapshot;
@@ -24,6 +29,7 @@
 	);
 	const comparison = $derived(snapshot.intelligence.comparison);
 	let selectedChangeDate = $state('');
+	let selectedCommitDate = $state('');
 	const peakDay = $derived(
 		[...projection.days].sort((left, right) => right.commits - left.commits)[0]
 	);
@@ -33,9 +39,11 @@
 	const displayedChangeDay = $derived(
 		projection.days.find((day) => day.date === selectedChangeDate) ?? peakChangeDay
 	);
-	const maximumDailyChange = $derived(
-		Math.max(1, ...projection.days.flatMap((day) => [day.additions, day.deletions]))
+	const displayedCommitDay = $derived(
+		projection.days.find((day) => day.date === selectedCommitDate) ?? peakDay
 	);
+	const changeChartModel = $derived(createWeekChangeChartModel(projection.days));
+	const commitChartModel = $derived(createWeekCommitChartModel(projection.days));
 	const activeDayCount = $derived(projection.days.filter((day) => day.commits > 0).length);
 	const changedFiles = $derived(
 		snapshot.intelligence.repositories.reduce(
@@ -48,8 +56,11 @@
 			? 0
 			: Math.round((snapshot.totals.additions / snapshot.totals.churn) * 100)
 	);
-	function changeHeight(value: number): string {
-		return `${Math.max(value === 0 ? 1 : 4, (value / maximumDailyChange) * 100)}%`;
+	function selectChangeDay(index: number): void {
+		selectedChangeDate = changeChartModel.dates[index] ?? '';
+	}
+	function selectCommitDay(index: number): void {
+		selectedCommitDate = commitChartModel.dates[index] ?? '';
 	}
 </script>
 
@@ -115,26 +126,8 @@
 				)} / −{formatCompact(displayedChangeDay?.deletions ?? 0)}</small
 			>
 		</header>
-		<div class="weekly-change-bars" role="list" aria-label="Lines added and removed by day">
-			{#each projection.days as day (day.date)}
-				<button
-					type="button"
-					class={displayedChangeDay?.date === day.date ? 'selected' : ''}
-					onpointerenter={() => (selectedChangeDate = day.date)}
-					onfocus={() => (selectedChangeDate = day.date)}
-					onclick={() => (selectedChangeDate = day.date)}
-					aria-label={`${day.longLabel}: ${day.additions} lines added and ${day.deletions} removed`}
-					aria-current={displayedChangeDay?.date === day.date ? 'true' : undefined}
-				>
-					<div class="weekly-change-bar weekly-change-bar--added">
-						<i style={`height:${changeHeight(day.additions)}`}></i>
-					</div>
-					<div class="weekly-change-bar weekly-change-bar--removed">
-						<i style={`height:${changeHeight(day.deletions)}`}></i>
-					</div>
-					<span>{day.label}</span>
-				</button>
-			{/each}
+		<div class="weekly-change-chart">
+			<WeekBarChart model={changeChartModel} onSelect={selectChangeDay} />
 		</div>
 		<footer class="weekly-changes-meta">
 			<span>Gold <strong>added</strong> · red <strong>removed</strong></span>
@@ -144,15 +137,16 @@
 
 	<div class={mobilePanel === 'signals' ? 'signal-column panel-visible' : 'signal-column'}>
 		<section class="rhythm-panel">
-			<header><span>Commits by day</span><small>Last 7 days</small></header>
-			<div class="rhythm-bars">
-				{#each projection.days as day (day.date)}
-					<div class="rhythm-bar">
-						<strong>{formatInteger(day.commits)}</strong>
-						<div><i style={`height:${day.height}`}></i></div>
-						<span>{day.label}</span>
-					</div>
-				{/each}
+			<header>
+				<span>Commits by day</span><small
+					>{displayedCommitDay?.longLabel ?? 'Selected day'} · {formatInteger(
+						displayedCommitDay?.commits ?? 0
+					)}
+					{(displayedCommitDay?.commits ?? 0) === 1 ? 'commit' : 'commits'}</small
+				>
+			</header>
+			<div class="weekly-commit-chart">
+				<WeekBarChart model={commitChartModel} onSelect={selectCommitDay} />
 			</div>
 		</section>
 

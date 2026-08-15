@@ -1,22 +1,26 @@
 import { formatGitHubArtifactTitle } from '$lib/presentation/github-artifact-title';
-import type { CareerCommitment, CareerSnapshot, CareerStory } from './career-accountability';
+import type {
+	CareerCommitment,
+	CareerSnapshot,
+	CareerStory
+} from '$lib/domain/career-accountability';
 import {
 	createCareerAccountabilityView,
 	type CareerFollowUpReminder
-} from './career-workspace-view';
+} from '$lib/domain/career-workspace-view';
 import {
 	formatCloudflareMetric,
 	type CloudflareMetric,
 	type CloudflareProductEvidence,
 	type CloudflareUsageSnapshot
-} from './cloudflare-usage';
-import { strongestRetainedDeliveryOutcome } from './dashboard-delivery-outcomes';
+} from '$lib/domain/cloudflare-usage';
+import { strongestRetainedDeliveryOutcome } from '$lib/domain/dashboard-delivery-outcomes';
 import type {
 	DeliveryArtifact,
 	GitHubDashboardSnapshot,
 	RepositoryIntelligence,
 	WorkflowRunInput
-} from './github-intelligence';
+} from '$lib/domain/github-intelligence';
 
 /** Evidence states rendered in the accountability review. */
 type AccountabilityEvidenceState =

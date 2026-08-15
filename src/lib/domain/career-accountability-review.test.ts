@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { CareerSnapshot } from './career-accountability';
-import { createCareerAccountabilityReview } from './career-accountability-review';
+import { createCareerAccountabilityReview } from './career-review';
 import type { CloudflareUsageSnapshot } from './cloudflare-usage';
 import { createDemoIntelligence, type GitHubDashboardSnapshot } from './github-intelligence';
 import { createDemoSnapshot } from './github-stats';
