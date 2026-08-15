@@ -4,6 +4,7 @@ import type {
 	WorkflowCheckAnnotationInput,
 	WorkflowRunInput
 } from '$lib/domain/github-intelligence';
+import { githubRequestHeaders } from '$lib/server/github-http';
 
 const API_ROOT = 'https://api.github.com';
 const PAGE_SIZE = 100;
@@ -89,11 +90,7 @@ function canonicalGitHubUrl(value: string): string {
 }
 
 function requestHeaders(token: Redacted.Redacted<string>): Readonly<Record<string, string>> {
-	return {
-		Accept: 'application/vnd.github+json',
-		Authorization: `Bearer ${Redacted.value(token)}`,
-		'X-GitHub-Api-Version': '2022-11-28'
-	};
+	return githubRequestHeaders({ authorization: `Bearer ${Redacted.value(token)}` });
 }
 
 async function fetchDecoded<Value>(

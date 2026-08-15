@@ -17,6 +17,7 @@ import {
 import { fetchWorkflowCoverage } from './github-actions';
 import { fetchGitHubChecksToken, type GitHubChecksAppConfig } from './github-app-auth';
 import { fetchGitHubIntelligence, GitHubGraphQLError } from './github-graphql';
+import { githubRequestHeaders } from './github-http';
 import type { GitHubRepositorySliceCache } from './github-repository-slice-cache';
 
 const MAX_PUSH_LOOKUPS = 25;
@@ -146,11 +147,9 @@ function requestJson(
 	path: string,
 	token: Redacted.Redacted<string> | undefined
 ): Effect.Effect<unknown, GitHubRequestError> {
-	const headers: Record<string, string> = {
-		Accept: 'application/vnd.github+json',
-		'X-GitHub-Api-Version': '2022-11-28'
-	};
-	if (token !== undefined) headers['Authorization'] = `Bearer ${Redacted.value(token)}`;
+	const headers = githubRequestHeaders(
+		token === undefined ? {} : { authorization: `Bearer ${Redacted.value(token)}` }
+	);
 
 	return Effect.tryPromise({
 		try: () => fetch(`https://api.github.com${path}`, { headers }),
