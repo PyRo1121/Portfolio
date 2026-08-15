@@ -15,6 +15,7 @@
 		TrashIcon as Trash,
 		WarningCircleIcon as WarningCircle
 	} from 'phosphor-svelte';
+	import type { CloudflareDeploymentSnapshot } from '$lib/domain/cloudflare-deployments';
 	import type { CloudflareUsageSnapshot } from '$lib/domain/cloudflare-usage';
 	import type { GitHubDashboardSnapshot } from '$lib/domain/github-intelligence';
 	import type { OwnerProjectResourceKind, OwnerProjectSnapshot } from '$lib/domain/owner-project';
@@ -30,17 +31,30 @@
 		readonly registry: OwnerProjectSnapshot | null;
 		readonly snapshot: GitHubDashboardSnapshot | null;
 		readonly cloudflare: CloudflareUsageSnapshot | null;
+		readonly deployments: CloudflareDeploymentSnapshot | null;
+		readonly deploymentState: 'Refreshing' | 'Current' | 'Fresh' | 'Unavailable';
+		readonly deploymentMessage: string;
 		readonly accessReason: string;
 		readonly actionMessage: string;
 		readonly requestedRepository: string | null;
 	};
 
-	let { registry, snapshot, cloudflare, accessReason, actionMessage, requestedRepository }: Props =
-		$props();
+	let {
+		registry,
+		snapshot,
+		cloudflare,
+		deployments,
+		deploymentState,
+		deploymentMessage,
+		accessReason,
+		actionMessage,
+		requestedRepository
+	}: Props = $props();
 	let selectedProjectId = $state('');
 	let mobilePanel = $state<'projects' | 'dossier' | 'manage'>('dossier');
+	let dossierTab = $state<'overview' | 'deployments' | 'resources'>('overview');
 	const dossiers = $derived(
-		registry === null ? [] : createOwnerProjectDossiers(registry, snapshot, cloudflare)
+		registry === null ? [] : createOwnerProjectDossiers(registry, snapshot, cloudflare, deployments)
 	);
 	const selected = $derived(
 		dossiers.find((dossier) => dossier.project.id === selectedProjectId) ??
@@ -53,8 +67,17 @@
 			dossiers[0] ??
 			null
 	);
-	const referenceTime = $derived(
-		snapshot?.generatedAt ?? cloudflare?.generatedAt ?? selected?.project.updatedAt ?? ''
+	const referenceTime = $derived.by(
+		() =>
+			[
+				snapshot?.generatedAt,
+				cloudflare?.generatedAt,
+				deployments?.generatedAt,
+				selected?.project.updatedAt
+			]
+				.filter((value): value is string => value !== undefined)
+				.sort()
+				.at(-1) ?? ''
 	);
 	const observedResourceCount = $derived(
 		selected?.resources.filter((resource) => resource.state !== 'Unavailable').length ?? 0
@@ -85,7 +108,16 @@
 
 	function selectProject(id: string): void {
 		selectedProjectId = id;
+		dossierTab = 'overview';
 		mobilePanel = 'dossier';
+	}
+
+	function shortIdentifier(value: string): string {
+		return value.length > 16 ? value.slice(0, 12) : value;
+	}
+
+	function deploymentStateLabel(state: 'Linked' | 'PartiallyLinked' | 'Unavailable'): string {
+		return state === 'PartiallyLinked' ? 'Partially linked' : state;
 	}
 
 	function resourceIcon(resource: OwnerProjectResourceView): typeof GithubLogo {
@@ -203,102 +235,262 @@
 					<small>Updated {formatRelativeTime(selected.project.updatedAt, referenceTime)}</small>
 				</header>
 
-				<section class="project-repository">
-					<header><span>GitHub</span><small>Authenticated repository evidence</small></header>
-					{#if selected.repository !== null && snapshot !== null}
-						<div class="repository-identity">
-							<div>
-								<span class="observed">Observed</span>
-								<strong>{selected.repository.fullName}</strong>
-								<small>{selected.repository.defaultBranch ?? 'Default branch unavailable'}</small>
-							</div>
-							<a
-								href={selected.repository.url}
-								target="_blank"
-								rel="external noreferrer"
-								aria-label="Open repository on GitHub"><ArrowUpRight size={15} /></a
-							>
-						</div>
-						<div class="repository-facts">
-							<div>
-								<strong>{formatInteger(selected.repository.commits)}</strong><span
-									>7-day commits</span
-								>
-							</div>
-							<div>
-								<strong>{formatInteger(selected.repository.openPullRequests)}</strong><span
-									>open PRs</span
-								>
-							</div>
-							<div>
-								<strong>{formatInteger(selected.repository.openIssues)}</strong><span
-									>open issues</span
-								>
-							</div>
-							<div>
-								<strong
-									>{formatRelativeTime(selected.repository.pushedAt, snapshot.generatedAt)}</strong
-								><span>latest activity</span>
-							</div>
-						</div>
-						<div class="repository-verification">
-							{#if selected.workflow !== null}
-								<CheckCircle size={15} weight="duotone" />
-								<strong
-									>{selected.workflow.successful} passed · {selected.workflow.failed} failed · {selected
-										.workflow.cancelled} cancelled</strong
-								>
-							{:else}
-								<WarningCircle size={15} weight="duotone" />
-								<strong>No repository-specific workflow totals are available.</strong>
-							{/if}
-							{#if selected.latestArtifact !== null}
-								<a
-									href={selected.latestArtifact.url}
-									target="_blank"
-									rel="external noreferrer"
-									title={selected.latestArtifact.title}
-									>{formatGitHubArtifactTitle(selected.latestArtifact.title)}
-									<ArrowUpRight size={12} /></a
-								>
-							{/if}
-						</div>
-					{:else}
-						<p class="dossier-missing">
-							No exact repository match exists in the current GitHub snapshot.
-						</p>
-					{/if}
-				</section>
+				<nav class="dossier-tabs" aria-label="Project dossier sections">
+					<button
+						type="button"
+						class={dossierTab === 'overview' ? 'active' : ''}
+						aria-pressed={dossierTab === 'overview'}
+						onclick={() => (dossierTab = 'overview')}>Overview</button
+					>
+					<button
+						type="button"
+						class={dossierTab === 'deployments' ? 'active' : ''}
+						aria-pressed={dossierTab === 'deployments'}
+						onclick={() => (dossierTab = 'deployments')}>Deployments</button
+					>
+					<button
+						type="button"
+						class={dossierTab === 'resources' ? 'active' : ''}
+						aria-pressed={dossierTab === 'resources'}
+						onclick={() => (dossierTab = 'resources')}>Resources</button
+					>
+				</nav>
 
-				<section class="project-resources">
-					<header><span>Linked resources</span><small>Exact provider identifiers</small></header>
-					<div>
-						{#each selected.resources as resource (resource.resource.id)}
-							{@const Icon = resourceIcon(resource)}
-							<article>
-								<Icon size={17} weight="duotone" />
+				{#if dossierTab === 'overview'}
+					<section class="project-repository dossier-panel">
+						<header><span>GitHub</span><small>Authenticated repository evidence</small></header>
+						{#if selected.repository !== null && snapshot !== null}
+							<div class="repository-identity">
 								<div>
-									<span class={resource.state.toLowerCase()}>{resource.state}</span>
-									<strong>{resource.resource.displayName}</strong>
-									<small>{resource.resource.environment} · {resource.detail}</small>
+									<span class="observed">Observed</span>
+									<strong>{selected.repository.fullName}</strong>
+									<small>{selected.repository.defaultBranch ?? 'Default branch unavailable'}</small>
 								</div>
-								{#if resource.cloudflare?.sizeBytes !== null && resource.cloudflare?.sizeBytes !== undefined}
-									<b>{formatCloudflareResourceBytes(resource.cloudflare.sizeBytes)}</b>
-								{:else if resource.cloudflare?.modifiedAt}
-									<b>{formatRelativeTime(resource.cloudflare.modifiedAt, referenceTime)}</b>
-								{/if}
 								<a
-									href={resource.resource.canonicalUrl}
+									href={selected.repository.url}
 									target="_blank"
 									rel="external noreferrer"
-									aria-label={`Open ${resource.resource.displayName}`}><ArrowUpRight size={13} /></a
+									aria-label="Open repository on GitHub"><ArrowUpRight size={15} /></a
 								>
-							</article>
+							</div>
+							<div class="repository-facts">
+								<div>
+									<strong>{formatInteger(selected.repository.commits)}</strong><span
+										>7-day commits</span
+									>
+								</div>
+								<div>
+									<strong>{formatInteger(selected.repository.openPullRequests)}</strong><span
+										>open PRs</span
+									>
+								</div>
+								<div>
+									<strong>{formatInteger(selected.repository.openIssues)}</strong><span
+										>open issues</span
+									>
+								</div>
+								<div>
+									<strong
+										>{formatRelativeTime(
+											selected.repository.pushedAt,
+											snapshot.generatedAt
+										)}</strong
+									><span>latest activity</span>
+								</div>
+							</div>
+							<div class="repository-verification">
+								{#if selected.workflow !== null}
+									<CheckCircle size={15} weight="duotone" />
+									<strong
+										>{selected.workflow.successful} passed · {selected.workflow.failed} failed · {selected
+											.workflow.cancelled} cancelled</strong
+									>
+								{:else}
+									<WarningCircle size={15} weight="duotone" />
+									<strong>No repository-specific workflow totals are available.</strong>
+								{/if}
+								{#if selected.latestArtifact !== null}
+									<a
+										href={selected.latestArtifact.url}
+										target="_blank"
+										rel="external noreferrer"
+										title={selected.latestArtifact.title}
+										>{formatGitHubArtifactTitle(selected.latestArtifact.title)}
+										<ArrowUpRight size={12} /></a
+									>
+								{/if}
+							</div>
 						{:else}
-							<p class="dossier-missing">No resources are linked to this project.</p>
-						{/each}
-					</div>
-				</section>
+							<p class="dossier-missing">
+								No exact repository match exists in the current GitHub snapshot.
+							</p>
+						{/if}
+					</section>
+				{:else if dossierTab === 'deployments'}
+					<section class="project-deployments dossier-panel">
+						<header>
+							<span>Deployments</span>
+							<small title={deploymentMessage}
+								>{deploymentState === 'Refreshing'
+									? 'Refreshing exact records'
+									: deploymentState === 'Unavailable'
+										? deployments === null
+											? 'Collection unavailable'
+											: 'Cached exact records'
+										: 'Current exact records'}</small
+							>
+						</header>
+						<div class="deployment-list">
+							{#each selected.deployments as deployment (deployment.resource.id)}
+								<article class="deployment-record">
+									<header>
+										<div>
+											<span
+												class={deployment.state === 'Linked'
+													? 'linked'
+													: deployment.state === 'PartiallyLinked'
+														? 'partial'
+														: 'unavailable'}>{deploymentStateLabel(deployment.state)}</span
+											>
+											<strong>{deployment.resource.displayName}</strong>
+											<small>{deployment.detail}</small>
+										</div>
+										<a
+											href={deployment.deployment?.evidenceUrl ?? deployment.resource.canonicalUrl}
+											target="_blank"
+											rel="external noreferrer"
+											aria-label={`Open ${deployment.resource.displayName} deployments`}
+											><ArrowUpRight size={14} /></a
+										>
+									</header>
+									<div class="deployment-chain">
+										<div>
+											<span>Pull request</span>
+											{#if deployment.pullRequest !== null}
+												<a
+													href={deployment.pullRequest.url}
+													target="_blank"
+													rel="external noreferrer"
+													>Observed · {formatGitHubArtifactTitle(deployment.pullRequest.title)}</a
+												>
+											{:else}<strong>Unavailable</strong><small
+													>No retained PR has this merge SHA.</small
+												>{/if}
+										</div>
+										<div>
+											<span>Merge commit</span>
+											{#if deployment.commit !== null}
+												<a
+													href={deployment.commit.url}
+													target="_blank"
+													rel="external noreferrer"
+													title={deployment.commit.sha}
+													>Observed · {shortIdentifier(deployment.commit.sha)}</a
+												>
+											{:else}<strong>Unavailable</strong><small title={deployment.commitSha ?? ''}
+													>{deployment.commitSha === null
+														? 'No exact deployment SHA.'
+														: shortIdentifier(deployment.commitSha)}</small
+												>{/if}
+										</div>
+										<div>
+											<span>Successful workflow</span>
+											{#if deployment.workflowRun !== null}
+												<a
+													href={deployment.workflowRun.url}
+													target="_blank"
+													rel="external noreferrer">Observed · {deployment.workflowRun.name}</a
+												>
+											{:else}<strong>Unavailable</strong><small
+													>No retained successful run matches.</small
+												>{/if}
+										</div>
+										<div>
+											<span>Cloudflare Build</span>
+											{#if deployment.activeVersion?.build.state === 'Observed'}
+												<strong title={deployment.activeVersion.build.buildId ?? ''}
+													>Observed · {shortIdentifier(
+														deployment.activeVersion.build.buildId ?? ''
+													)}</strong
+												><small
+													>{deployment.activeVersion.build.status ?? 'Status unavailable'}</small
+												>
+											{:else if deployment.activeVersion?.build.state === 'NoRecord'}
+												<strong>No record</strong><small
+													>{deployment.activeVersion.build.detail}</small
+												>
+											{:else}<strong>Unavailable</strong><small
+													>{deployment.activeVersion?.build.detail ??
+														'Version evidence unavailable.'}</small
+												>{/if}
+										</div>
+										<div>
+											<span>Worker version</span>
+											{#if deployment.activeVersion !== null}
+												<strong title={deployment.activeVersion.versionId}
+													>Observed · {shortIdentifier(deployment.activeVersion.versionId)}</strong
+												><small
+													>Version {deployment.activeVersion.number ?? '—'} · {deployment
+														.activeVersion.percentage}% traffic</small
+												>
+											{:else}<strong>Unavailable</strong><small
+													>No immutable version was retained.</small
+												>{/if}
+										</div>
+										<div>
+											<span>Active deployment</span>
+											{#if deployment.deployment?.deploymentId !== null && deployment.deployment?.deploymentId !== undefined}
+												<strong title={deployment.deployment.deploymentId}
+													>Observed · {shortIdentifier(deployment.deployment.deploymentId)}</strong
+												><small
+													>{deployment.deployment.source ?? 'Source unavailable'} · {formatRelativeTime(
+														deployment.deployment.createdAt,
+														referenceTime
+													)}</small
+												>
+											{:else}<strong>Unavailable</strong><small
+													>No deployment record was returned.</small
+												>{/if}
+										</div>
+									</div>
+								</article>
+							{:else}
+								<p class="dossier-missing">No Cloudflare Worker is linked to this project.</p>
+							{/each}
+						</div>
+					</section>
+				{:else}
+					<section class="project-resources dossier-panel">
+						<header><span>Linked resources</span><small>Exact provider identifiers</small></header>
+						<div>
+							{#each selected.resources as resource (resource.resource.id)}
+								{@const Icon = resourceIcon(resource)}
+								<article>
+									<Icon size={17} weight="duotone" />
+									<div>
+										<span class={resource.state.toLowerCase()}>{resource.state}</span>
+										<strong>{resource.resource.displayName}</strong>
+										<small>{resource.resource.environment} · {resource.detail}</small>
+									</div>
+									{#if resource.cloudflare?.sizeBytes !== null && resource.cloudflare?.sizeBytes !== undefined}
+										<b>{formatCloudflareResourceBytes(resource.cloudflare.sizeBytes)}</b>
+									{:else if resource.cloudflare?.modifiedAt}
+										<b>{formatRelativeTime(resource.cloudflare.modifiedAt, referenceTime)}</b>
+									{/if}
+									<a
+										href={resource.resource.canonicalUrl}
+										target="_blank"
+										rel="external noreferrer"
+										aria-label={`Open ${resource.resource.displayName}`}
+										><ArrowUpRight size={13} /></a
+									>
+								</article>
+							{:else}
+								<p class="dossier-missing">No resources are linked to this project.</p>
+							{/each}
+						</div>
+					</section>
+				{/if}
 			{:else}
 				<p class="dossier-missing">Add a project to build its private dossier.</p>
 			{/if}
@@ -424,6 +616,7 @@
 	.project-list > header,
 	.project-manage > header,
 	.project-repository > header,
+	.project-deployments > header,
 	.project-resources > header {
 		font: 560 0.6rem/1.2 var(--mono);
 		color: var(--muted);
@@ -484,6 +677,7 @@
 	.project-list > header,
 	.project-manage > header,
 	.project-repository > header,
+	.project-deployments > header,
 	.project-resources > header {
 		display: flex;
 		justify-content: space-between;
@@ -607,7 +801,7 @@
 	}
 	.project-dossier {
 		display: grid;
-		grid-template-rows: auto minmax(0, 0.85fr) minmax(0, 1.15fr);
+		grid-template-rows: auto auto minmax(0, 1fr);
 		overflow: hidden;
 	}
 	.dossier-header {
@@ -616,8 +810,7 @@
 		justify-content: space-between;
 		gap: 1rem;
 		padding: 1rem;
-		background:
-			radial-gradient(circle at 90% 0%, rgb(216 165 74 / 9%), transparent 40%), var(--surface-deep);
+		background: var(--surface-deep);
 	}
 	.dossier-header h2 {
 		margin: 0.25rem 0 0;
@@ -631,11 +824,36 @@
 		color: var(--muted);
 		font-size: 0.68rem;
 	}
-	.project-repository,
-	.project-resources {
+	.dossier-tabs {
+		display: flex;
+		gap: 0;
+		border-top: 1px solid var(--line);
+		border-bottom: 1px solid var(--line);
+		background: var(--surface-deep);
+	}
+	.dossier-tabs button {
+		border: 0;
+		border-right: 1px solid var(--line);
+		background: transparent;
+		color: var(--muted);
+		padding: 0.58rem 0.8rem;
+		font: 560 0.56rem/1 var(--mono);
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+	}
+	.dossier-tabs button.active {
+		background: var(--surface);
+		color: var(--accent);
+	}
+	.dossier-panel {
 		min-height: 0;
 		overflow: hidden;
-		border-top: 1px solid var(--line);
+	}
+	.project-repository,
+	.project-resources,
+	.project-deployments {
+		min-height: 0;
+		overflow: hidden;
 	}
 	.project-repository {
 		display: grid;
@@ -689,9 +907,84 @@
 		margin-left: auto;
 		text-decoration: none;
 	}
+	.project-deployments,
 	.project-resources {
 		display: grid;
 		grid-template-rows: auto minmax(0, 1fr);
+	}
+	.deployment-list {
+		min-height: 0;
+		overflow: auto;
+	}
+	.deployment-record > header {
+		display: flex;
+		align-items: start;
+		justify-content: space-between;
+		gap: 0.8rem;
+		padding: 0.72rem 0.8rem;
+		border-bottom: 1px solid var(--line);
+		background: var(--surface-deep);
+	}
+	.deployment-record > header > div {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr);
+		gap: 0.24rem 0.5rem;
+		min-width: 0;
+	}
+	.deployment-record > header small {
+		grid-column: 1 / -1;
+	}
+	.deployment-record > header > a {
+		color: var(--accent);
+	}
+	.deployment-chain {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+	.deployment-chain > div {
+		display: grid;
+		align-content: start;
+		gap: 0.35rem;
+		min-height: 5.2rem;
+		padding: 0.7rem;
+		border-right: 1px solid var(--line);
+		border-bottom: 1px solid var(--line);
+	}
+	.deployment-chain span {
+		color: var(--muted);
+		font: 520 0.48rem/1.2 var(--mono);
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+	}
+	.deployment-chain strong,
+	.deployment-chain a {
+		color: var(--ink);
+		font: 590 0.58rem/1.35 var(--mono);
+		text-decoration: none;
+		overflow-wrap: anywhere;
+	}
+	.deployment-chain a {
+		color: var(--accent);
+	}
+	.deployment-chain small {
+		color: var(--muted);
+		font: 460 0.52rem/1.35 var(--sans);
+		overflow-wrap: anywhere;
+	}
+	.deployment-record .linked,
+	.deployment-record .partial,
+	.deployment-record .unavailable {
+		font: 650 0.48rem/1 var(--mono);
+		text-transform: uppercase;
+	}
+	.deployment-record .linked {
+		color: var(--success);
+	}
+	.deployment-record .partial {
+		color: var(--accent);
+	}
+	.deployment-record .unavailable {
+		color: var(--muted);
 	}
 	.project-resources > div {
 		min-height: 0;
@@ -791,7 +1084,7 @@
 			display: grid;
 		}
 		.project-dossier {
-			grid-template-rows: auto minmax(0, 0.9fr) minmax(0, 1.1fr);
+			grid-template-rows: auto auto minmax(0, 1fr);
 		}
 		.dossier-header {
 			padding: 0.75rem;
@@ -809,6 +1102,16 @@
 		.repository-verification a {
 			width: 100%;
 			margin-left: 0;
+		}
+		.dossier-tabs button {
+			flex: 1;
+			padding-inline: 0.45rem;
+		}
+		.deployment-chain {
+			grid-template-columns: minmax(0, 1fr);
+		}
+		.deployment-chain > div {
+			min-height: auto;
 		}
 		.project-resources article {
 			grid-template-columns: auto minmax(0, 1fr) auto;

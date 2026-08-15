@@ -136,6 +136,7 @@ function withSuccessfulWorkflow(base: GitHubDashboardSnapshot): GitHubDashboardS
 								status: 'completed',
 								conclusion: 'success',
 								branch: 'main',
+								headSha: '4242424242424242424242424242424242424242',
 								createdAt: '2026-08-14T10:00:00.000Z'
 							}
 						]

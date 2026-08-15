@@ -1,6 +1,10 @@
 import type { D1Database, KVNamespace } from '@cloudflare/workers-types';
 import type { CareerSnapshot } from '$lib/domain/career-accountability';
 import type {
+	CloudflareDeploymentRefreshResult,
+	CloudflareDeploymentSnapshot
+} from '$lib/domain/cloudflare-deployments';
+import type {
 	CloudflareUsageRefreshResult,
 	CloudflareUsageSnapshot
 } from '$lib/domain/cloudflare-usage';
@@ -26,6 +30,12 @@ declare global {
 			cloudflare: CloudflareUsageSnapshot | null;
 			cloudflareCache: { readonly _tag: 'Cold' | 'Cached'; readonly cachedAt: string | null };
 			cloudflareRefresh: Promise<CloudflareUsageRefreshResult>;
+			cloudflareDeployments: CloudflareDeploymentSnapshot | null;
+			cloudflareDeploymentCache: {
+				readonly _tag: 'Cold' | 'Cached';
+				readonly cachedAt: string | null;
+			};
+			cloudflareDeploymentRefresh: Promise<CloudflareDeploymentRefreshResult>;
 		}
 		// interface PageState {}
 		interface Platform {

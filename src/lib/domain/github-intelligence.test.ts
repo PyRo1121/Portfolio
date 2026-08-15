@@ -99,6 +99,7 @@ describe('createGitHubDashboardSnapshot', () => {
 						url: 'https://github.com/octocat/private-work/pull/1',
 						occurredAt: now.toISOString(),
 						isPrivate: true,
+						mergeCommitSha: 'abc1234567890',
 						responsibility: 'Authored'
 					}
 				],
@@ -162,7 +163,13 @@ describe('createGitHubDashboardSnapshot', () => {
 		expect(snapshot.intelligence.delivery).toMatchObject({
 			outcomes: 1,
 			workflowPassRate: 50,
-			outcomeDelta: 1
+			outcomeDelta: 1,
+			pullRequestMerges: [
+				{
+					url: 'https://github.com/octocat/private-work/pull/1',
+					mergeCommitSha: 'abc1234567890'
+				}
+			]
 		});
 		expect(snapshot.intelligence.repositories[0]).toMatchObject({
 			commits: 2,

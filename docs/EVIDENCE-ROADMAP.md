@@ -19,11 +19,12 @@ Weeknote should remain decision-first: show one decisive signal on entry, then e
 - State is **Unavailable**, not zero, when no accessible review timestamp exists.
 - Source: [GitHub GraphQL PullRequestReview reference](https://docs.github.com/en/graphql/reference/objects#pullrequestreview).
 
-### Deployment frequency — Measured only for repositories using GitHub Deployments
+### Deployment frequency — Not yet calculated
 
-- Formula: successful production deployments in the rolling window.
-- Do not treat releases or workflow runs as deployments unless repository configuration explicitly maps them.
-- Source: [GitHub GraphQL deployments reference](https://docs.github.com/en/graphql/reference/objects#deployment).
+- The Projects dossier now retains exact current Cloudflare deployment and immutable-version evidence for owner-linked Workers, including exact Git SHA annotations and Workers Builds lookup by version ID.
+- This current-state chain does not yet calculate rolling deployment frequency. A future formula must count canonical production deployment records within the window and preserve project/environment mappings.
+- Do not treat releases or workflow runs as deployments unless an exact deployment record links them.
+- Sources: [Cloudflare Workers deployments API](https://developers.cloudflare.com/api/resources/workers/subresources/scripts/subresources/deployments/methods/list/) and [GitHub GraphQL deployments reference](https://docs.github.com/en/graphql/reference/objects#deployment).
 
 ### Release cadence — Measured
 

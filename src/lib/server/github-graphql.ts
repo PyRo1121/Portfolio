@@ -145,6 +145,7 @@ const PullRequestSearchResultSchema = Schema.Struct({
 	reviews: Schema.Struct({ totalCount: Schema.Number }),
 	author: Schema.NullOr(SearchActorSchema),
 	mergedBy: Schema.NullOr(SearchActorSchema),
+	mergeCommit: Schema.NullOr(Schema.Struct({ oid: Schema.String })),
 	repository: SearchRepositorySchema
 });
 
@@ -332,6 +333,7 @@ fragment SearchFields on SearchResultItemConnection {
       reviews { totalCount }
       author { __typename login }
       mergedBy { __typename login }
+      mergeCommit { oid }
       repository { nameWithOwner isPrivate }
     }
     ... on Issue {
@@ -841,6 +843,7 @@ function collectDeliveryPullRequests(
 		url: pullRequest.url,
 		occurredAt: pullRequest.mergedAt ?? pullRequest.createdAt,
 		isPrivate: pullRequest.repository.isPrivate,
+		mergeCommitSha: pullRequest.mergeCommit?.oid ?? null,
 		responsibility: responsibility(pullRequest)
 	}));
 	const authoredMergedPullRequests = outcomes.filter(
@@ -913,6 +916,7 @@ function collectDeliveryIssues(
 						url: issue.url,
 						occurredAt: issue.closedAt ?? issue.createdAt,
 						isPrivate: issue.repository.isPrivate,
+						mergeCommitSha: null,
 						responsibility
 					};
 		})

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { CloudflareDeploymentSnapshot } from './cloudflare-deployments';
 import type { CloudflareUsageSnapshot } from './cloudflare-usage';
 import { createDemoIntelligence } from './github-intelligence';
 import { createDemoSnapshot } from './github-stats';
@@ -109,6 +110,143 @@ describe('owner project dossier', () => {
 		expect(worker).toMatchObject({
 			state: 'Unavailable',
 			detail: 'No matching resource exists in the current Cloudflare inventory.'
+		});
+	});
+
+	it('links a deployment only when each exact provider record names the same commit', () => {
+		const commitSha = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+		const base = createDemoIntelligence(
+			createDemoSnapshot(new Date('2026-08-15T00:00:00.000Z'), 'octocat', 'Test fixture.')
+		);
+		const repository = base.intelligence.repositories.find(
+			(item) => item.fullName === 'octocat/signal-garden'
+		);
+		expect(repository).toBeDefined();
+		const snapshot = {
+			...base,
+			intelligence: {
+				...base.intelligence,
+				commits: [
+					...base.intelligence.commits,
+					{
+						sha: commitSha,
+						shortSha: commitSha.slice(0, 7),
+						message: 'Deploy exact project evidence',
+						committedAt: '2026-08-15T08:30:00.000Z',
+						repository: 'octocat/signal-garden',
+						repositoryUrl: 'https://github.com/octocat/signal-garden',
+						url: `https://github.com/octocat/signal-garden/commit/${commitSha}`,
+						isPrivate: true,
+						additions: 12,
+						deletions: 2,
+						changedFiles: 2
+					}
+				],
+				delivery: {
+					...base.intelligence.delivery,
+					pullRequestMerges: [
+						{
+							title: 'Deploy exact project evidence',
+							number: 12,
+							repository: 'octocat/signal-garden',
+							url: 'https://github.com/octocat/signal-garden/pull/12',
+							mergeCommitSha: commitSha
+						}
+					],
+					artifacts: [
+						...base.intelligence.delivery.artifacts,
+						{
+							kind: 'PullRequest' as const,
+							title: 'Deploy exact project evidence',
+							repository: 'octocat/signal-garden',
+							url: 'https://github.com/octocat/signal-garden/pull/12',
+							occurredAt: '2026-08-15T08:30:00.000Z',
+							status: 'shipped' as const,
+							commitSha,
+							detail: 'PR #12'
+						}
+					],
+					workflows: {
+						...base.intelligence.delivery.workflows,
+						current: {
+							...base.intelligence.delivery.workflows.current,
+							recent: [
+								{
+									id: 12,
+									name: 'Weeknote CI',
+									title: 'Verify exact project evidence',
+									repository: 'octocat/signal-garden',
+									url: 'https://github.com/octocat/signal-garden/actions/runs/12',
+									event: 'push',
+									status: 'completed',
+									conclusion: 'success',
+									branch: 'main',
+									headSha: commitSha,
+									createdAt: '2026-08-15T08:31:00.000Z'
+								}
+							]
+						}
+					}
+				}
+			}
+		};
+		const deploymentSnapshot: CloudflareDeploymentSnapshot = {
+			generatedAt: '2026-08-15T09:00:00.000Z',
+			workers: [
+				{
+					workerName: 'signal-garden',
+					state: 'Observed',
+					detail: 'Observed',
+					deploymentId: 'deployment-id',
+					createdAt: '2026-08-15T08:40:22.000Z',
+					source: 'wrangler',
+					strategy: 'percentage',
+					authorEmail: 'owner@example.com',
+					message: `git:${commitSha}`,
+					triggeredBy: 'deployment',
+					versionsTruncated: false,
+					evidenceUrl: 'https://dash.cloudflare.com/example/deployments',
+					versions: [
+						{
+							versionId: 'version-id',
+							percentage: 100,
+							number: 12,
+							createdAt: '2026-08-15T08:40:21.000Z',
+							source: 'wrangler',
+							authorEmail: 'owner@example.com',
+							tag: 'git-aaaaaaaaaaaa',
+							message: `git:${commitSha}`,
+							lastDeployedFrom: 'wrangler',
+							build: {
+								state: 'Observed',
+								detail: 'Observed',
+								buildId: 'build-id',
+								status: 'success',
+								outcome: 'success',
+								branch: 'main',
+								commitSha,
+								createdAt: '2026-08-15T08:35:00.000Z',
+								completedAt: '2026-08-15T08:40:00.000Z'
+							}
+						}
+					]
+				}
+			]
+		};
+
+		const dossier = createOwnerProjectDossiers(
+			registry,
+			snapshot,
+			cloudflare([]),
+			deploymentSnapshot
+		)[0];
+		expect(dossier?.deployments[0]).toMatchObject({
+			state: 'Linked',
+			commitSha,
+			commit: { sha: commitSha },
+			workflowRun: { id: 12 },
+			pullRequest: { url: 'https://github.com/octocat/signal-garden/pull/12' },
+			activeVersion: { versionId: 'version-id', build: { buildId: 'build-id' } }
 		});
 	});
 });

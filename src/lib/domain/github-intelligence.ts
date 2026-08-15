@@ -169,6 +169,7 @@ export type DeliveryOutcomeInput = {
 	readonly url: string;
 	readonly occurredAt: string;
 	readonly isPrivate: boolean;
+	readonly mergeCommitSha: string | null;
 	readonly responsibility:
 		'Authored' | 'Maintainer' | 'Automated' | 'ClosedByOwner' | 'ClosedByPullRequest';
 };
@@ -195,6 +196,7 @@ export type WorkflowRunInput = {
 	readonly status: string;
 	readonly conclusion: string | null;
 	readonly branch: string | null;
+	readonly headSha: string;
 	readonly createdAt: string;
 };
 
@@ -361,6 +363,15 @@ export type YearIntelligence = {
 	readonly days: ReadonlyArray<ContributionDay>;
 };
 
+/** Canonical merge identity retained for exact deployment linkage. */
+export type PullRequestMergeEvidence = {
+	readonly title: string;
+	readonly number: number;
+	readonly repository: string;
+	readonly url: string;
+	readonly mergeCommitSha: string;
+};
+
 /** One linked piece of evidence rendered in the delivery trail. */
 export type DeliveryArtifact = {
 	readonly kind: 'PullRequest' | 'Issue' | 'Release' | 'WorkflowRun';
@@ -369,6 +380,7 @@ export type DeliveryArtifact = {
 	readonly url: string;
 	readonly occurredAt: string;
 	readonly status: 'shipped' | 'passed' | 'failed' | 'cancelled' | 'running';
+	readonly commitSha: string | null;
 	readonly detail: string;
 };
 
@@ -390,6 +402,7 @@ export type DeliveryIntelligence = {
 	readonly previousOutcomes: number;
 	readonly outcomeDelta: number;
 	readonly workflowPassRate: number | null;
+	readonly pullRequestMerges: ReadonlyArray<PullRequestMergeEvidence>;
 	readonly artifacts: ReadonlyArray<DeliveryArtifact>;
 	readonly workflows: WorkflowCoverageInput;
 };
@@ -715,6 +728,7 @@ function buildDelivery(input: GitHubIntelligenceInput['delivery']): DeliveryInte
 			url: outcome.url,
 			occurredAt: outcome.occurredAt,
 			status: 'shipped',
+			commitSha: outcome.mergeCommitSha,
 			detail: `${outcome.kind === 'PullRequest' ? 'PR' : 'Issue'} #${outcome.number}${responsibility}`
 		};
 	});
@@ -725,8 +739,22 @@ function buildDelivery(input: GitHubIntelligenceInput['delivery']): DeliveryInte
 		url: release.url,
 		occurredAt: release.publishedAt ?? release.createdAt,
 		status: 'shipped',
+		commitSha: null,
 		detail: `${release.tagName}${release.isPrerelease ? ' · prerelease' : ''}`
 	}));
+	const pullRequestMerges: PullRequestMergeEvidence[] = input.outcomes.flatMap((outcome) =>
+		outcome.kind === 'PullRequest' && outcome.mergeCommitSha !== null
+			? [
+					{
+						title: outcome.title,
+						number: outcome.number,
+						repository: outcome.repository,
+						url: outcome.url,
+						mergeCommitSha: outcome.mergeCommitSha
+					}
+				]
+			: []
+	);
 	const workflowArtifacts: DeliveryArtifact[] = input.workflows.current.recent.map((run) => ({
 		kind: 'WorkflowRun',
 		title: run.title || run.name,
@@ -734,6 +762,7 @@ function buildDelivery(input: GitHubIntelligenceInput['delivery']): DeliveryInte
 		url: run.url,
 		occurredAt: run.createdAt,
 		status: artifactStatus(run),
+		commitSha: run.headSha,
 		detail: `${run.name} · ${run.branch ?? run.event}`
 	}));
 	return {
@@ -753,6 +782,7 @@ function buildDelivery(input: GitHubIntelligenceInput['delivery']): DeliveryInte
 		previousOutcomes,
 		outcomeDelta: outcomes - previousOutcomes,
 		workflowPassRate,
+		pullRequestMerges,
 		artifacts: [
 			...outcomeArtifacts
 				.sort((left, right) => right.occurredAt.localeCompare(left.occurredAt))
@@ -1017,6 +1047,7 @@ export function createDemoIntelligence(base: WeeklySnapshot): GitHubDashboardSna
 					url: base.profile.profileUrl,
 					occurredAt: new Date(start.getTime() + 5 * DAY_IN_MS).toISOString(),
 					isPrivate: true,
+					mergeCommitSha: null,
 					responsibility: 'Automated'
 				}
 			],

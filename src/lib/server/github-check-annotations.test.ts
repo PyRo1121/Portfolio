@@ -14,6 +14,7 @@ function run(conclusion: string | null): WorkflowRunInput {
 		status: 'completed',
 		conclusion,
 		branch: 'main',
+		headSha: '4242424242424242424242424242424242424242',
 		createdAt: '2026-08-14T20:00:00.000Z'
 	};
 }

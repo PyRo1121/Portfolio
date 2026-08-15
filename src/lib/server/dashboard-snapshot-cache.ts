@@ -161,6 +161,7 @@ const WorkflowRunSchema = Schema.Struct({
 	status: Schema.String,
 	conclusion: Schema.NullOr(Schema.String),
 	branch: Schema.NullOr(Schema.String),
+	headSha: Schema.optional(Schema.String),
 	createdAt: Schema.String
 });
 const RepositoryWorkflowSummarySchema = Schema.Struct({
@@ -217,6 +218,13 @@ const WorkflowCoverageSchema = Schema.Struct({
 	}),
 	previous: WorkflowTotalsSchema
 });
+const PullRequestMergeEvidenceSchema = Schema.Struct({
+	title: Schema.String,
+	number: Schema.Number,
+	repository: Schema.String,
+	url: Schema.String,
+	mergeCommitSha: Schema.String
+});
 const DeliveryArtifactSchema = Schema.Struct({
 	kind: Schema.Union(
 		Schema.Literal('PullRequest'),
@@ -235,6 +243,7 @@ const DeliveryArtifactSchema = Schema.Struct({
 		Schema.Literal('cancelled'),
 		Schema.Literal('running')
 	),
+	commitSha: Schema.optional(Schema.NullOr(Schema.String)),
 	detail: Schema.String
 });
 const DashboardSnapshotSchema = Schema.Struct({
@@ -327,6 +336,7 @@ const DashboardSnapshotSchema = Schema.Struct({
 			previousOutcomes: Schema.Number,
 			outcomeDelta: Schema.Number,
 			workflowPassRate: Schema.NullOr(Schema.Number),
+			pullRequestMerges: Schema.optional(Schema.Array(PullRequestMergeEvidenceSchema)),
 			artifacts: Schema.Array(DeliveryArtifactSchema),
 			workflows: WorkflowCoverageSchema
 		}),
@@ -438,10 +448,19 @@ export class DashboardSnapshotCache {
 						ownerClosedIssues: storedDelivery.ownerClosedIssues ?? 0,
 						pullRequestClosedIssues: storedDelivery.pullRequestClosedIssues ?? 0,
 						closedIssuesTruncated: storedDelivery.closedIssuesTruncated ?? false,
+						pullRequestMerges: storedDelivery.pullRequestMerges ?? [],
+						artifacts: storedDelivery.artifacts.map((artifact) => ({
+							...artifact,
+							commitSha: artifact.commitSha ?? null
+						})),
 						workflows: {
 							...storedWorkflows,
 							current: {
 								...storedWorkflows.current,
+								recent: storedWorkflows.current.recent.map((run) => ({
+									...run,
+									headSha: run.headSha ?? ''
+								})),
 								annotations: storedWorkflows.current.annotations ?? unavailableAnnotations
 							}
 						}

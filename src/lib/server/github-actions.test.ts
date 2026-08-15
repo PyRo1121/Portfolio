@@ -16,6 +16,7 @@ const run = (id: number, conclusion: string | null, status = 'completed'): Workf
 	status,
 	conclusion,
 	branch: 'main',
+	headSha: id.toString(16).padStart(40, '0'),
 	createdAt: `2026-08-1${id}T00:00:00Z`
 });
 
@@ -90,6 +91,7 @@ describe('summarizeRepositoryWorkflows', () => {
 						conclusion: 'success',
 						html_url: 'https://github.com/octocat/portfolio/actions/runs/1',
 						head_branch: 'main',
+						head_sha: '1111111111111111111111111111111111111111',
 						created_at: '2026-08-14T20:00:00.000Z'
 					},
 					{
@@ -101,6 +103,7 @@ describe('summarizeRepositoryWorkflows', () => {
 						conclusion: 'failure',
 						html_url: 'https://github.com/octocat/portfolio/actions/runs/2',
 						head_branch: 'main',
+						head_sha: '2222222222222222222222222222222222222222',
 						created_at: '2026-08-14T20:00:00.000Z'
 					}
 				]
