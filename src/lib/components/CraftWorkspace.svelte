@@ -3,7 +3,6 @@
 	import type { GitHubDashboardSnapshot } from '$lib/domain/github-intelligence';
 	import { createCraftIntelligence } from '$lib/domain/dashboard-craft';
 	import { formatInteger } from '$lib/presentation/dashboard-format';
-	import CraftCore from './CraftCore.svelte';
 
 	type Props = { readonly snapshot: GitHubDashboardSnapshot };
 	type CraftMobilePanel = 'verify' | 'review' | 'mix' | 'discipline' | 'limits';
@@ -17,6 +16,10 @@
 		{ id: 'limits', label: 'Missing data' }
 	];
 	const craft = $derived(createCraftIntelligence(snapshot));
+	const completedChecks = $derived(craft.observed.successfulChecks + craft.observed.failedChecks);
+	const passedCheckShare = $derived(
+		completedChecks === 0 ? 0 : craft.observed.successfulChecks / completedChecks
+	);
 </script>
 
 <div class="craft-screen">
@@ -30,7 +33,7 @@
 			>
 		{/each}
 	</nav>
-	<section class="craft-score">
+	<section class="quality-summary">
 		<img
 			class="craft-portrait"
 			src={snapshot.profile.avatarUrl}
@@ -40,13 +43,23 @@
 			fetchpriority="high"
 			referrerpolicy="no-referrer"
 		/>
-		<header><span>Rolling 7 days</span><small>Observed + inferred</small></header>
-		<div><strong>{craft.score}</strong><span>quality evidence score</span></div>
+		<header><span>Rolling 7 days</span><small>GitHub evidence</small></header>
+		<div class="quality-summary__value">
+			<strong>{formatInteger(craft.observed.failedChecks)}</strong><span>failed checks</span>
+		</div>
 		<article>
-			<strong>{craft.label}</strong>
-			<p>{craft.message}</p>
+			<strong
+				>{craft.observed.failedChecks > 0 ? 'Checks need attention' : 'No failed checks'}</strong
+			>
+			<p>
+				{formatInteger(craft.observed.successfulChecks)} passed; {formatInteger(
+					craft.observed.cancelledChecks
+				)} cancelled. {formatInteger(craft.observed.oversizedCommits)} commits exceeded the size threshold.
+			</p>
 		</article>
-		<footer><span>Not a code-quality grade</span><strong>Based on available data</strong></footer>
+		<footer>
+			<span>Not a code-quality grade</span><strong>Observed and message-inferred data</strong>
+		</footer>
 	</section>
 
 	<section
@@ -56,13 +69,24 @@
 			<span>Workflow checks</span><small>GitHub Actions · default branches</small>
 		</header>
 		<div class="craft-verification-body">
-			<CraftCore {craft} />
 			<div class="craft-pass-rate">
 				<strong
 					>{craft.observed.workflowPassRate === null
 						? '—'
 						: `${craft.observed.workflowPassRate}%`}</strong
 				><span>completed checks passing</span>
+			</div>
+			<div class="quality-verification-detail">
+				<div
+					class="quality-verification-track"
+					aria-label={`${craft.observed.successfulChecks} passed and ${craft.observed.failedChecks} failed checks`}
+				>
+					<i style={`transform:scaleX(${passedCheckShare})`}></i>
+				</div>
+				<p>
+					{formatInteger(craft.observed.successfulChecks)} of {formatInteger(completedChecks)}
+					completed user-triggered checks passed. Cancelled runs are excluded from the rate.
+				</p>
 			</div>
 		</div>
 		<div class="craft-checks">
@@ -88,12 +112,12 @@
 		<header><span>Commit size</span><small>Files and changed lines</small></header>
 		<div class="reviewability-grid">
 			<div>
-				<span>Review-sized commits</span><strong
+				<span>Within size threshold</span><strong
 					>{formatInteger(craft.observed.focusedCommits)}</strong
 				><small>≤8 files and ≤500 lines</small>
 			</div>
 			<div>
-				<span>Oversized commits</span><strong
+				<span>Above size threshold</span><strong
 					>{formatInteger(craft.observed.oversizedCommits)}</strong
 				><small>&gt;25 files or &gt;2K lines</small>
 			</div>
@@ -150,7 +174,7 @@
 	</section>
 
 	<section class={mobilePanel === 'limits' ? 'quality-coverage panel-visible' : 'quality-coverage'}>
-		<header><span>Missing quality data</span><small>Not currently collected</small></header>
+		<header><span>Data not collected</span><small>Current evidence limits</small></header>
 		<div>
 			{#each craft.unavailable as unavailable (unavailable)}<p><i></i>{unavailable}</p>{/each}
 		</div>

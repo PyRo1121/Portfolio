@@ -372,20 +372,12 @@ export type DeliveryIntelligence = {
 	readonly previousOutcomes: number;
 	readonly outcomeDelta: number;
 	readonly workflowPassRate: number | null;
-	readonly score: number;
-	readonly scoreBreakdown: {
-		readonly outcomes: number;
-		readonly verification: number;
-		readonly coverage: number;
-	};
-	readonly label: string;
-	readonly message: string;
 	readonly artifacts: ReadonlyArray<DeliveryArtifact>;
 	readonly workflows: WorkflowCoverageInput;
 };
 
 /** Authenticated activity and collaboration metrics shown by the dashboard. */
-export type GitHubIntelligence = {
+type GitHubIntelligence = {
 	readonly account: AccountIntelligence;
 	readonly repositoryCollection: RepositoryCollectionEvidence;
 	readonly comparison: WeekComparison;
@@ -477,7 +469,7 @@ function buildRepositories(
 				name: repository.name,
 				fullName: repository.fullName,
 				url: repository.url,
-				description: repository.description ?? 'No repository description.',
+				description: repository.description ?? 'No description on GitHub.',
 				isPrivate: repository.isPrivate,
 				isFork: repository.isFork,
 				isArchived: repository.isArchived,
@@ -686,32 +678,6 @@ function buildDelivery(input: GitHubIntelligenceInput['delivery']): DeliveryInte
 		completedRuns === 0
 			? null
 			: Math.round((input.workflows.current.successful / completedRuns) * 100);
-	const outcomeScore = Math.min(
-		input.mergedPullRequests * 14 + input.closedIssues * 10 + releases * 16 + prereleaseBuilds * 3,
-		56
-	);
-	const verificationScore = workflowPassRate === null ? 0 : Math.round(workflowPassRate * 0.34);
-	const breadthScore = Math.min(input.workflows.coveredRepositories * 3, 10);
-	const score = Math.min(100, outcomeScore + verificationScore + breadthScore);
-	const label =
-		outcomes === 0
-			? 'No completed outcomes'
-			: workflowPassRate !== null && workflowPassRate < 75
-				? 'Workflow failures present'
-				: score >= 85
-					? 'Strong outcome and check coverage'
-					: score >= 60
-						? 'Completed outcomes present'
-						: 'Limited outcome coverage';
-	const outcomeLabel = outcomes === 1 ? 'completed outcome' : 'completed outcomes';
-	const message =
-		outcomes === 0
-			? 'No merged pull requests, closed issues, releases, or prereleases in this seven-day window.'
-			: workflowPassRate === null
-				? `${outcomes} ${outcomeLabel}. Workflow data was unavailable for active repositories.`
-				: input.workflows.current.failed > 0
-					? `${outcomes} ${outcomeLabel}. ${input.workflows.current.successful} checks passed and ${input.workflows.current.failed} failed.`
-					: `${outcomes} ${outcomeLabel} with every completed check passing.`;
 	const outcomeArtifacts: DeliveryArtifact[] = input.outcomes.map((outcome) => ({
 		kind: outcome.kind,
 		title: outcome.title,
@@ -748,14 +714,6 @@ function buildDelivery(input: GitHubIntelligenceInput['delivery']): DeliveryInte
 		previousOutcomes,
 		outcomeDelta: outcomes - previousOutcomes,
 		workflowPassRate,
-		score,
-		scoreBreakdown: {
-			outcomes: outcomeScore,
-			verification: verificationScore,
-			coverage: breadthScore
-		},
-		label,
-		message,
 		artifacts: [
 			...outcomeArtifacts
 				.sort((left, right) => right.occurredAt.localeCompare(left.occurredAt))

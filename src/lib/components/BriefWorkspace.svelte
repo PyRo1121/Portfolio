@@ -1,23 +1,21 @@
 <script lang="ts">
 	import { ArrowDownRight, ArrowUpRight, Minus } from 'phosphor-svelte';
 	import type { GitHubDashboardSnapshot } from '$lib/domain/github-intelligence';
-	import { createDashboardMomentum } from '$lib/domain/dashboard-momentum';
 	import type { ViewerActivityProjection } from '$lib/domain/dashboard-viewer-time';
 	import { formatCompact, formatInteger, formatSigned } from '$lib/presentation/dashboard-format';
 	import AnimatedNumber from './AnimatedNumber.svelte';
-	import ChangeTerrain from './ChangeTerrain.svelte';
 
 	type Props = {
 		readonly snapshot: GitHubDashboardSnapshot;
 		readonly projection: ViewerActivityProjection;
 		readonly onSelectRepository: (fullName: string) => void;
 	};
-	type WeekMobilePanel = 'terrain' | 'signals' | 'work';
+	type WeekMobilePanel = 'changes' | 'signals' | 'work';
 
 	let { snapshot, projection, onSelectRepository }: Props = $props();
 	let mobilePanel = $state<WeekMobilePanel>('signals');
 	const mobilePanels: ReadonlyArray<{ readonly id: WeekMobilePanel; readonly label: string }> = [
-		{ id: 'terrain', label: 'Changes' },
+		{ id: 'changes', label: 'Changes' },
 		{ id: 'signals', label: 'Breakdown' },
 		{ id: 'work', label: 'Repositories' }
 	];
@@ -25,9 +23,20 @@
 		snapshot.intelligence.repositories.filter((repository) => repository.commits > 0).slice(0, 6)
 	);
 	const comparison = $derived(snapshot.intelligence.comparison);
+	let selectedChangeDate = $state('');
 	const peakDay = $derived(
 		[...projection.days].sort((left, right) => right.commits - left.commits)[0]
 	);
+	const peakChangeDay = $derived(
+		[...projection.days].sort((left, right) => right.totalChanges - left.totalChanges)[0]
+	);
+	const displayedChangeDay = $derived(
+		projection.days.find((day) => day.date === selectedChangeDate) ?? peakChangeDay
+	);
+	const maximumDailyChange = $derived(
+		Math.max(1, ...projection.days.flatMap((day) => [day.additions, day.deletions]))
+	);
+	const activeDayCount = $derived(projection.days.filter((day) => day.commits > 0).length);
 	const changedFiles = $derived(
 		snapshot.intelligence.repositories.reduce(
 			(total, repository) => total + repository.changedFiles,
@@ -39,7 +48,9 @@
 			? 0
 			: Math.round((snapshot.totals.additions / snapshot.totals.churn) * 100)
 	);
-	const momentum = $derived(createDashboardMomentum(snapshot, projection));
+	function changeHeight(value: number): string {
+		return `${Math.max(value === 0 ? 1 : 4, (value / maximumDailyChange) * 100)}%`;
+	}
 </script>
 
 <div class="week-screen">
@@ -66,9 +77,12 @@
 			<span>commits</span>
 		</div>
 		<div class="motivation-line">
-			<span>Activity score {momentum.score}</span>
-			<strong>{momentum.label}</strong>
-			<p>{momentum.message}</p>
+			<span>Current window</span>
+			<strong>{activeDayCount} active {activeDayCount === 1 ? 'day' : 'days'}</strong>
+			<p>
+				Peak activity was {peakDay?.label ?? '—'} with {formatInteger(peakDay?.commits ?? 0)}
+				commits.
+			</p>
 		</div>
 		<div class="summary-stats">
 			<div><span>Lines changed</span><strong>{formatCompact(snapshot.totals.churn)}</strong></div>
@@ -93,16 +107,39 @@
 		</div>
 	</section>
 
-	<section class={mobilePanel === 'terrain' ? 'terrain-panel panel-visible' : 'terrain-panel'}>
-		<header><span>Changes by day</span><small>Lines added and removed</small></header>
-		<ChangeTerrain days={projection.days} />
-		<div class="terrain-meta">
-			<span
-				>Peak day <strong>{peakDay?.label ?? '—'} · {formatInteger(peakDay?.commits ?? 0)}</strong
-				></span
+	<section class={mobilePanel === 'changes' ? 'weekly-changes panel-visible' : 'weekly-changes'}>
+		<header>
+			<span>Lines changed by day</span><small
+				>{displayedChangeDay?.longLabel ?? 'Selected day'} · +{formatCompact(
+					displayedChangeDay?.additions ?? 0
+				)} / −{formatCompact(displayedChangeDay?.deletions ?? 0)}</small
 			>
-			<span>Peak hour <strong>{projection.peakHour} {projection.timeLabel}</strong></span>
+		</header>
+		<div class="weekly-change-bars" role="list" aria-label="Lines added and removed by day">
+			{#each projection.days as day (day.date)}
+				<button
+					type="button"
+					class={displayedChangeDay?.date === day.date ? 'selected' : ''}
+					onpointerenter={() => (selectedChangeDate = day.date)}
+					onfocus={() => (selectedChangeDate = day.date)}
+					onclick={() => (selectedChangeDate = day.date)}
+					aria-label={`${day.longLabel}: ${day.additions} lines added and ${day.deletions} removed`}
+					aria-current={displayedChangeDay?.date === day.date ? 'true' : undefined}
+				>
+					<div class="weekly-change-bar weekly-change-bar--added">
+						<i style={`height:${changeHeight(day.additions)}`}></i>
+					</div>
+					<div class="weekly-change-bar weekly-change-bar--removed">
+						<i style={`height:${changeHeight(day.deletions)}`}></i>
+					</div>
+					<span>{day.label}</span>
+				</button>
+			{/each}
 		</div>
+		<footer class="weekly-changes-meta">
+			<span>Gold <strong>added</strong> · red <strong>removed</strong></span>
+			<span>Peak hour <strong>{projection.peakHour} {projection.timeLabel}</strong></span>
+		</footer>
 	</section>
 
 	<div class={mobilePanel === 'signals' ? 'signal-column panel-visible' : 'signal-column'}>

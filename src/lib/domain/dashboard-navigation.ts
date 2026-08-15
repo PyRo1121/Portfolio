@@ -19,7 +19,7 @@ export function createWorkspaceSignals(
 ): Readonly<Record<DashboardWorkspace, WorkspaceSignal>> {
 	const today = createTodayIntelligence(snapshot, projection);
 	const craft = createCraftIntelligence(snapshot);
-	const failedChecks = snapshot.intelligence.delivery.workflows.current.failed;
+	const failedChecks = craft.observed.failedChecks;
 	return {
 		today: { value: String(today.commits), label: 'today', tone: 'neutral' },
 		brief: { value: String(snapshot.totals.commits), label: '7 days', tone: 'neutral' },
@@ -29,9 +29,9 @@ export function createWorkspaceSignals(
 			tone: failedChecks > 0 ? 'attention' : 'neutral'
 		},
 		craft: {
-			value: String(craft.score),
-			label: 'score',
-			tone: craft.score < 68 ? 'attention' : 'neutral'
+			value: String(failedChecks),
+			label: 'failed',
+			tone: failedChecks > 0 ? 'attention' : 'neutral'
 		},
 		repositories: {
 			value: String(snapshot.intelligence.account.activeRepositories),

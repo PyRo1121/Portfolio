@@ -29,9 +29,6 @@ export type CraftIntelligence = {
 		readonly categories: ReadonlyArray<CraftCategorySignal>;
 	};
 	readonly unavailable: ReadonlyArray<string>;
-	readonly score: number;
-	readonly label: string;
-	readonly message: string;
 };
 
 const PREFIX_PATTERN =
@@ -96,27 +93,6 @@ export function createCraftIntelligence(snapshot: GitHubDashboardSnapshot): Craf
 	).length;
 	const reverts = commits.filter((commit) => /^revert\b/i.test(commit.message)).length;
 	const workflow = snapshot.intelligence.delivery;
-	const reviewabilityScore =
-		commits.length === 0 ? 0 : Math.round((focusedCommits / commits.length) * 28);
-	const conventionScore =
-		commits.length === 0 ? 0 : Math.round((conventionalCommits / commits.length) * 20);
-	const verificationScore =
-		workflow.workflowPassRate === null ? 0 : Math.round(workflow.workflowPassRate * 0.42);
-	const revertPenalty = Math.min(reverts * 4, 10);
-	const score = Math.max(
-		0,
-		Math.min(100, reviewabilityScore + conventionScore + verificationScore + 10 - revertPenalty)
-	);
-	const label =
-		workflow.workflowPassRate !== null && workflow.workflowPassRate < 70
-			? 'Workflow failures present'
-			: score >= 82
-				? 'Strong available quality data'
-				: score >= 65
-					? 'Moderate available quality data'
-					: 'Limited available quality data';
-	const commitLabel = commits.length === 1 ? 'commit' : 'commits';
-	const message = `${focusedCommits} of ${commits.length} ${commitLabel} met the review-size threshold; ${workflow.workflows.current.failed} default-branch checks failed.`;
 
 	return {
 		observed: {
@@ -146,9 +122,6 @@ export function createCraftIntelligence(snapshot: GitHubDashboardSnapshot): Craf
 			'Code coverage — no consistent coverage artifact exposed',
 			'Code scanning — unavailable or disabled on active repositories',
 			'Lint/typecheck results — not normalized across workflows'
-		],
-		score,
-		label,
-		message
+		]
 	};
 }

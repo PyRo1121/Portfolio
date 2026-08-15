@@ -15,9 +15,9 @@
 	import {
 		formatCompact,
 		formatInteger,
-		formatRelativeTime,
-		formatSigned
+		formatRelativeTime
 	} from '$lib/presentation/dashboard-format';
+	import { formatGitHubArtifactTitle } from '$lib/presentation/github-artifact-title';
 
 	type Props = {
 		readonly snapshot: GitHubDashboardSnapshot;
@@ -44,6 +44,20 @@
 		collectionEvidence.oldestStaleAt === null
 			? null
 			: formatRelativeTime(collectionEvidence.oldestStaleAt, snapshot.generatedAt)
+	);
+	const selectedWorkflow = $derived(
+		selected === null
+			? null
+			: (snapshot.intelligence.delivery.workflows.current.repositories.find(
+					(repository) => repository.repository === selected.fullName
+				) ?? null)
+	);
+	const selectedArtifact = $derived(
+		selected === null
+			? null
+			: (snapshot.intelligence.delivery.artifacts.find(
+					(artifact) => artifact.repository === selected.fullName
+				) ?? null)
 	);
 	const filters: ReadonlyArray<{ readonly id: RepositoryFilter; readonly label: string }> = [
 		{ id: 'active', label: 'Active' },
@@ -150,33 +164,39 @@
 
 		<aside class="repository-inspector">
 			{#if selected}
-				<figure class="repository-artwork">
-					<img
-						src={selected.imageUrl}
-						alt={`${selected.name} repository artwork`}
-						width="640"
-						height="320"
-						loading="eager"
-						decoding="async"
-					/>
-					<figcaption>
-						<span>{selected.fullName}</span><i style={`background:${selected.languageColor}`}></i>
-					</figcaption>
-				</figure>
-				<header>
-					<span>{selected.isPrivate ? 'Private' : 'Public'} · {selected.primaryLanguage}</span><a
+				<header class="repository-inspector__header">
+					<span class="repository-inspector__image"
+						><img
+							src={selected.imageUrl}
+							alt=""
+							width="72"
+							height="72"
+							loading="eager"
+							decoding="async"
+						/></span
+					>
+					<div>
+						<span>{selected.isPrivate ? 'Private' : 'Public'} · {selected.primaryLanguage}</span>
+						<div class="inspector-title">
+							{#if selected.isPrivate}<LockSimple size={16} weight="light" />{/if}
+							<h2>{selected.name}</h2>
+						</div>
+						<small>{selected.fullName}</small>
+					</div>
+					<a
 						href={selected.url}
 						target="_blank"
 						rel="external noreferrer"
 						aria-label={`Open ${selected.name} on GitHub`}
-						><ArrowUpRight size={16} weight="bold" /></a
+						><ArrowUpRight size={17} weight="bold" /></a
 					>
 				</header>
-				<div class="inspector-title">
-					{#if selected.isPrivate}<LockSimple size={16} weight="light" />{/if}
-					<h2>{selected.name}</h2>
-				</div>
 				<p>{selected.description}</p>
+				<div class="repository-inspector__activity">
+					<span>Latest GitHub activity</span><strong
+						>{formatRelativeTime(selected.pushedAt, snapshot.generatedAt)}</strong
+					>
+				</div>
 				<div class="inspector-primary">
 					<div><span>Commits</span><strong>{formatInteger(selected.commits)}</strong></div>
 					<div>
@@ -187,8 +207,8 @@
 				</div>
 				<dl>
 					<div>
-						<dt>Prior week</dt>
-						<dd>{formatSigned(selected.commits - selected.previousCommits)}</dd>
+						<dt>Prior-week commits</dt>
+						<dd>{formatInteger(selected.previousCommits)}</dd>
 					</div>
 					<div>
 						<dt>Added</dt>
@@ -211,6 +231,41 @@
 						<dd>{formatInteger(selected.openPullRequests)}</dd>
 					</div>
 				</dl>
+				<section class="repository-inspector__evidence">
+					<header>
+						<span>Repository evidence</span><small>Checks and recent GitHub records</small>
+					</header>
+					{#if selectedWorkflow}
+						<div class="repository-inspector__checks">
+							<div>
+								<strong>{formatInteger(selectedWorkflow.successful)}</strong><span>passed</span>
+							</div>
+							<div>
+								<strong>{formatInteger(selectedWorkflow.failed)}</strong><span>failed</span>
+							</div>
+							<div>
+								<strong>{formatInteger(selectedWorkflow.cancelled)}</strong><span>cancelled</span>
+							</div>
+						</div>
+					{:else}
+						<p>No accessible workflow totals for this repository.</p>
+					{/if}
+					{#if selectedArtifact}
+						<a href={selectedArtifact.url} target="_blank" rel="external noreferrer">
+							<span
+								>{selectedArtifact.kind === 'WorkflowRun'
+									? 'Workflow run'
+									: selectedArtifact.kind}</span
+							>
+							<strong title={selectedArtifact.title}
+								>{formatGitHubArtifactTitle(selectedArtifact.title)}</strong
+							>
+							<ArrowUpRight size={13} />
+						</a>
+					{:else}
+						<p>No retained outcome or workflow record for this repository.</p>
+					{/if}
+				</section>
 			{:else}<p>Select a repository.</p>{/if}
 		</aside>
 	</div>

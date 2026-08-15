@@ -25,7 +25,7 @@
 	);
 	let page = $state(0);
 	let selectedCommitSha = $state('');
-	const pageSize = 7;
+	const pageSize = 10;
 	const selectedDay = $derived(
 		projection.days.find((day) => day.date === resolvedDate) ?? projection.days[0]
 	);
@@ -51,7 +51,7 @@
 		<div>
 			<span>Commits</span><strong
 				>{formatInteger(snapshot.totals.commits)} commits · {formatCompact(snapshot.totals.churn)} lines
-				moved</strong
+				changed</strong
 			>
 		</div>
 		<nav aria-label={`Select engineering day in ${projection.timeZone}`}>
@@ -71,7 +71,8 @@
 		<header>
 			<div>
 				<span>{selectedDay?.longLabel ?? 'Selected day'}</span><strong
-					>{formatInteger(selectedDay?.commits ?? 0)} commits</strong
+					>{formatInteger(selectedDay?.commits ?? 0)}
+					{(selectedDay?.commits ?? 0) === 1 ? 'commit' : 'commits'}</strong
 				>
 			</div>
 			<div>
@@ -94,9 +95,8 @@
 						rel="external noreferrer"
 						onpointerenter={() => (selectedCommitSha = commit.sha)}
 						onfocus={() => (selectedCommitSha = commit.sha)}
-						><span>{commit.shortSha}</span><strong>{commit.message}</strong><span
-							>{commit.repository}</span
-						><span class="diff"
+						><span>{commit.shortSha}</span><strong title={commit.message}>{commit.message}</strong
+						><span title={commit.repository}>{commit.repository}</span><span class="diff"
 							><b>+{formatInteger(commit.additions)}</b><i>−{formatInteger(commit.deletions)}</i
 							></span
 						><ArrowUpRight size={14} weight="light" /></a

@@ -11,11 +11,8 @@
 	} from 'phosphor-svelte';
 	import type { DeliveryArtifact, GitHubDashboardSnapshot } from '$lib/domain/github-intelligence';
 	import { workflowAnnotationCoverage } from '$lib/domain/dashboard-workflow-annotations';
-	import {
-		formatInteger,
-		formatRelativeTime,
-		formatSigned
-	} from '$lib/presentation/dashboard-format';
+	import { formatInteger, formatRelativeTime } from '$lib/presentation/dashboard-format';
+	import { formatGitHubArtifactTitle } from '$lib/presentation/github-artifact-title';
 
 	type Props = { readonly snapshot: GitHubDashboardSnapshot };
 	type DeliveryMobilePanel = 'outcomes' | 'checks' | 'trail' | 'repos';
@@ -36,6 +33,16 @@
 	const verificationTotal = $derived(workflow.successful + workflow.failed);
 	const annotationCoverage = $derived(workflowAnnotationCoverage(snapshot));
 	const latestAnnotation = $derived(annotationCoverage.evidence[0] ?? null);
+	const outcomeNoun = $derived(
+		delivery.outcomes === 1 ? 'completed outcome' : 'completed outcomes'
+	);
+	const outcomeComparison = $derived(
+		delivery.outcomeDelta === 0
+			? `Same number as the prior seven days (${delivery.previousOutcomes}).`
+			: `${Math.abs(delivery.outcomeDelta)} ${
+					delivery.outcomeDelta > 0 ? 'more' : 'fewer'
+				} than the prior seven days (${delivery.previousOutcomes}).`
+	);
 
 	function artifactLabel(artifact: DeliveryArtifact): string {
 		switch (artifact.kind) {
@@ -62,7 +69,7 @@
 			>
 		{/each}
 	</nav>
-	<section class="delivery-score">
+	<section class="delivery-summary">
 		<img
 			class="delivery-portrait"
 			src={snapshot.profile.avatarUrl}
@@ -75,22 +82,25 @@
 		<header>
 			<span>{snapshot.period.label}</span><small>Merged work, releases, and checks</small>
 		</header>
-		<div class="delivery-score__value">
-			<strong>{delivery.score}</strong><span>delivery score</span>
+		<div class="delivery-summary__value">
+			<strong>{formatInteger(delivery.outcomes)}</strong><span>{outcomeNoun}</span>
 		</div>
 		<div class="delivery-message">
-			<span>{delivery.label}</span>
-			<p>{delivery.message}</p>
+			<span>Recorded this week</span>
+			<p>
+				{formatInteger(delivery.prereleaseBuilds)} prereleases; {formatInteger(
+					delivery.mergedPullRequests
+				)} merged pull requests; {formatInteger(delivery.closedIssues)} closed issues.
+			</p>
 		</div>
-		<div class="delivery-score__footer">
-			<span>{formatInteger(delivery.outcomes)} outcomes</span><strong
-				>{formatSigned(delivery.outcomeDelta)} vs prior window</strong
-			>
-		</div>
-		<div class="score-formula" aria-label="Delivery score formula">
-			<div><span>Outcomes</span><strong>{delivery.scoreBreakdown.outcomes}/56</strong></div>
-			<div><span>Verification</span><strong>{delivery.scoreBreakdown.verification}/34</strong></div>
-			<div><span>Coverage</span><strong>{delivery.scoreBreakdown.coverage}/10</strong></div>
+		<div class="delivery-summary__facts">
+			<div><span>Passed checks</span><strong>{formatInteger(workflow.successful)}</strong></div>
+			<div><span>Failed checks</span><strong>{formatInteger(workflow.failed)}</strong></div>
+			<div>
+				<span>Repositories with workflow data</span><strong
+					>{delivery.workflows.coveredRepositories}/{delivery.workflows.totalRepositories}</strong
+				>
+			</div>
 		</div>
 	</section>
 
@@ -120,8 +130,8 @@
 					weight="bold"
 				/>{/if}
 			<div>
-				<strong>{formatSigned(delivery.outcomeDelta)}</strong><span
-					>{delivery.previousOutcomes} outcomes in the prior seven days</span
+				<strong>{outcomeComparison}</strong><span
+					>{formatInteger(delivery.outcomes)} {outcomeNoun}</span
 				>
 			</div>
 		</div>
@@ -201,8 +211,8 @@
 					<i class={`artifact-status artifact-status--${artifact.status}`}></i>
 					<span class="artifact-kind">{artifactLabel(artifact)}</span>
 					<div>
-						<strong>{artifact.title}</strong><small>{artifact.repository} · {artifact.detail}</small
-						>
+						<strong title={artifact.title}>{formatGitHubArtifactTitle(artifact.title)}</strong
+						><small>{artifact.repository} · {artifact.detail}</small>
 					</div>
 					<time datetime={artifact.occurredAt}
 						>{formatRelativeTime(artifact.occurredAt, snapshot.generatedAt)}</time
