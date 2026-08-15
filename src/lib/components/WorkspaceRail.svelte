@@ -25,7 +25,7 @@
 		brief: 'Week',
 		delivery: 'Deliver',
 		craft: 'Quality',
-		repositories: 'Repos',
+		repositories: 'Project',
 		activity: 'Commits',
 		cloudflare: 'Cloud',
 		career: 'Career'

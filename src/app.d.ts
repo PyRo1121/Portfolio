@@ -4,6 +4,7 @@ import type {
 	CloudflareUsageRefreshResult,
 	CloudflareUsageSnapshot
 } from '$lib/domain/cloudflare-usage';
+import type { OwnerProjectSnapshot } from '$lib/domain/owner-project';
 
 // See https://svelte.dev/docs/kit/types#app.d.ts
 // for information about these interfaces
@@ -13,6 +14,11 @@ declare global {
 		// interface Locals {}
 		interface PageData {
 			career: CareerSnapshot | null;
+			ownerProjects: OwnerProjectSnapshot | null;
+			ownerProjectAccess: {
+				readonly _tag: 'Current' | 'Unavailable';
+				readonly reason: string;
+			};
 			careerAccess: {
 				readonly _tag: 'Current' | 'Unavailable';
 				readonly reason: string;
@@ -25,6 +31,7 @@ declare global {
 		interface Platform {
 			env: {
 				CAREER_DB: D1Database;
+				OWNER_DB: D1Database;
 				CAREER_OWNER_EMAIL?: string;
 				CLOUDFLARE_ACCOUNT_ID?: string;
 				CLOUDFLARE_API_TOKEN?: string;

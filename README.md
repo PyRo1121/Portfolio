@@ -7,6 +7,7 @@ A private-aware Svelte 5 dashboard for exploring weekly GitHub engineering activ
 ```bash
 cp .env.example .env
 npm ci
+npm run db:migrate:local
 npm run dev
 ```
 
@@ -14,7 +15,7 @@ Set `GITHUB_USERNAME` in `.env`, but keep GitHub credentials outside the reposit
 
 ## Cloudflare deployment
 
-The production application runs as the `weeknote` Cloudflare Worker at `https://gh.latham.cloud`, protected by Cloudflare Access for the exact owner email. Static assets use Workers Static Assets; independently versioned GitHub and Cloudflare snapshots use `WEEKNOTE_CACHE`; mutable owner-scoped opportunities, commitments, and interview stories use the dedicated `CAREER_DB` D1 binding; `GITHUB_TOKEN`, `GITHUB_CHECKS_APP_PRIVATE_KEY`, and `CLOUDFLARE_API_TOKEN` are Worker secrets.
+The production application runs as the `weeknote` Cloudflare Worker at `https://gh.latham.cloud`, protected by Cloudflare Access for the exact owner email. Static assets use Workers Static Assets; independently versioned GitHub and Cloudflare snapshots use `WEEKNOTE_CACHE`; mutable owner-scoped opportunities, commitments, and interview stories use the dedicated `CAREER_DB` D1 binding; confirmed cross-provider project mappings use the separate `OWNER_DB` D1 binding; `GITHUB_TOKEN`, `GITHUB_CHECKS_APP_PRIVATE_KEY`, and `CLOUDFLARE_API_TOKEN` are Worker secrets.
 
 ```bash
 npm run cf:types
@@ -30,21 +31,21 @@ Use `wrangler secret put GITHUB_TOKEN`, `wrangler secret put GITHUB_CHECKS_APP_P
 - Commit and churn totals come from commits reachable from each owned repository's current default branch, filtered to the configured GitHub user.
 - Commit additions, deletions, changed files, timestamps, and messages come from GitHub's `Commit` GraphQL object.
 - Repository inventory includes private/public visibility, language mass, open issues and pull requests, stars, forks, and disk usage.
+- The owner project registry persists explicit GitHub repository, Worker, D1, KV, R2, and domain associations in a separate D1 database. Project evidence joins only by exact provider ID; similar resource names are never treated as a confirmed association.
 - Contribution memory uses GitHub's contribution calendar for the previous twelve months.
 - Delivery outcomes deduplicate pull requests authored by the configured GitHub user with pull requests that user merged in owned repositories, regardless of whether a person or automation created them. The UI separates authored, maintainer, and automated merges.
 - Closed issues are deduplicated across issues authored by the configured user, issues that user closed in owned repositories, and issues closed by a pull request that user merged. Non-draft repository releases remain eligible outcomes; stable releases and prerelease builds remain separate.
 - Verification uses authenticated GitHub Actions runs on active repositories' default branches, attributed to the configured GitHub user. Coverage gaps and result truncation are exposed.
 - Today uses the viewer-local date at snapshot generation time and derives exact hourly, repository, commit, and change-mass signals from the collected commit evidence.
 - Craft separates observed evidence (checks, reverts, files, change size) from commit-message inference (feature/fix/refactor/test/docs mix). Missing coverage, code-scanning, and normalized lint evidence is explicitly labeled unavailable.
-- The delivery signal is transparent: up to 56 outcome points, 34 verification points, and 10 coverage points.
 - Live snapshots use a versioned server-only cache envelope: Cloudflare KV in production and Wrangler's local KV emulation in development. The PAT is never cached.
 - Cached private data renders immediately while one single-flight background refresh runs. On Cloudflare, warm refreshes use the execution context so the document response can close immediately.
-- If GitHub is temporarily unavailable, Weeknote keeps the last-known-good live snapshot and labels it cached. Demo intelligence is used only when authentication is absent; a first authenticated cold start shows a skeleton until a verified snapshot is available.
+- If GitHub is temporarily unavailable, Weeknote keeps the last-known-good live snapshot and labels it cached. When authentication is absent, the application shows an unavailable state and never substitutes runtime demo evidence; a first authenticated cold start shows a skeleton until a verified snapshot is available.
 - Private dashboard responses use `Cache-Control: private, no-store`; private repository data is never intentionally placed in a shared HTTP cache.
 - GitHub GraphQL collection uses a small account query, an isolated search/outcome query, and independently cached per-repository slices refreshed at concurrency six with a 15-second request timeout. A failed repository may reuse only same-window last-known-good evidence; without a matching slice, the full refresh fails and preserves the prior dashboard snapshot.
 - Repository collection health shows oldest retained-slice age and sums GitHub-returned point cost across successful account, search, repository, and pagination responses. Any fallback makes total cost **Unavailable** while preserving the known successful-response lower bound.
 - Verification totals include only default-branch push/dispatch runs. Actions jobs use the fine-grained PAT; bounded, job-linked check annotations use a one-hour token minted from a private least-privilege GitHub App. Authentication or permission gaps remain **Unavailable** and never become an inferred failure cause.
-- Cloudflare inventory counts are labeled **Provisioned**; Workers, D1, and KV analytics and D1 physical storage are labeled **Measured** only after a successful API read. Permission gaps and unsupported response shapes remain **Unavailable**, never zero.
+- Cloudflare inventory counts and exact Worker, D1, KV, and R2 resource identities are labeled **Provisioned** only after successful API parsing. Workers, D1, and KV analytics and D1 physical storage are labeled **Measured** only after a successful API read. Permission gaps and unsupported response shapes remain **Unavailable**, never zero.
 - Cloudflare collection has a separate cache envelope and refresh lifecycle, so Cloudflare failures cannot replace or invalidate GitHub evidence.
 - Career records are stored in a dedicated D1 database, scoped by the exact normalized Access owner email, and parsed server-side before every mutation. Stage transitions append dated evidence rather than overwriting history silently.
 - The Career workspace opens on a decision-first Accountability Review, then exposes deliberate opportunities, editable private context, one build and one job-search commitment, and private or sanitized interview story drafts. Due-date reminders are derived in the dashboard each viewer-local day; Weeknote does not claim an external notification was delivered or reward application spam.
@@ -58,7 +59,7 @@ Use `wrangler secret put GITHUB_TOKEN`, `wrangler secret put GITHUB_CHECKS_APP_P
 - `2` — Week
 - `3` — Delivery
 - `4` — Quality
-- `5` — Repositories
+- `5` — Projects
 - `6` — Commits
 - `7` — Cloudflare
 - `8` — Career

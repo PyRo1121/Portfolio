@@ -10,7 +10,7 @@
 	import CraftWorkspace from '$lib/components/CraftWorkspace.svelte';
 	import DashboardSkeleton from '$lib/components/DashboardSkeleton.svelte';
 	import DeliveryWorkspace from '$lib/components/DeliveryWorkspace.svelte';
-	import RepositoriesWorkspace from '$lib/components/RepositoriesWorkspace.svelte';
+	import ProjectsWorkspace from '$lib/components/ProjectsWorkspace.svelte';
 	import TodayWorkspace from '$lib/components/TodayWorkspace.svelte';
 	import WorkspaceRail from '$lib/components/WorkspaceRail.svelte';
 	import type { CareerSnapshot } from '$lib/domain/career-accountability';
@@ -28,12 +28,18 @@
 		zonedDateKey
 	} from '$lib/domain/dashboard-time';
 	import { createViewerActivityProjection } from '$lib/domain/dashboard-viewer-time';
-	import { filterRepositories, resolveSelectedRepository } from '$lib/domain/dashboard-workspace';
 	import type { GitHubDashboardSnapshot } from '$lib/domain/github-intelligence';
+	import type { OwnerProjectSnapshot } from '$lib/domain/owner-project';
+	import { createOwnerProjectNavigationSignal } from '$lib/domain/owner-project-navigation';
 	import { DashboardView } from '$lib/state/dashboard-view.svelte';
 
 	type PrivatePageData = {
 		readonly career: CareerSnapshot | null;
+		readonly ownerProjects: OwnerProjectSnapshot | null;
+		readonly ownerProjectAccess: {
+			readonly _tag: 'Current' | 'Unavailable';
+			readonly reason: string;
+		};
 		readonly careerAccess: {
 			readonly _tag: 'Current' | 'Unavailable';
 			readonly reason: string;
@@ -45,10 +51,13 @@
 		};
 		readonly cloudflareRefresh: Promise<CloudflareUsageRefreshResult>;
 	};
-	type CareerActionData = { readonly careerMessage?: string };
+	type ActionData = {
+		readonly careerMessage?: string;
+		readonly ownerProjectMessage?: string;
+	};
 	type PageProps = Omit<GeneratedPageProps, 'data' | 'form'> & {
 		readonly data: GeneratedPageProps['data'] & PrivatePageData;
-		readonly form: CareerActionData | null;
+		readonly form: ActionData | null;
 	};
 
 	let { data, form }: PageProps = $props();
@@ -64,18 +73,6 @@
 	let viewerTimeZone = $derived(SSR_VIEWER_TIME_ZONE);
 	const viewerToday = $derived(zonedDateKey(new Date(), viewerTimeZone));
 	const dashboardView = new DashboardView();
-	const visibleRepositories = $derived(
-		snapshot === null
-			? []
-			: filterRepositories(
-					snapshot.intelligence.repositories,
-					dashboardView.repositoryFilter,
-					dashboardView.repositoryQuery
-				)
-	);
-	const selectedRepository = $derived(
-		snapshot === null ? null : resolveSelectedRepository(snapshot, dashboardView.selectedRepository)
-	);
 	const viewerProjection = $derived(
 		snapshot === null ? null : createViewerActivityProjection(snapshot, viewerTimeZone)
 	);
@@ -91,6 +88,7 @@
 		if (snapshot === null || viewerProjection === null) return null;
 		return {
 			...createWorkspaceSignals(snapshot, viewerProjection, cloudflare),
+			repositories: createOwnerProjectNavigationSignal(data.ownerProjects),
 			career: createCareerNavigationSignal(career, viewerToday)
 		};
 	});
@@ -230,6 +228,22 @@
 					message={cloudflareMessage}
 				/>
 			</section>
+		{:else if dashboardView.activeWorkspace === 'repositories'}
+			<section
+				class="active"
+				aria-hidden="false"
+				tabindex="-1"
+				{@attach dashboardView.workspaceAttachment('repositories')}
+			>
+				<ProjectsWorkspace
+					registry={data.ownerProjects}
+					{snapshot}
+					{cloudflare}
+					accessReason={data.ownerProjectAccess.reason}
+					actionMessage={form?.ownerProjectMessage ?? ''}
+					requestedRepository={dashboardView.selectedRepository}
+				/>
+			</section>
 		{:else if snapshot === null}
 			<DashboardSkeleton
 				failed={refreshState === 'Unavailable'}
@@ -275,23 +289,6 @@
 				{@attach dashboardView.workspaceAttachment('craft')}
 			>
 				<CraftWorkspace {snapshot} />
-			</section>
-			<section
-				class:active={dashboardView.activeWorkspace === 'repositories'}
-				aria-hidden={dashboardView.activeWorkspace !== 'repositories'}
-				tabindex="-1"
-				{@attach dashboardView.workspaceAttachment('repositories')}
-			>
-				<RepositoriesWorkspace
-					{snapshot}
-					repositories={visibleRepositories}
-					selected={selectedRepository}
-					filter={dashboardView.repositoryFilter}
-					query={dashboardView.repositoryQuery}
-					onFilter={(filter) => dashboardView.setRepositoryFilter(filter)}
-					onQuery={(query) => dashboardView.setRepositoryQuery(query)}
-					onSelect={(fullName) => dashboardView.selectRepository(fullName)}
-				/>
 			</section>
 			<section
 				class:active={dashboardView.activeWorkspace === 'activity'}

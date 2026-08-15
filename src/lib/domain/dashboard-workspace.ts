@@ -1,11 +1,6 @@
-import type { GitHubDashboardSnapshot, RepositoryIntelligence } from './github-intelligence';
-
 /** Top-level analytical workspaces available in the dashboard. */
 export type DashboardWorkspace =
 	'today' | 'brief' | 'delivery' | 'craft' | 'repositories' | 'activity' | 'cloudflare' | 'career';
-
-/** Repository visibility filters supported by the explorer. */
-export type RepositoryFilter = 'all' | 'active' | 'private' | 'public';
 
 /** Metadata for one dashboard workspace. */
 export type WorkspaceDefinition = {
@@ -49,8 +44,8 @@ export const workspaceDefinitions: ReadonlyArray<WorkspaceDefinition> = [
 	{
 		id: 'repositories',
 		index: 5,
-		label: 'Repos',
-		description: 'Repository list and current activity',
+		label: 'Projects',
+		description: 'Confirmed GitHub and Cloudflare links',
 		shortcut: '5'
 	},
 	{
@@ -75,39 +70,3 @@ export const workspaceDefinitions: ReadonlyArray<WorkspaceDefinition> = [
 		shortcut: '8'
 	}
 ];
-
-/** Return a filtered repository list for the explorer. */
-export function filterRepositories(
-	repositories: ReadonlyArray<RepositoryIntelligence>,
-	filter: RepositoryFilter,
-	query: string
-): ReadonlyArray<RepositoryIntelligence> {
-	const normalizedQuery = query.trim().toLocaleLowerCase();
-	return repositories.filter((repository) => {
-		const matchesFilter =
-			filter === 'all' ||
-			(filter === 'active' && repository.commits > 0) ||
-			(filter === 'private' && repository.isPrivate) ||
-			(filter === 'public' && !repository.isPrivate);
-		const matchesQuery =
-			normalizedQuery.length === 0 ||
-			repository.name.toLocaleLowerCase().includes(normalizedQuery) ||
-			repository.description.toLocaleLowerCase().includes(normalizedQuery) ||
-			repository.primaryLanguage.toLocaleLowerCase().includes(normalizedQuery);
-		return matchesFilter && matchesQuery;
-	});
-}
-
-/** Resolve one selected repository, falling back to the most active repository. */
-export function resolveSelectedRepository(
-	snapshot: GitHubDashboardSnapshot,
-	selectedFullName: string | null
-): RepositoryIntelligence | null {
-	return (
-		snapshot.intelligence.repositories.find(
-			(repository) => repository.fullName === selectedFullName
-		) ??
-		snapshot.intelligence.repositories[0] ??
-		null
-	);
-}

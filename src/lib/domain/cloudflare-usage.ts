@@ -32,6 +32,30 @@ export const CloudflareProductEvidenceSchema = Schema.Struct({
 });
 export type CloudflareProductEvidence = Schema.Schema.Type<typeof CloudflareProductEvidenceSchema>;
 
+/** Named Cloudflare resource types retained for owner-confirmed project association. */
+export const CloudflareResourceKindSchema = Schema.Union(
+	Schema.Literal('Worker'),
+	Schema.Literal('D1Database'),
+	Schema.Literal('KVNamespace'),
+	Schema.Literal('R2Bucket')
+);
+export type CloudflareResourceKind = Schema.Schema.Type<typeof CloudflareResourceKindSchema>;
+
+/** One exact account resource returned by a Cloudflare inventory endpoint. */
+export const CloudflareResourceEvidenceSchema = Schema.Struct({
+	kind: CloudflareResourceKindSchema,
+	providerId: Schema.String,
+	name: Schema.String,
+	state: Schema.Literal('Provisioned'),
+	createdAt: Schema.NullOr(Schema.String),
+	modifiedAt: Schema.NullOr(Schema.String),
+	sizeBytes: Schema.NullOr(Schema.Number),
+	evidenceUrl: Schema.String
+});
+export type CloudflareResourceEvidence = Schema.Schema.Type<
+	typeof CloudflareResourceEvidenceSchema
+>;
+
 /** One measured Cloudflare usage or storage signal. */
 export const CloudflareMetricSchema = Schema.Struct({
 	id: Schema.Union(
@@ -56,6 +80,7 @@ export const CloudflareUsageSnapshotSchema = Schema.Struct({
 	generatedAt: Schema.String,
 	period: Schema.Struct({ startIso: Schema.String, endIso: Schema.String, label: Schema.String }),
 	products: Schema.Array(CloudflareProductEvidenceSchema),
+	resources: Schema.Array(CloudflareResourceEvidenceSchema),
 	metrics: Schema.Array(CloudflareMetricSchema),
 	summary: Schema.Struct({
 		availableProducts: Schema.Number,

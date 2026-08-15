@@ -12,8 +12,10 @@
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build",
-		"deploy": "npm run ci && wrangler deploy --strict",
+		"deploy": "npm run ci && npm run db:migrate:remote && wrangler deploy --strict",
 		"deploy:dry-run": "npm run build && wrangler deploy --dry-run --strict",
+		"db:migrate:local": "wrangler d1 migrations apply CAREER_DB --local && wrangler d1 migrations apply OWNER_DB --local",
+		"db:migrate:remote": "wrangler d1 migrations apply CAREER_DB --remote && wrangler d1 migrations apply OWNER_DB --remote",
 		"preview": "vite preview",
 		"preview:cloudflare": "npm run build && wrangler dev .svelte-kit/cloudflare/_worker.js",
 		"prepare": "svelte-kit sync",

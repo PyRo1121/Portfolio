@@ -82,6 +82,7 @@ const cloudflare: CloudflareUsageSnapshot = {
 		endIso: '2026-08-14T12:00:00.000Z',
 		label: 'Rolling seven days'
 	},
+	resources: [],
 	products: [
 		{
 			id: 'd1',

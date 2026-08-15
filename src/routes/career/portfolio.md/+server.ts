@@ -3,7 +3,7 @@ import { error, text } from '@sveltejs/kit';
 import { Effect } from 'effect';
 import type { RequestHandler } from './$types';
 import { createCareerPortfolioMarkdown } from '$lib/domain/career-portfolio-export';
-import { resolveCareerAccess } from '$lib/server/career-access';
+import { resolveOwnerAccess } from '$lib/server/owner-access';
 import { loadShareDraftStories } from '$lib/server/career-story-store';
 
 export const GET: RequestHandler = async ({ platform, request, setHeaders }) => {
@@ -12,7 +12,7 @@ export const GET: RequestHandler = async ({ platform, request, setHeaders }) => 
 		'x-content-type-options': 'nosniff'
 	});
 	if (platform === undefined) error(503, 'Career export storage is unavailable.');
-	const access = resolveCareerAccess(
+	const access = resolveOwnerAccess(
 		request.headers,
 		platform.env.CAREER_OWNER_EMAIL?.trim() || env['CAREER_OWNER_EMAIL']?.trim()
 	);
