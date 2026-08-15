@@ -1,7 +1,7 @@
 import { Effect, Either, Redacted, Schema } from 'effect';
+import { githubRequestHeaders } from './github-http';
 
 const API_ROOT = 'https://api.github.com';
-const API_VERSION = '2022-11-28';
 const REQUEST_TIMEOUT_MS = 10_000;
 const JWT_BACKDATE_SECONDS = 60;
 const JWT_LIFETIME_SECONDS = 9 * 60;
@@ -129,12 +129,10 @@ export function fetchGitHubChecksToken(
 					`${API_ROOT}/app/installations/${encodeURIComponent(decodedConfig.installationId)}/access_tokens`,
 					{
 						method: 'POST',
-						headers: {
-							Accept: 'application/vnd.github+json',
-							Authorization: `Bearer ${jwt}`,
-							'Content-Type': 'application/json',
-							'X-GitHub-Api-Version': API_VERSION
-						},
+						headers: githubRequestHeaders({
+							authorization: `Bearer ${jwt}`,
+							json: true
+						}),
 						body: JSON.stringify({ permissions: { checks: 'read' } }),
 						signal: controller.signal
 					}

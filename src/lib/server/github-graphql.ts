@@ -7,6 +7,7 @@ import type {
 	ReleaseInput,
 	RepositoryIntelligenceInput
 } from '$lib/domain/github-intelligence';
+import { githubRequestHeaders } from '$lib/server/github-http';
 import { collectGitHubRepositorySlices } from '$lib/server/github-repository-collector';
 import type { GitHubRepositoryRefresh } from '$lib/server/github-repository-collector';
 import type {
@@ -434,12 +435,10 @@ function graphQLRequest(
 			try {
 				const response = await fetch(GRAPHQL_ENDPOINT, {
 					method: 'POST',
-					headers: {
-						Accept: 'application/vnd.github+json',
-						Authorization: `Bearer ${Redacted.value(token)}`,
-						'Content-Type': 'application/json',
-						'X-GitHub-Api-Version': '2022-11-28'
-					},
+					headers: githubRequestHeaders({
+						authorization: `Bearer ${Redacted.value(token)}`,
+						json: true
+					}),
 					body: JSON.stringify({ query, variables }),
 					signal: controller.signal
 				});

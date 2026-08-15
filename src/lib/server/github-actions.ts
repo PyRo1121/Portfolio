@@ -6,6 +6,7 @@ import type {
 	WorkflowRunInput
 } from '$lib/domain/github-intelligence';
 import { fetchWorkflowAnnotations } from '$lib/server/github-check-annotations';
+import { githubRequestHeaders } from '$lib/server/github-http';
 
 const API_ROOT = 'https://api.github.com';
 const PAGE_SIZE = 100;
@@ -125,11 +126,9 @@ function fetchRepositoryWindow(
 					fetch(
 						`${API_ROOT}/repos/${repositoryPath(repository)}/actions/runs?${parameters.toString()}`,
 						{
-							headers: {
-								Accept: 'application/vnd.github+json',
-								Authorization: `Bearer ${Redacted.value(token)}`,
-								'X-GitHub-Api-Version': '2022-11-28'
-							}
+							headers: githubRequestHeaders({
+								authorization: `Bearer ${Redacted.value(token)}`
+							})
 						}
 					),
 				catch: (cause) => cause
