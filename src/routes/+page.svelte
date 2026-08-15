@@ -1114,6 +1114,19 @@
 		display: grid;
 		grid-template-rows: auto minmax(0, 1fr) auto;
 	}
+	:global(.today-pulse-panel > header) {
+		text-transform: none !important;
+		letter-spacing: 0 !important;
+	}
+	:global(.today-pulse-panel > header span) {
+		font: 590 0.74rem/1.2 var(--sans);
+		color: var(--ink);
+		letter-spacing: -0.015em;
+	}
+	:global(.today-pulse-panel > header small) {
+		font: 500 0.63rem/1.2 var(--mono);
+		color: var(--muted);
+	}
 	:global(.today-pulse-panel footer) {
 		display: flex;
 		justify-content: space-between;

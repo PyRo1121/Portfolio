@@ -19,7 +19,7 @@
 	type TodayMobilePanel = 'pulse' | 'change' | 'rhythm' | 'work' | 'commits';
 	let { snapshot, projection }: Props = $props();
 	const mobilePanels: ReadonlyArray<{ readonly id: TodayMobilePanel; readonly label: string }> = [
-		{ id: 'pulse', label: 'Pulse' },
+		{ id: 'pulse', label: 'Hours' },
 		{ id: 'change', label: 'Change' },
 		{ id: 'rhythm', label: 'Rhythm' },
 		{ id: 'work', label: 'Work' },
@@ -85,7 +85,7 @@
 	<section
 		class={mobilePanel === 'pulse' ? 'today-pulse-panel panel-visible' : 'today-pulse-panel'}
 	>
-		<header><span>Build pulse</span><small>24 viewer-local hours</small></header>
+		<header><span>Today by hour</span><small>Interactive viewer-local clock</small></header>
 		<TodayPulse
 			{today}
 			timeLabel={projection.timeLabel}
