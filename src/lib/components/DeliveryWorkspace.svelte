@@ -12,6 +12,7 @@
 	import type { DeliveryArtifact, GitHubDashboardSnapshot } from '$lib/domain/github-intelligence';
 	import { workflowAnnotationCoverage } from '$lib/domain/dashboard-workflow-annotations';
 	import { formatInteger, formatRelativeTime } from '$lib/presentation/dashboard-format';
+	import { deliveryIssueBreakdown } from '$lib/presentation/delivery-issue-breakdown';
 	import { deliveryMergeBreakdown } from '$lib/presentation/delivery-merge-breakdown';
 	import { formatGitHubArtifactTitle } from '$lib/presentation/github-artifact-title';
 
@@ -30,6 +31,7 @@
 	];
 	const delivery = $derived(snapshot.intelligence.delivery);
 	const mergeBreakdown = $derived(deliveryMergeBreakdown(delivery));
+	const issueBreakdown = $derived(deliveryIssueBreakdown(delivery));
 	const workflow = $derived(delivery.workflows.current);
 	const artifacts = $derived(delivery.artifacts.slice(0, 8));
 	const verificationTotal = $derived(workflow.successful + workflow.failed);
@@ -128,6 +130,16 @@
 				<CheckCircle size={20} weight="light" /><strong
 					>{formatInteger(delivery.closedIssues)}</strong
 				><span>Closed issues</span>
+				{#if delivery.closedIssues > 0}
+					<small
+						>{formatInteger(issueBreakdown.authored)} authored · {formatInteger(
+							issueBreakdown.closedByYou
+						)} closed by you · {formatInteger(issueBreakdown.viaPullRequest)} via merged PR</small
+					>
+				{:else}
+					<small>No matching issue closures</small>
+				{/if}
+				{#if issueBreakdown.truncated}<small>At least; GitHub result cap reached</small>{/if}
 			</div>
 			<div>
 				<Package size={20} weight="light" />

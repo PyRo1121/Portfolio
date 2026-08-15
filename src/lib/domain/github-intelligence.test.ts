@@ -84,6 +84,10 @@ describe('createGitHubDashboardSnapshot', () => {
 				automatedMergedPullRequests: 0,
 				mergedPullRequestsTruncated: false,
 				closedIssues: 0,
+				authoredClosedIssues: 0,
+				ownerClosedIssues: 0,
+				pullRequestClosedIssues: 0,
+				closedIssuesTruncated: false,
 				previousMergedPullRequests: 0,
 				previousClosedIssues: 0,
 				outcomes: [

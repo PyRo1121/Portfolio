@@ -169,7 +169,8 @@ export type DeliveryOutcomeInput = {
 	readonly url: string;
 	readonly occurredAt: string;
 	readonly isPrivate: boolean;
-	readonly responsibility: 'Authored' | 'Maintainer' | 'Automated';
+	readonly responsibility:
+		'Authored' | 'Maintainer' | 'Automated' | 'ClosedByOwner' | 'ClosedByPullRequest';
 };
 
 /** A published GitHub release in the rolling window. */
@@ -292,6 +293,10 @@ export type GitHubIntelligenceInput = {
 		readonly automatedMergedPullRequests: number;
 		readonly mergedPullRequestsTruncated: boolean;
 		readonly closedIssues: number;
+		readonly authoredClosedIssues: number;
+		readonly ownerClosedIssues: number;
+		readonly pullRequestClosedIssues: number;
+		readonly closedIssuesTruncated: boolean;
 		readonly previousMergedPullRequests: number;
 		readonly previousClosedIssues: number;
 		readonly outcomes: ReadonlyArray<DeliveryOutcomeInput>;
@@ -375,6 +380,10 @@ export type DeliveryIntelligence = {
 	readonly automatedMergedPullRequests: number;
 	readonly mergedPullRequestsTruncated: boolean;
 	readonly closedIssues: number;
+	readonly authoredClosedIssues: number;
+	readonly ownerClosedIssues: number;
+	readonly pullRequestClosedIssues: number;
+	readonly closedIssuesTruncated: boolean;
 	readonly releases: number;
 	readonly prereleaseBuilds: number;
 	readonly outcomes: number;
@@ -687,19 +696,28 @@ function buildDelivery(input: GitHubIntelligenceInput['delivery']): DeliveryInte
 		completedRuns === 0
 			? null
 			: Math.round((input.workflows.current.successful / completedRuns) * 100);
-	const outcomeArtifacts: DeliveryArtifact[] = input.outcomes.map((outcome) => ({
-		kind: outcome.kind,
-		title: outcome.title,
-		repository: outcome.repository,
-		url: outcome.url,
-		occurredAt: outcome.occurredAt,
-		status: 'shipped',
-		detail: `${outcome.kind === 'PullRequest' ? 'PR' : 'Issue'} #${outcome.number}${
-			outcome.kind === 'PullRequest' && outcome.responsibility !== 'Authored'
-				? ` · ${outcome.responsibility === 'Automated' ? 'automated update' : 'maintainer merge'}`
-				: ''
-		}`
-	}));
+	const outcomeArtifacts: DeliveryArtifact[] = input.outcomes.map((outcome) => {
+		let responsibility = '';
+		if (outcome.kind === 'PullRequest' && outcome.responsibility !== 'Authored') {
+			responsibility =
+				outcome.responsibility === 'Automated' ? ' · automated update' : ' · maintainer merge';
+		}
+		if (outcome.kind === 'Issue' && outcome.responsibility === 'ClosedByOwner') {
+			responsibility = ' · closed by you';
+		}
+		if (outcome.kind === 'Issue' && outcome.responsibility === 'ClosedByPullRequest') {
+			responsibility = ' · closed by merged PR';
+		}
+		return {
+			kind: outcome.kind,
+			title: outcome.title,
+			repository: outcome.repository,
+			url: outcome.url,
+			occurredAt: outcome.occurredAt,
+			status: 'shipped',
+			detail: `${outcome.kind === 'PullRequest' ? 'PR' : 'Issue'} #${outcome.number}${responsibility}`
+		};
+	});
 	const releaseArtifacts: DeliveryArtifact[] = input.releases.map((release) => ({
 		kind: 'Release',
 		title: release.name,
@@ -725,6 +743,10 @@ function buildDelivery(input: GitHubIntelligenceInput['delivery']): DeliveryInte
 		automatedMergedPullRequests: input.automatedMergedPullRequests,
 		mergedPullRequestsTruncated: input.mergedPullRequestsTruncated,
 		closedIssues: input.closedIssues,
+		authoredClosedIssues: input.authoredClosedIssues,
+		ownerClosedIssues: input.ownerClosedIssues,
+		pullRequestClosedIssues: input.pullRequestClosedIssues,
+		closedIssuesTruncated: input.closedIssuesTruncated,
 		releases,
 		prereleaseBuilds,
 		outcomes,
@@ -980,6 +1002,10 @@ export function createDemoIntelligence(base: WeeklySnapshot): GitHubDashboardSna
 			automatedMergedPullRequests: 1,
 			mergedPullRequestsTruncated: false,
 			closedIssues: 1,
+			authoredClosedIssues: 1,
+			ownerClosedIssues: 0,
+			pullRequestClosedIssues: 0,
+			closedIssuesTruncated: false,
 			previousMergedPullRequests: 1,
 			previousClosedIssues: 1,
 			outcomes: [
