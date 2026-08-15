@@ -3,6 +3,7 @@ import type {
 	CloudflareMetric,
 	CloudflareProductEvidence,
 	CloudflareProductId,
+	CloudflareResourceEvidence,
 	CloudflareUsageSnapshot
 } from '$lib/domain/cloudflare-usage';
 
@@ -85,12 +86,25 @@ const ApiEnvelopeSchema = Schema.Struct({
 	)
 });
 const ArrayResultSchema = Schema.Array(Schema.Unknown);
-const BucketResultSchema = Schema.Struct({ buckets: Schema.Array(Schema.Unknown) });
+const WorkerInventorySchema = Schema.Array(
+	Schema.Struct({
+		id: Schema.String,
+		tag: Schema.optional(Schema.String),
+		created_on: Schema.optional(Schema.String),
+		modified_on: Schema.optional(Schema.String)
+	})
+);
+const R2BucketSchema = Schema.Struct({ name: Schema.String, creation_date: Schema.String });
+const BucketResultSchema = Schema.Struct({ buckets: Schema.Array(R2BucketSchema) });
 const ItemsResultSchema = Schema.Struct({ items: Schema.Array(Schema.Unknown) });
+const KvNamespaceInventorySchema = Schema.Array(
+	Schema.Struct({ id: Schema.String, title: Schema.String })
+);
 const D1DatabaseSchema = Schema.Struct({
 	uuid: Schema.String,
 	name: Schema.String,
-	file_size: Schema.optional(Schema.Number)
+	file_size: Schema.optional(Schema.Number),
+	created_at: Schema.optional(Schema.String)
 });
 const D1DatabasesSchema = Schema.Array(D1DatabaseSchema);
 const D1DetailSchema = Schema.Struct({ file_size: Schema.Number });
@@ -193,37 +207,121 @@ function unavailableProduct(
 	};
 }
 
+type ProductCollection = {
+	readonly product: CloudflareProductEvidence;
+	readonly resources: ReadonlyArray<CloudflareResourceEvidence>;
+};
+
+function namedResources(
+	definition: ProductDefinition,
+	envelope: Schema.Schema.Type<typeof ApiEnvelopeSchema>,
+	accountId: string
+): ReadonlyArray<CloudflareResourceEvidence> | null {
+	if (definition.id === 'workers') {
+		const decoded = Schema.decodeUnknownEither(WorkerInventorySchema)(envelope.result);
+		return Either.isLeft(decoded)
+			? null
+			: decoded.right.map((worker) => ({
+					kind: 'Worker' as const,
+					providerId: worker.id,
+					name: worker.id,
+					state: 'Provisioned' as const,
+					createdAt: worker.created_on ?? null,
+					modifiedAt: worker.modified_on ?? null,
+					sizeBytes: null,
+					evidenceUrl: `https://dash.cloudflare.com/${accountId}/workers/services/view/${encodeURIComponent(worker.id)}/production`
+				}));
+	}
+	if (definition.id === 'd1') {
+		const decoded = Schema.decodeUnknownEither(D1DatabasesSchema)(envelope.result);
+		return Either.isLeft(decoded)
+			? null
+			: decoded.right.map((database) => ({
+					kind: 'D1Database' as const,
+					providerId: database.uuid,
+					name: database.name,
+					state: 'Provisioned' as const,
+					createdAt: database.created_at ?? null,
+					modifiedAt: null,
+					sizeBytes: database.file_size ?? null,
+					evidenceUrl: `https://dash.cloudflare.com/${accountId}/d1/${database.uuid}`
+				}));
+	}
+	if (definition.id === 'kv') {
+		const decoded = Schema.decodeUnknownEither(KvNamespaceInventorySchema)(envelope.result);
+		return Either.isLeft(decoded)
+			? null
+			: decoded.right.map((namespace) => ({
+					kind: 'KVNamespace' as const,
+					providerId: namespace.id,
+					name: namespace.title,
+					state: 'Provisioned' as const,
+					createdAt: null,
+					modifiedAt: null,
+					sizeBytes: null,
+					evidenceUrl: `https://dash.cloudflare.com/${accountId}/workers/kv/namespaces/${namespace.id}`
+				}));
+	}
+	if (definition.id === 'r2') {
+		const decoded = Schema.decodeUnknownEither(BucketResultSchema)(envelope.result);
+		return Either.isLeft(decoded)
+			? null
+			: decoded.right.buckets.map((bucket) => ({
+					kind: 'R2Bucket' as const,
+					providerId: bucket.name,
+					name: bucket.name,
+					state: 'Provisioned' as const,
+					createdAt: bucket.creation_date,
+					modifiedAt: null,
+					sizeBytes: null,
+					evidenceUrl: `https://dash.cloudflare.com/${accountId}/r2/default/buckets/${encodeURIComponent(bucket.name)}`
+				}));
+	}
+	return [];
+}
+
 async function collectProduct(
 	fetch: Fetch,
 	token: Redacted.Redacted<string>,
 	accountId: string,
 	definition: ProductDefinition
-): Promise<CloudflareProductEvidence> {
+): Promise<ProductCollection> {
 	const exit = await Effect.runPromiseExit(
 		requestApiResult(fetch, token, accountId, definition.path)
 	);
 	if (exit._tag === 'Failure') {
-		return unavailableProduct(
-			definition,
-			accountId,
-			'The inventory endpoint is unavailable or the token lacks permission.'
-		);
+		return {
+			product: unavailableProduct(
+				definition,
+				accountId,
+				'The inventory endpoint is unavailable or the token lacks permission.'
+			),
+			resources: []
+		};
 	}
 	const count = inventoryCount(exit.value, definition.resultKey);
-	return count === null
-		? unavailableProduct(
+	const resources = namedResources(definition, exit.value, accountId);
+	if (count === null || resources === null) {
+		return {
+			product: unavailableProduct(
 				definition,
 				accountId,
 				'Cloudflare returned an unrecognized inventory shape.'
-			)
-		: {
-				id: definition.id,
-				label: definition.label,
-				count,
-				state: 'Provisioned',
-				detail: `${count} resources enumerated by the account API. This is inventory, not usage.`,
-				evidenceUrl: `https://dash.cloudflare.com/${accountId}${definition.evidencePath}`
-			};
+			),
+			resources: []
+		};
+	}
+	return {
+		product: {
+			id: definition.id,
+			label: definition.label,
+			count,
+			state: 'Provisioned',
+			detail: `${count} resources enumerated by the account API. This is inventory, not usage.`,
+			evidenceUrl: `https://dash.cloudflare.com/${accountId}${definition.evidencePath}`
+		},
+		resources
+	};
 }
 
 function unavailableMetric(
@@ -533,7 +631,7 @@ export async function loadCloudflareUsageSnapshot(
 	const endIso = end.toISOString();
 	const startDate = startIso.slice(0, 10);
 	const endDate = endIso.slice(0, 10);
-	const [products, d1Storage, workerMetrics, d1Metrics, kvMetric] = await Promise.all([
+	const [productCollections, d1Storage, workerMetrics, d1Metrics, kvMetric] = await Promise.all([
 		Promise.all(
 			productDefinitions.map((definition) => collectProduct(fetch, token, accountId, definition))
 		),
@@ -542,12 +640,17 @@ export async function loadCloudflareUsageSnapshot(
 		collectD1Analytics(fetch, token, accountId, startDate, endDate),
 		collectKvAnalytics(fetch, token, accountId, startDate, endDate)
 	]);
+	const products = productCollections.map((collection) => collection.product);
+	const resources = productCollections
+		.flatMap((collection) => collection.resources)
+		.sort((left, right) => left.name.localeCompare(right.name));
 	const metrics = [...workerMetrics, ...d1Metrics, kvMetric, d1Storage];
 	const availableProducts = products.filter((product) => product.state === 'Provisioned').length;
 	return {
 		generatedAt: now.toISOString(),
 		period: { startIso, endIso, label: 'Last 7 UTC days' },
 		products,
+		resources,
 		metrics,
 		summary: {
 			availableProducts,

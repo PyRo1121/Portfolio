@@ -1,16 +1,16 @@
 /** Result of enforcing the exact-owner Cloudflare Access boundary. */
-export type CareerAccessDecision =
+export type OwnerAccessDecision =
 	| { readonly _tag: 'Allowed'; readonly ownerEmail: string }
 	| { readonly _tag: 'Denied'; readonly reason: string };
 
-/** Resolve the authenticated Career owner from Cloudflare Access headers. */
-export function resolveCareerAccess(
+/** Resolve the authenticated owner from Cloudflare Access headers. */
+export function resolveOwnerAccess(
 	headers: Headers,
 	configuredOwnerEmail: string | undefined
-): CareerAccessDecision {
+): OwnerAccessDecision {
 	const expected = configuredOwnerEmail?.trim().toLocaleLowerCase();
 	if (expected === undefined || expected.length === 0) {
-		return { _tag: 'Denied', reason: 'Career owner configuration is unavailable.' };
+		return { _tag: 'Denied', reason: 'Owner identity configuration is unavailable.' };
 	}
 	const assertion = headers.get('cf-access-jwt-assertion')?.trim();
 	const authenticatedEmail = headers
@@ -18,7 +18,7 @@ export function resolveCareerAccess(
 		?.trim()
 		.toLocaleLowerCase();
 	if (assertion === undefined || assertion.length === 0 || authenticatedEmail !== expected) {
-		return { _tag: 'Denied', reason: 'Career data requires the configured owner identity.' };
+		return { _tag: 'Denied', reason: 'Owner data requires the configured Access identity.' };
 	}
 	return { _tag: 'Allowed', ownerEmail: expected };
 }

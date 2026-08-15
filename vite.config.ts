@@ -13,7 +13,7 @@ export default defineConfig({
 
 			adapter: adapter({
 				platformProxy: {
-					persist: { path: '.wrangler/state' }
+					persist: { path: '.wrangler/state/v3' }
 				}
 			})
 		})

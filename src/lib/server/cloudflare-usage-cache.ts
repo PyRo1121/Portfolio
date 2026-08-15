@@ -7,7 +7,7 @@ import {
 } from '$lib/domain/cloudflare-usage';
 import type { DashboardCacheStore } from './dashboard-snapshot-cache';
 
-const CACHE_VERSION = 1;
+const CACHE_VERSION = 2;
 const DEFAULT_FRESHNESS_MS = 15 * 60_000;
 const CacheEnvelopeSchema = Schema.Struct({
 	version: Schema.Literal(CACHE_VERSION),

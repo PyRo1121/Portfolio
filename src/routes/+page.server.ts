@@ -13,9 +13,13 @@ import {
 } from '$lib/domain/career-accountability';
 import type { CloudflareUsageRefreshResult } from '$lib/domain/cloudflare-usage';
 import type { DashboardRefreshResult } from '$lib/domain/dashboard-hydration';
-import { createDemoIntelligence } from '$lib/domain/github-intelligence';
-import { createDemoSnapshot } from '$lib/domain/github-stats';
-import { resolveCareerAccess } from '$lib/server/career-access';
+import {
+	parseAddOwnerProjectResource,
+	parseCreateOwnerProject,
+	parseRemoveOwnerProjectResource,
+	parseUpdateOwnerProject
+} from '$lib/domain/owner-project';
+import { resolveOwnerAccess } from '$lib/server/owner-access';
 import {
 	createCareerCommitment,
 	createCareerOpportunity,
@@ -31,6 +35,13 @@ import { cloudflareUsageCacheFor } from '$lib/server/cloudflare-usage-cache';
 import { loadLiveDashboardSnapshot } from '$lib/server/dashboard-loader';
 import { parseGitHubChecksAppConfig } from '$lib/server/github-app-auth';
 import { dashboardSnapshotCacheFor } from '$lib/server/dashboard-snapshot-cache';
+import {
+	addOwnerProjectResource,
+	createOwnerProject,
+	loadOwnerProjectSnapshot,
+	removeOwnerProjectResource,
+	updateOwnerProject
+} from '$lib/server/owner-project-store';
 
 const DEFAULT_USERNAME = 'PyRo1121';
 
@@ -57,7 +68,7 @@ export const load: PageServerLoad = async ({ platform, request, setHeaders }) =>
 			env['GITHUB_CHECKS_APP_PRIVATE_KEY']?.trim()
 	});
 
-	const careerAccess = resolveCareerAccess(
+	const careerAccess = resolveOwnerAccess(
 		request.headers,
 		platform.env.CAREER_OWNER_EMAIL?.trim() || env['CAREER_OWNER_EMAIL']?.trim()
 	);
@@ -80,6 +91,29 @@ export const load: PageServerLoad = async ({ platform, request, setHeaders }) =>
 		}
 	}
 	const careerPageData = { career, careerAccess: careerData };
+	let ownerProjects: App.PageData['ownerProjects'] = null;
+	let ownerProjectAccess: App.PageData['ownerProjectAccess'];
+	if (careerAccess._tag === 'Denied') {
+		ownerProjectAccess = { _tag: 'Unavailable', reason: careerAccess.reason };
+	} else {
+		const ownerProjectExit = await Effect.runPromiseExit(
+			loadOwnerProjectSnapshot(platform.env.OWNER_DB, careerAccess.ownerEmail)
+		);
+		if (ownerProjectExit._tag === 'Success') {
+			ownerProjects = ownerProjectExit.value;
+			ownerProjectAccess = {
+				_tag: 'Current',
+				reason: 'Exact-owner Access identity verified.'
+			};
+		} else {
+			console.warn('Owner project registry load failed:', ownerProjectExit.cause);
+			ownerProjectAccess = {
+				_tag: 'Unavailable',
+				reason: 'Owner project storage is temporarily unavailable.'
+			};
+		}
+	}
+	const ownerProjectData = { ownerProjects, ownerProjectAccess };
 
 	const cloudflareToken =
 		platform.env.CLOUDFLARE_API_TOKEN?.trim() || env['CLOUDFLARE_API_TOKEN']?.trim();
@@ -123,11 +157,8 @@ export const load: PageServerLoad = async ({ platform, request, setHeaders }) =>
 	};
 
 	if (token === undefined || token.length === 0) {
-		const snapshot = createDemoIntelligence(
-			createDemoSnapshot(now, username, 'Add GITHUB_TOKEN to unlock private account intelligence.')
-		);
 		return {
-			snapshot,
+			snapshot: null,
 			cache: { _tag: 'Cold' as const, cachedAt: null },
 			refresh: Promise.resolve<DashboardRefreshResult>({
 				_tag: 'Unavailable',
@@ -135,7 +166,8 @@ export const load: PageServerLoad = async ({ platform, request, setHeaders }) =>
 				reason: 'GitHub authentication is not configured.'
 			}),
 			...cloudflareData,
-			...careerPageData
+			...careerPageData,
+			...ownerProjectData
 		};
 	}
 
@@ -159,7 +191,8 @@ export const load: PageServerLoad = async ({ platform, request, setHeaders }) =>
 			cache: { _tag: 'Cached' as const, cachedAt: cached.cachedAt },
 			refresh,
 			...cloudflareData,
-			...careerPageData
+			...careerPageData,
+			...ownerProjectData
 		};
 	}
 
@@ -168,7 +201,8 @@ export const load: PageServerLoad = async ({ platform, request, setHeaders }) =>
 		cache: { _tag: 'Cold' as const, cachedAt: null },
 		refresh,
 		...cloudflareData,
-		...careerPageData
+		...careerPageData,
+		...ownerProjectData
 	};
 };
 
@@ -178,7 +212,7 @@ function actionAccess(event: CareerActionEvent) {
 	if (event.platform === undefined) {
 		return { _tag: 'Denied' as const, reason: 'Career storage is unavailable.' };
 	}
-	const access = resolveCareerAccess(
+	const access = resolveOwnerAccess(
 		event.request.headers,
 		event.platform.env.CAREER_OWNER_EMAIL?.trim() || env['CAREER_OWNER_EMAIL']?.trim()
 	);
@@ -188,6 +222,7 @@ function actionAccess(event: CareerActionEvent) {
 				_tag: 'Allowed' as const,
 				ownerEmail: access.ownerEmail,
 				database: event.platform.env.CAREER_DB,
+				ownerDatabase: event.platform.env.OWNER_DB,
 				cache: event.platform.env.WEEKNOTE_CACHE,
 				username:
 					event.platform.env.GITHUB_USERNAME?.trim() ||
@@ -201,6 +236,54 @@ async function actionInput(event: CareerActionEvent): Promise<Record<string, For
 }
 
 export const actions = {
+	createOwnerProject: async (event) => {
+		const access = actionAccess(event);
+		if (access._tag === 'Denied') return fail(403, { ownerProjectMessage: access.reason });
+		const parsed = parseCreateOwnerProject(await actionInput(event));
+		if (Either.isLeft(parsed)) return fail(400, { ownerProjectMessage: parsed.left.reason });
+		const exit = await Effect.runPromiseExit(
+			createOwnerProject(access.ownerDatabase, access.ownerEmail, parsed.right, new Date())
+		);
+		return exit._tag === 'Success'
+			? { ownerProjectMessage: 'Project added.' }
+			: fail(503, { ownerProjectMessage: 'Project could not be saved.' });
+	},
+	updateOwnerProject: async (event) => {
+		const access = actionAccess(event);
+		if (access._tag === 'Denied') return fail(403, { ownerProjectMessage: access.reason });
+		const parsed = parseUpdateOwnerProject(await actionInput(event));
+		if (Either.isLeft(parsed)) return fail(400, { ownerProjectMessage: parsed.left.reason });
+		const exit = await Effect.runPromiseExit(
+			updateOwnerProject(access.ownerDatabase, access.ownerEmail, parsed.right, new Date())
+		);
+		return exit._tag === 'Success'
+			? { ownerProjectMessage: 'Project updated.' }
+			: fail(503, { ownerProjectMessage: 'Project could not be updated.' });
+	},
+	addOwnerProjectResource: async (event) => {
+		const access = actionAccess(event);
+		if (access._tag === 'Denied') return fail(403, { ownerProjectMessage: access.reason });
+		const parsed = parseAddOwnerProjectResource(await actionInput(event));
+		if (Either.isLeft(parsed)) return fail(400, { ownerProjectMessage: parsed.left.reason });
+		const exit = await Effect.runPromiseExit(
+			addOwnerProjectResource(access.ownerDatabase, access.ownerEmail, parsed.right, new Date())
+		);
+		return exit._tag === 'Success'
+			? { ownerProjectMessage: 'Resource linked.' }
+			: fail(503, { ownerProjectMessage: 'Resource could not be linked.' });
+	},
+	removeOwnerProjectResource: async (event) => {
+		const access = actionAccess(event);
+		if (access._tag === 'Denied') return fail(403, { ownerProjectMessage: access.reason });
+		const parsed = parseRemoveOwnerProjectResource(await actionInput(event));
+		if (Either.isLeft(parsed)) return fail(400, { ownerProjectMessage: parsed.left.reason });
+		const exit = await Effect.runPromiseExit(
+			removeOwnerProjectResource(access.ownerDatabase, access.ownerEmail, parsed.right)
+		);
+		return exit._tag === 'Success'
+			? { ownerProjectMessage: 'Resource link removed.' }
+			: fail(503, { ownerProjectMessage: 'Resource link could not be removed.' });
+	},
 	createOpportunity: async (event) => {
 		const access = actionAccess(event);
 		if (access._tag === 'Denied') return fail(403, { careerMessage: access.reason });

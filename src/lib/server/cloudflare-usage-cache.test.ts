@@ -12,6 +12,7 @@ function snapshot(availableProducts: number, measuredMetrics: number): Cloudflar
 			label: 'Last 7 UTC days'
 		},
 		products: [],
+		resources: [],
 		metrics: [],
 		summary: {
 			availableProducts,

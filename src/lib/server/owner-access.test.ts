@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { resolveCareerAccess } from './career-access';
+import { resolveOwnerAccess } from './owner-access';
 
-describe('resolveCareerAccess', () => {
+describe('resolveOwnerAccess', () => {
 	it('allows only the exact configured Access identity with an assertion', () => {
 		const headers = new Headers({
 			'cf-access-authenticated-user-email': 'OLEN@LATHAM.CLOUD',
 			'cf-access-jwt-assertion': 'signed-access-assertion'
 		});
-		expect(resolveCareerAccess(headers, 'olen@latham.cloud')).toEqual({
+		expect(resolveOwnerAccess(headers, 'olen@latham.cloud')).toEqual({
 			_tag: 'Allowed',
 			ownerEmail: 'olen@latham.cloud'
 		});
@@ -17,7 +17,7 @@ describe('resolveCareerAccess', () => {
 		const headers = new Headers({
 			'cf-access-authenticated-user-email': 'olen@latham.cloud'
 		});
-		expect(resolveCareerAccess(headers, 'olen@latham.cloud')._tag).toBe('Denied');
+		expect(resolveOwnerAccess(headers, 'olen@latham.cloud')._tag).toBe('Denied');
 	});
 
 	it('denies every other Access identity', () => {
@@ -25,6 +25,6 @@ describe('resolveCareerAccess', () => {
 			'cf-access-authenticated-user-email': 'other@example.com',
 			'cf-access-jwt-assertion': 'signed-access-assertion'
 		});
-		expect(resolveCareerAccess(headers, 'olen@latham.cloud')._tag).toBe('Denied');
+		expect(resolveOwnerAccess(headers, 'olen@latham.cloud')._tag).toBe('Denied');
 	});
 });

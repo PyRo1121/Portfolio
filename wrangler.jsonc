@@ -28,6 +28,12 @@
 			"database_name": "weeknote-career",
 			"database_id": "2e37016a-ccb2-4a3d-b4fd-7010c7addf54",
 			"migrations_dir": "migrations/career"
+		},
+		{
+			"binding": "OWNER_DB",
+			"database_name": "weeknote-owner",
+			"database_id": "5070021c-900b-4670-973e-aea431c60f93",
+			"migrations_dir": "migrations/owner"
 		}
 	],
 	"vars": {

@@ -39,9 +39,9 @@ function inventoryResponse(pathname: string): Response {
 		case pathname.endsWith('/d1/database/db-2'):
 			return api({ file_size: 2000 });
 		case pathname.endsWith('/r2/buckets'):
-			return api({ buckets: [{ name: 'assets' }] });
+			return api({ buckets: [{ name: 'assets', creation_date: '2026-08-01T00:00:00.000Z' }] });
 		case pathname.endsWith('/storage/kv/namespaces'):
-			return api([{ id: 'kv' }]);
+			return api([{ id: 'kv', title: 'CACHE' }]);
 		case pathname.endsWith('/vectorize/v2/indexes'):
 			return api([{ name: 'search' }]);
 		case pathname.endsWith('/workflows'):
@@ -82,5 +82,17 @@ describe('loadCloudflareUsageSnapshot', () => {
 		expect(snapshot.metrics.find((metric) => metric.id === 'workerRequests')?.value).toBe(4200);
 		expect(snapshot.metrics.find((metric) => metric.id === 'd1RowsWritten')?.value).toBe(450);
 		expect(snapshot.metrics.find((metric) => metric.id === 'kvOperations')?.value).toBe(700);
+		expect(snapshot.resources).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ kind: 'Worker', providerId: 'a', name: 'a' }),
+				expect.objectContaining({
+					kind: 'D1Database',
+					providerId: 'db-1',
+					sizeBytes: 1000
+				}),
+				expect.objectContaining({ kind: 'KVNamespace', providerId: 'kv', name: 'CACHE' }),
+				expect.objectContaining({ kind: 'R2Bucket', providerId: 'assets' })
+			])
+		);
 	});
 });
