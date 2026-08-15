@@ -1,9 +1,17 @@
+import type {
+	CloudflareDeploymentSnapshot,
+	CloudflareWorkerDeploymentEvidence,
+	CloudflareWorkerVersionEvidence
+} from './cloudflare-deployments';
 import type { CloudflareResourceEvidence, CloudflareUsageSnapshot } from './cloudflare-usage';
 import type {
+	CommitSignal,
 	DeliveryArtifact,
 	GitHubDashboardSnapshot,
+	PullRequestMergeEvidence,
 	RepositoryIntelligence,
-	RepositoryWorkflowSummaryInput
+	RepositoryWorkflowSummaryInput,
+	WorkflowRunInput
 } from './github-intelligence';
 import type { OwnerProject, OwnerProjectResource, OwnerProjectSnapshot } from './owner-project';
 
@@ -15,6 +23,19 @@ export type OwnerProjectResourceView = {
 	readonly cloudflare: CloudflareResourceEvidence | null;
 };
 
+/** Exact deployment chain for one owner-linked Worker. */
+type OwnerProjectDeploymentView = {
+	readonly resource: OwnerProjectResource;
+	readonly state: 'Linked' | 'PartiallyLinked' | 'Unavailable';
+	readonly detail: string;
+	readonly deployment: CloudflareWorkerDeploymentEvidence | null;
+	readonly activeVersion: CloudflareWorkerVersionEvidence | null;
+	readonly commitSha: string | null;
+	readonly commit: CommitSignal | null;
+	readonly workflowRun: WorkflowRunInput | null;
+	readonly pullRequest: PullRequestMergeEvidence | null;
+};
+
 /** Joined private dossier for one persisted owner project. */
 export type OwnerProjectDossier = {
 	readonly project: OwnerProject;
@@ -22,6 +43,7 @@ export type OwnerProjectDossier = {
 	readonly repositoryState: 'Observed' | 'Unavailable';
 	readonly workflow: RepositoryWorkflowSummaryInput | null;
 	readonly latestArtifact: DeliveryArtifact | null;
+	readonly deployments: ReadonlyArray<OwnerProjectDeploymentView>;
 	readonly resources: ReadonlyArray<OwnerProjectResourceView>;
 };
 
@@ -85,11 +107,89 @@ function resourceView(
 	};
 }
 
+function annotationCommitSha(message: string | null): string | null {
+	const match = /^git:([0-9a-f]{40})$/i.exec(message ?? '');
+	return match?.[1]?.toLocaleLowerCase() ?? null;
+}
+
+function deploymentView(
+	resource: OwnerProjectResource,
+	repository: RepositoryIntelligence | null,
+	snapshot: GitHubDashboardSnapshot | null,
+	deployments: CloudflareDeploymentSnapshot | null
+): OwnerProjectDeploymentView {
+	const deployment =
+		deployments?.workers.find((worker) => worker.workerName === resource.providerId) ?? null;
+	const activeVersion =
+		deployment === null
+			? null
+			: ([...deployment.versions].sort((left, right) => right.percentage - left.percentage)[0] ??
+				null);
+	const deploymentSha = annotationCommitSha(deployment?.message ?? null);
+	const versionSha = annotationCommitSha(activeVersion?.message ?? null);
+	const annotationsConflict =
+		deploymentSha !== null && versionSha !== null && deploymentSha !== versionSha;
+	const commitSha = annotationsConflict ? null : (versionSha ?? deploymentSha);
+	const commit =
+		commitSha === null || repository === null || snapshot === null
+			? null
+			: (snapshot.intelligence.commits.find(
+					(item) => item.repository === repository.fullName && item.sha === commitSha
+				) ?? null);
+	const workflowRun =
+		commitSha === null || repository === null || snapshot === null
+			? null
+			: (snapshot.intelligence.delivery.workflows.current.recent.find(
+					(run) =>
+						run.repository === repository.fullName &&
+						run.headSha === commitSha &&
+						run.status === 'completed' &&
+						run.conclusion === 'success'
+				) ?? null);
+	const pullRequest =
+		commitSha === null || repository === null || snapshot === null
+			? null
+			: (snapshot.intelligence.delivery.pullRequestMerges.find(
+					(pullRequest) =>
+						pullRequest.repository === repository.fullName &&
+						pullRequest.mergeCommitSha === commitSha
+				) ?? null);
+	const buildMatches =
+		activeVersion?.build.state === 'Observed' && activeVersion.build.commitSha === commitSha;
+	const state =
+		deployment?.state !== 'Observed' || activeVersion === null || commitSha === null
+			? 'Unavailable'
+			: commit !== null && workflowRun !== null && pullRequest !== null && buildMatches
+				? 'Linked'
+				: 'PartiallyLinked';
+	let detail = 'No readable deployment and immutable version pair is available.';
+	if (annotationsConflict) {
+		detail = 'Deployment and version annotations name different Git commits.';
+	} else if (state === 'Linked') {
+		detail =
+			'PR, merge commit, successful workflow, Cloudflare Build, version, and deployment match.';
+	} else if (state === 'PartiallyLinked') {
+		detail = 'The deployment names an exact Git commit; missing chain records remain separate.';
+	}
+	return {
+		resource,
+		state,
+		detail,
+		deployment,
+		activeVersion,
+		commitSha,
+		commit,
+		workflowRun,
+		pullRequest
+	};
+}
+
 /** Join persisted project mappings with authenticated GitHub and Cloudflare evidence. */
 export function createOwnerProjectDossiers(
 	registry: OwnerProjectSnapshot,
 	snapshot: GitHubDashboardSnapshot | null,
-	cloudflare: CloudflareUsageSnapshot | null
+	cloudflare: CloudflareUsageSnapshot | null,
+	deployments: CloudflareDeploymentSnapshot | null = null
 ): ReadonlyArray<OwnerProjectDossier> {
 	return registry.projects.map((project) => {
 		const repositoryLink = project.resources.find(
@@ -119,6 +219,9 @@ export function createOwnerProjectDossiers(
 			repositoryState: repository === null ? 'Unavailable' : 'Observed',
 			workflow,
 			latestArtifact,
+			deployments: project.resources
+				.filter((resource) => resource.kind === 'CloudflareWorker')
+				.map((resource) => deploymentView(resource, repository, snapshot, deployments)),
 			resources: project.resources.map((resource) => resourceView(resource, snapshot, cloudflare))
 		};
 	});

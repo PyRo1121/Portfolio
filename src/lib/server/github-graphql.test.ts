@@ -82,6 +82,7 @@ function pullRequestSearchResult(input: {
 		reviews: { totalCount: 1 },
 		author: { __typename: input.authorType, login: input.author },
 		mergedBy: { __typename: 'User', login: input.mergedBy },
+		mergeCommit: { oid: input.number.toString(16).padStart(40, '0') },
 		repository: { nameWithOwner: input.repository, isPrivate: false }
 	};
 }
@@ -347,8 +348,16 @@ describe('incremental GitHub GraphQL intelligence', () => {
 			previousMergedPullRequests: 1
 		});
 		expect(intelligence.delivery.outcomes).toMatchObject([
-			{ number: 2, responsibility: 'Automated' },
-			{ number: 1, responsibility: 'Authored' }
+			{
+				number: 2,
+				responsibility: 'Automated',
+				mergeCommitSha: '0000000000000000000000000000000000000002'
+			},
+			{
+				number: 1,
+				responsibility: 'Authored',
+				mergeCommitSha: '0000000000000000000000000000000000000001'
+			}
 		]);
 		expect(searchVariables).toHaveLength(1);
 		expect(searchVariables[0]?.['currentMaintainerMergedPullRequests']).toContain(

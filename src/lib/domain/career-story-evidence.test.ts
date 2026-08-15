@@ -24,6 +24,7 @@ const live: GitHubDashboardSnapshot = {
 					url: 'https://github.com/octocat/product/issues/7',
 					occurredAt: '2026-08-14T11:00:00.000Z',
 					status: 'shipped',
+					commitSha: null,
 					detail: 'Closed issue'
 				},
 				{
@@ -33,6 +34,7 @@ const live: GitHubDashboardSnapshot = {
 					url: 'https://github.com/octocat/product/releases/tag/v2.0.0-rc.1',
 					occurredAt: '2026-08-14T12:00:00.000Z',
 					status: 'shipped',
+					commitSha: null,
 					detail: 'Published prerelease'
 				},
 				{
@@ -42,6 +44,7 @@ const live: GitHubDashboardSnapshot = {
 					url: 'https://github.com/octocat/product/pull/8',
 					occurredAt: '2026-08-13T12:00:00.000Z',
 					status: 'shipped',
+					commitSha: '8888888888888888888888888888888888888888',
 					detail: 'Merged pull request'
 				},
 				{
@@ -51,6 +54,7 @@ const live: GitHubDashboardSnapshot = {
 					url: 'https://github.com/octocat/product/releases/tag/v1.0.0',
 					occurredAt: '2026-08-12T12:00:00.000Z',
 					status: 'shipped',
+					commitSha: null,
 					detail: 'Published stable release'
 				},
 				{
@@ -60,6 +64,7 @@ const live: GitHubDashboardSnapshot = {
 					url: 'https://github.com/octocat/product/actions/runs/9',
 					occurredAt: '2026-08-14T13:00:00.000Z',
 					status: 'shipped',
+					commitSha: '9999999999999999999999999999999999999999',
 					detail: 'Successful workflow'
 				}
 			]

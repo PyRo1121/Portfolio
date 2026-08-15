@@ -11,6 +11,7 @@ import {
 	parseUpdateOpportunity,
 	parseUpdateStory
 } from '$lib/domain/career-accountability';
+import type { CloudflareDeploymentRefreshResult } from '$lib/domain/cloudflare-deployments';
 import type { CloudflareUsageRefreshResult } from '$lib/domain/cloudflare-usage';
 import type { DashboardRefreshResult } from '$lib/domain/dashboard-hydration';
 import {
@@ -31,6 +32,8 @@ import {
 import { resolveObservedCareerStoryEvidence } from '$lib/server/career-story-evidence';
 import { createCareerStory, updateCareerStory } from '$lib/server/career-story-store';
 import { loadCloudflareUsageSnapshot } from '$lib/server/cloudflare-api';
+import { cloudflareDeploymentCacheFor } from '$lib/server/cloudflare-deployment-cache';
+import { loadCloudflareDeploymentSnapshot } from '$lib/server/cloudflare-deployments-api';
 import { cloudflareUsageCacheFor } from '$lib/server/cloudflare-usage-cache';
 import { loadLiveDashboardSnapshot } from '$lib/server/dashboard-loader';
 import { parseGitHubChecksAppConfig } from '$lib/server/github-app-auth';
@@ -139,12 +142,56 @@ export const load: PageServerLoad = async ({ platform, request, setHeaders }) =>
 		const refresh = cloudflareCache.refresh(cloudflareAccountId, cachedCloudflare, now, () =>
 			loadCloudflareUsageSnapshot(globalThis.fetch, cloudflareAccountId, cloudflareToken, now)
 		);
-		if (cachedCloudflare !== null) {
-			platform.ctx.waitUntil(refresh.then(() => undefined));
-			cloudflareRefresh = Promise.resolve({ _tag: 'Current', checkedAt: now.toISOString() });
-		} else {
-			cloudflareRefresh = refresh;
-		}
+		if (cachedCloudflare !== null) platform.ctx.waitUntil(refresh.then(() => undefined));
+		cloudflareRefresh = refresh;
+	}
+
+	const deploymentWorkerNames =
+		ownerProjects?.projects.flatMap((project) =>
+			project.resources.flatMap((resource) =>
+				resource.kind === 'CloudflareWorker' ? [resource.providerId] : []
+			)
+		) ?? [];
+	const deploymentCache = cloudflareDeploymentCacheFor(platform.env.WEEKNOTE_CACHE);
+	const cachedDeployments =
+		cloudflareAccountId === undefined || deploymentWorkerNames.length === 0
+			? null
+			: await deploymentCache.read(cloudflareAccountId, deploymentWorkerNames);
+	let cloudflareDeploymentRefresh: Promise<CloudflareDeploymentRefreshResult>;
+	if (
+		cloudflareToken === undefined ||
+		cloudflareToken.length === 0 ||
+		cloudflareAccountId === undefined ||
+		cloudflareAccountId.length === 0
+	) {
+		cloudflareDeploymentRefresh = Promise.resolve({
+			_tag: 'Unavailable',
+			attemptedAt: now.toISOString(),
+			reason: 'Cloudflare deployment collection is not configured.'
+		});
+	} else if (deploymentWorkerNames.length === 0) {
+		cloudflareDeploymentRefresh = Promise.resolve({
+			_tag: 'Unavailable',
+			attemptedAt: now.toISOString(),
+			reason: 'No owner-confirmed Worker links are available.'
+		});
+	} else {
+		const refresh = deploymentCache.refresh(
+			cloudflareAccountId,
+			deploymentWorkerNames,
+			cachedDeployments,
+			now,
+			() =>
+				loadCloudflareDeploymentSnapshot(
+					globalThis.fetch,
+					cloudflareAccountId,
+					cloudflareToken,
+					deploymentWorkerNames,
+					now
+				)
+		);
+		if (cachedDeployments !== null) platform.ctx.waitUntil(refresh.then(() => undefined));
+		cloudflareDeploymentRefresh = refresh;
 	}
 
 	const cloudflareData = {
@@ -153,7 +200,13 @@ export const load: PageServerLoad = async ({ platform, request, setHeaders }) =>
 			_tag: cachedCloudflare === null ? ('Cold' as const) : ('Cached' as const),
 			cachedAt: cachedCloudflare?.cachedAt ?? null
 		},
-		cloudflareRefresh
+		cloudflareRefresh,
+		cloudflareDeployments: cachedDeployments?.snapshot ?? null,
+		cloudflareDeploymentCache: {
+			_tag: cachedDeployments === null ? ('Cold' as const) : ('Cached' as const),
+			cachedAt: cachedDeployments?.cachedAt ?? null
+		},
+		cloudflareDeploymentRefresh
 	};
 
 	if (token === undefined || token.length === 0) {

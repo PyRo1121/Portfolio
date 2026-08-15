@@ -23,6 +23,7 @@ const WorkflowRunSchema = Schema.Struct({
 	conclusion: Schema.NullOr(Schema.String),
 	html_url: Schema.String,
 	head_branch: Schema.NullOr(Schema.String),
+	head_sha: Schema.String,
 	created_at: Schema.DateFromString
 });
 
@@ -59,6 +60,7 @@ function toWorkflowRun(repository: string, run: DecodedWorkflowRun): WorkflowRun
 		status: run.status,
 		conclusion: run.conclusion,
 		branch: run.head_branch,
+		headSha: run.head_sha,
 		createdAt: run.created_at.toISOString()
 	};
 }

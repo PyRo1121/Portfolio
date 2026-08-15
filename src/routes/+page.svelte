@@ -1,5 +1,10 @@
 <script lang="ts">
-	import { ArrowClockwise, Command, GithubLogo, LockSimple } from 'phosphor-svelte';
+	import {
+		ArrowClockwiseIcon as ArrowClockwise,
+		CommandIcon as Command,
+		GithubLogoIcon as GithubLogo,
+		LockSimpleIcon as LockSimple
+	} from 'phosphor-svelte';
 	import { invalidateAll } from '$app/navigation';
 	import type { PageProps as GeneratedPageProps } from './$types';
 	import ActivityWorkspace from '$lib/components/ActivityWorkspace.svelte';
@@ -17,6 +22,10 @@
 	import { createCareerAccountabilityReview } from '$lib/domain/career-review';
 	import { createCareerNavigationSignal } from '$lib/domain/career-navigation';
 	import { createCareerStoryEvidenceOptions } from '$lib/domain/career-story-evidence';
+	import type {
+		CloudflareDeploymentRefreshResult,
+		CloudflareDeploymentSnapshot
+	} from '$lib/domain/cloudflare-deployments';
 	import type {
 		CloudflareUsageRefreshResult,
 		CloudflareUsageSnapshot
@@ -50,6 +59,12 @@
 			readonly cachedAt: string | null;
 		};
 		readonly cloudflareRefresh: Promise<CloudflareUsageRefreshResult>;
+		readonly cloudflareDeployments: CloudflareDeploymentSnapshot | null;
+		readonly cloudflareDeploymentCache: {
+			readonly _tag: 'Cold' | 'Cached';
+			readonly cachedAt: string | null;
+		};
+		readonly cloudflareDeploymentRefresh: Promise<CloudflareDeploymentRefreshResult>;
 	};
 	type ActionData = {
 		readonly careerMessage?: string;
@@ -64,12 +79,19 @@
 	let snapshot: GitHubDashboardSnapshot | null = $derived(data.snapshot);
 	let career: CareerSnapshot | null = $derived(data.career);
 	let cloudflare: CloudflareUsageSnapshot | null = $derived(data.cloudflare);
+	let cloudflareDeployments: CloudflareDeploymentSnapshot | null = $derived(
+		data.cloudflareDeployments
+	);
 	let refreshState = $state<'Refreshing' | 'Current' | 'Fresh' | 'Unavailable'>('Refreshing');
 	let refreshMessage = $state('');
 	let cloudflareRefreshState = $state<'Refreshing' | 'Current' | 'Fresh' | 'Unavailable'>(
 		'Refreshing'
 	);
 	let cloudflareMessage = $state('');
+	let deploymentRefreshState = $state<'Refreshing' | 'Current' | 'Fresh' | 'Unavailable'>(
+		'Refreshing'
+	);
+	let deploymentMessage = $state('');
 	let viewerTimeZone = $derived(SSR_VIEWER_TIME_ZONE);
 	const viewerToday = $derived(zonedDateKey(new Date(), viewerTimeZone));
 	const dashboardView = new DashboardView();
@@ -133,6 +155,28 @@
 			cloudflareRefreshState = result._tag;
 			if (result._tag === 'Fresh') cloudflare = result.snapshot;
 			if (result._tag === 'Unavailable') cloudflareMessage = result.reason;
+		});
+		return () => {
+			cancelled = true;
+		};
+	});
+
+	$effect(() => {
+		const activeRefresh = data.cloudflareDeploymentRefresh;
+		cloudflareDeployments = data.cloudflareDeployments;
+		deploymentRefreshState = 'Refreshing';
+		deploymentMessage =
+			data.cloudflareDeploymentCache.cachedAt === null
+				? data.cloudflareDeploymentCache._tag === 'Cold'
+					? 'Warming deployment evidence.'
+					: ''
+				: `cached ${data.cloudflareDeploymentCache.cachedAt}`;
+		let cancelled = false;
+		void activeRefresh.then((result) => {
+			if (cancelled) return;
+			deploymentRefreshState = result._tag;
+			if (result._tag === 'Fresh') cloudflareDeployments = result.snapshot;
+			if (result._tag === 'Unavailable') deploymentMessage = result.reason;
 		});
 		return () => {
 			cancelled = true;
@@ -239,6 +283,9 @@
 					registry={data.ownerProjects}
 					{snapshot}
 					{cloudflare}
+					deployments={cloudflareDeployments}
+					deploymentState={deploymentRefreshState}
+					{deploymentMessage}
 					accessReason={data.ownerProjectAccess.reason}
 					actionMessage={form?.ownerProjectMessage ?? ''}
 					requestedRepository={dashboardView.selectedRepository}
