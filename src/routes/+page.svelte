@@ -189,11 +189,44 @@
 </script>
 
 <svelte:head>
-	<title>{snapshot?.profile.login ?? 'Weeknote'} / Weeknote</title>
 	<meta
 		name="description"
-		content="A public, evidence-backed dashboard for GitHub activity, Cloudflare delivery, and career records."
+		content="Olen Latham’s public engineering dashboard covering GitHub activity, shipped product work, deployments, Cloudflare Workers, and full-stack development."
 	/>
+	<link rel="canonical" href="https://latham.cloud/" />
+	<meta property="og:type" content="profile" />
+	<meta property="og:title" content="Olen Latham — Full-stack engineer and product builder" />
+	<meta
+		property="og:description"
+		content="Public engineering activity, delivery evidence, deployments, and Cloudflare projects."
+	/>
+	<meta property="og:url" content="https://latham.cloud/" />
+	<meta property="og:image" content="https://avatars.githubusercontent.com/u/32664069?v=4" />
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:title" content="Olen Latham — Full-stack engineer and product builder" />
+	<meta
+		name="twitter:description"
+		content="Public engineering activity, delivery evidence, deployments, and Cloudflare projects."
+	/>
+	<meta name="twitter:image" content="https://avatars.githubusercontent.com/u/32664069?v=4" />
+	<script type="application/ld+json">
+		{
+			"@context": "https://schema.org",
+			"@type": "ProfilePage",
+			"@id": "https://latham.cloud/#profile",
+			"url": "https://latham.cloud/",
+			"name": "Olen Latham — Full-stack engineer and product builder",
+			"mainEntity": {
+				"@type": "Person",
+				"@id": "https://latham.cloud/#olen-latham",
+				"name": "Olen Latham",
+				"url": "https://latham.cloud/",
+				"jobTitle": "Full-stack engineer",
+				"sameAs": ["https://github.com/PyRo1121", "https://x.com/PyRo1121"]
+			}
+		}
+	</script>
+	<title>Olen Latham — Full-stack engineer and product builder</title>
 </svelte:head>
 <a class="skip-link" href="#workspace-stage">Skip to dashboard</a>
 
