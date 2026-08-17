@@ -84,11 +84,17 @@
 	};
 
 	let { data, form }: PageProps = $props();
-	let snapshot: GitHubDashboardSnapshot | null = $derived(data.snapshot);
+	// Server data is the baseline; refresh results layer on top as real state
+	// rather than overwriting a derived (a derived override would be discarded
+	// on the next recompute and the UI would roll back to the cached numbers).
+	let freshSnapshot: GitHubDashboardSnapshot | null = $state.raw(null);
+	let snapshot: GitHubDashboardSnapshot | null = $derived(freshSnapshot ?? data.snapshot);
 	let career: CareerSnapshot | null = $derived(data.career);
-	let cloudflare: CloudflareUsageSnapshot | null = $derived(data.cloudflare);
+	let freshCloudflare: CloudflareUsageSnapshot | null = $state.raw(null);
+	let cloudflare: CloudflareUsageSnapshot | null = $derived(freshCloudflare ?? data.cloudflare);
+	let freshCloudflareDeployments: CloudflareDeploymentSnapshot | null = $state.raw(null);
 	let cloudflareDeployments: CloudflareDeploymentSnapshot | null = $derived(
-		data.cloudflareDeployments
+		freshCloudflareDeployments ?? data.cloudflareDeployments
 	);
 	let refreshState = $state<'Refreshing' | 'Current' | 'Fresh' | 'Unavailable'>('Refreshing');
 	let refreshMessage = $state('');
@@ -146,14 +152,14 @@
 
 	$effect(() => {
 		const activeRefresh = data.refresh;
-		snapshot = data.snapshot;
+		freshSnapshot = null;
 		refreshState = 'Refreshing';
 		refreshMessage = data.cache.cachedAt === null ? '' : `cached ${data.cache.cachedAt}`;
 		let cancelled = false;
 		void activeRefresh.then((result) => {
 			if (cancelled) return;
 			refreshState = result._tag;
-			if (result._tag === 'Fresh') snapshot = result.snapshot;
+			if (result._tag === 'Fresh') freshSnapshot = result.snapshot;
 			if (result._tag === 'Unavailable') refreshMessage = result.reason;
 		});
 		return () => {
@@ -163,7 +169,7 @@
 
 	$effect(() => {
 		const activeRefresh = data.cloudflareRefresh;
-		cloudflare = data.cloudflare;
+		freshCloudflare = null;
 		cloudflareRefreshState = 'Refreshing';
 		cloudflareMessage =
 			data.cloudflareCache.cachedAt === null ? '' : `cached ${data.cloudflareCache.cachedAt}`;
@@ -171,7 +177,7 @@
 		void activeRefresh.then((result) => {
 			if (cancelled) return;
 			cloudflareRefreshState = result._tag;
-			if (result._tag === 'Fresh') cloudflare = result.snapshot;
+			if (result._tag === 'Fresh') freshCloudflare = result.snapshot;
 			if (result._tag === 'Unavailable') cloudflareMessage = result.reason;
 		});
 		return () => {
@@ -181,7 +187,7 @@
 
 	$effect(() => {
 		const activeRefresh = data.cloudflareDeploymentRefresh;
-		cloudflareDeployments = data.cloudflareDeployments;
+		freshCloudflareDeployments = null;
 		deploymentRefreshState = 'Refreshing';
 		deploymentMessage =
 			data.cloudflareDeploymentCache.cachedAt === null
@@ -193,7 +199,7 @@
 		void activeRefresh.then((result) => {
 			if (cancelled) return;
 			deploymentRefreshState = result._tag;
-			if (result._tag === 'Fresh') cloudflareDeployments = result.snapshot;
+			if (result._tag === 'Fresh') freshCloudflareDeployments = result.snapshot;
 			if (result._tag === 'Unavailable') deploymentMessage = result.reason;
 		});
 		return () => {
