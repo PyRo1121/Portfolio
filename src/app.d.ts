@@ -51,6 +51,7 @@ declare global {
 				GITHUB_CHECKS_INSTALLATION_ID?: string;
 				GITHUB_TOKEN?: string;
 				GITHUB_USERNAME?: string;
+				WARM_SECRET?: string;
 				WEEKNOTE_CACHE: KVNamespace;
 			};
 		}

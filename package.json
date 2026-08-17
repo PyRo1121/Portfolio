@@ -14,6 +14,7 @@
 		"build": "vite build",
 		"deploy": "npm run ci && npm run db:migrate:owner:remote && wrangler deploy --strict",
 		"deploy:dry-run": "npm run build && wrangler deploy --dry-run --strict",
+		"deploy:warm": "wrangler deploy --config warm/wrangler.jsonc --strict",
 		"db:migrate:local": "wrangler d1 migrations apply CAREER_DB --local && wrangler d1 migrations apply OWNER_DB --local",
 		"db:migrate:career:remote": "wrangler d1 migrations apply CAREER_DB --remote",
 		"db:migrate:owner:remote": "wrangler d1 migrations apply OWNER_DB --remote",

@@ -1,0 +1,15 @@
+{
+	"$schema": "../node_modules/wrangler/config-schema.json",
+	"name": "weeknote-warm",
+	"main": "index.js",
+	"compatibility_date": "2026-08-13",
+	"triggers": {
+		"crons": ["*/10 * * * *"]
+	},
+	"services": [
+		{
+			"binding": "WEEKNOTE",
+			"service": "weeknote"
+		}
+	]
+}
