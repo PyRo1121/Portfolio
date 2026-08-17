@@ -24,7 +24,9 @@ npm run deploy
 
 The deploy command applies pending `OWNER_DB` migrations before uploading the Worker. Career migrations remain an explicit `npm run db:migrate:career:remote` operation because that existing database currently has a separate Cloudflare API authorization boundary.
 
-Use `wrangler secret put GITHUB_TOKEN`, `wrangler secret put GITHUB_CHECKS_APP_PRIVATE_KEY`, or `wrangler secret put CLOUDFLARE_API_TOKEN` to rotate production credentials. Never add credential values to `wrangler.jsonc`. The non-secret GitHub App and installation IDs remain ordinary Worker variables. Keep `/owner` behind its exact-account-owner Access policy: mutations require both that protected path and the verified Access identity.
+Use `wrangler secret put GITHUB_TOKEN`, `wrangler secret put GITHUB_CHECKS_APP_PRIVATE_KEY`, `wrangler secret put CLOUDFLARE_API_TOKEN`, or `wrangler secret put WARM_SECRET` to rotate production credentials. Never add credential values to `wrangler.jsonc`. The non-secret GitHub App and installation IDs remain ordinary Worker variables. Keep `/owner` behind its exact-account-owner Access policy: mutations require both that protected path and the verified Access identity.
+
+The `weeknote-warm` scheduled Worker (`warm/` directory, deploy with `npm run deploy:warm`) pokes the secret-guarded `https://latham.cloud/__warm` endpoint through a service binding every 10 minutes, so GitHub and Cloudflare snapshots are refreshed before visitors arrive and the dashboard rarely experiences cold-collection 504s. The shared `WARM_SECRET` is a Worker secret on both the `weeknote` and `weeknote-warm` Workers.
 
 ## Data model
 
