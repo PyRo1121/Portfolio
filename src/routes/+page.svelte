@@ -45,7 +45,7 @@
 	import type { OwnerProjectSnapshot } from '$lib/domain/owner-project';
 	import { createOwnerProjectNavigationSignal } from '$lib/domain/owner-project-navigation';
 	import type { TelemetryView } from '$lib/domain/telemetry-view';
-	import { ClientTelemetry } from '$lib/telemetry/client-telemetry';
+	import { getClientTelemetry } from '$lib/telemetry/client-telemetry';
 	import { DashboardView } from '$lib/state/dashboard-view.svelte';
 
 	type DashboardPageData = {
@@ -103,7 +103,7 @@
 	let viewerTimeZone = $derived(SSR_VIEWER_TIME_ZONE);
 	const viewerToday = $derived(zonedDateKey(new Date(), viewerTimeZone));
 	const dashboardView = new DashboardView();
-	const clientTelemetry = typeof window === 'undefined' ? null : new ClientTelemetry();
+	const clientTelemetry = getClientTelemetry();
 	const viewerProjection = $derived(
 		snapshot === null ? null : createViewerActivityProjection(snapshot, viewerTimeZone)
 	);
@@ -299,7 +299,10 @@
 		<WorkspaceRail
 			activeWorkspace={dashboardView.activeWorkspace}
 			signals={workspaceSignals}
-			onWorkspace={(workspace) => dashboardView.navigate(workspace)}
+			onWorkspace={(workspace) => {
+				dashboardView.navigate(workspace);
+				clientTelemetry?.recordWorkspace(workspace);
+			}}
 		/>
 		<div class="actions">
 			<span
@@ -383,7 +386,11 @@
 				tabindex="-1"
 				{@attach dashboardView.workspaceAttachment('telemetry')}
 			>
-				<TelemetryWorkspace view={data.telemetry} referenceTime={telemetryReferenceTime} />
+				<TelemetryWorkspace
+					view={data.telemetry}
+					{cloudflare}
+					referenceTime={telemetryReferenceTime}
+				/>
 			</section>
 		{:else if snapshot === null}
 			<DashboardSkeleton
@@ -412,6 +419,7 @@
 					onSelectRepository={(fullName) => {
 						dashboardView.selectRepository(fullName);
 						dashboardView.navigate('repositories');
+						clientTelemetry?.recordWorkspace('repositories');
 					}}
 				/>
 			</section>
@@ -444,7 +452,10 @@
 	<CommandPalette
 		open={dashboardView.commandOpen}
 		onClose={() => dashboardView.closeCommand()}
-		onWorkspace={(workspace) => dashboardView.navigate(workspace)}
+		onWorkspace={(workspace) => {
+			dashboardView.navigate(workspace);
+			clientTelemetry?.recordWorkspace(workspace);
+		}}
 	/>
 </div>
 

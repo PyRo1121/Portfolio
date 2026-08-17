@@ -10,8 +10,14 @@ export type TelemetryBar = {
 /** Core Web Vitals aggregates measured from beacon events. */
 export type TelemetryVitals = {
 	readonly lcpMs: number | null;
+	readonly fcpMs: number | null;
+	readonly ttfbMs: number | null;
+	readonly inpMs: number | null;
 	readonly cls: number | null;
 	readonly lcpCount: number;
+	readonly fcpCount: number;
+	readonly ttfbCount: number;
+	readonly inpCount: number;
 	readonly clsCount: number;
 };
 
@@ -20,12 +26,19 @@ export type TelemetryView = {
 	readonly pageViews: number;
 	readonly workspaceViews: number;
 	readonly uniqueSessions: number;
+	readonly pageViewSessions: number;
+	readonly performanceSessions: number;
+	readonly performanceCoveragePercent: number | null;
+	readonly errorCount: number;
 	readonly paths: ReadonlyArray<TelemetryBar>;
 	readonly workspaces: ReadonlyArray<TelemetryBar>;
 	readonly countries: ReadonlyArray<TelemetryBar>;
 	readonly devices: ReadonlyArray<TelemetryBar>;
 	readonly browsers: ReadonlyArray<TelemetryBar>;
+	readonly referrers: ReadonlyArray<TelemetryBar>;
 	readonly hours: ReadonlyArray<TelemetryBar>;
+	readonly totalEvents: number;
+	readonly lastRecordedAt: string | null;
 	readonly vitals: TelemetryVitals;
 	readonly recent: ReadonlyArray<TelemetryEvent>;
 };
@@ -47,9 +60,23 @@ export function createTelemetryView(
 	now: Date
 ): TelemetryView {
 	const recent = events.slice(0, 12);
-	const pageViews = events.filter((event) => event.eventType === 'page_view').length;
+	const pageViewEvents = events.filter((event) => event.eventType === 'page_view');
+	const pageViews = pageViewEvents.length;
 	const workspaceViews = events.filter((event) => event.eventType === 'workspace_view').length;
 	const uniqueSessions = new Set(events.map((event) => event.sessionHash).filter(Boolean)).size;
+	const pageViewSessions = new Set(pageViewEvents.map((event) => event.sessionHash).filter(Boolean))
+		.size;
+	const performanceSessions = new Set(
+		events
+			.filter((event) => event.eventType === 'web_vital')
+			.map((event) => event.sessionHash)
+			.filter(Boolean)
+	).size;
+	const performanceCoveragePercent =
+		pageViewSessions === 0
+			? null
+			: Math.min(100, Math.round((performanceSessions / pageViewSessions) * 100));
+	const errorCount = events.filter((event) => event.eventType === 'error').length;
 
 	const paths = rank(
 		events,
@@ -62,22 +89,28 @@ export function createTelemetryView(
 	);
 	const countries = rank(
 		events,
-		(event) => event.country ?? 'unknown',
+		(event) => event.country ?? 'Unreported',
 		(event) => event.eventType === 'page_view'
 	);
 	const devices = rank(
 		events,
-		(event) => event.deviceClass ?? 'unknown',
+		(event) => event.deviceClass ?? 'Unreported',
 		(event) => event.eventType === 'page_view'
 	);
 	const browsers = rank(
 		events,
-		(event) => event.browserFamily ?? 'unknown',
+		(event) => event.browserFamily ?? 'Unreported',
+		(event) => event.eventType === 'page_view'
+	);
+	const referrers = rank(
+		events,
+		(event) => event.referrerHost ?? 'Direct / none',
 		(event) => event.eventType === 'page_view'
 	);
 
 	const hours = new Map<number, number>();
 	for (const event of events) {
+		if (event.eventType !== 'page_view') continue;
 		const hour = new Date(event.recordedAt).getUTCHours();
 		hours.set(hour, (hours.get(hour) ?? 0) + 1);
 	}
@@ -97,30 +130,49 @@ export function createTelemetryView(
 		pageViews,
 		workspaceViews,
 		uniqueSessions,
+		pageViewSessions,
+		performanceSessions,
+		performanceCoveragePercent,
+		errorCount,
 		paths: top(paths, 8),
 		workspaces: top(workspaces, 8),
 		countries: top(countries, 10),
 		devices: top(devices, 5),
 		browsers: top(browsers, 6),
+		referrers: top(referrers, 8),
 		hours: hoursWithShare.slice(0, 12),
+		totalEvents: events.length,
+		lastRecordedAt: events[0]?.recordedAt ?? null,
 		vitals,
 		recent
 	};
 }
 
 function computeVitals(events: ReadonlyArray<TelemetryEvent>): TelemetryVitals {
-	const lcpValues: number[] = [];
-	const clsValues: number[] = [];
+	const values = new Map<string, number[]>();
 	for (const event of events) {
 		if (event.eventType !== 'web_vital' || event.metricValue === null) continue;
-		if (event.metricName === 'lcp') lcpValues.push(event.metricValue);
-		if (event.metricName === 'cls') clsValues.push(event.metricValue);
+		const metricValues = values.get(event.metricName ?? 'unknown') ?? [];
+		metricValues.push(event.metricValue);
+		values.set(event.metricName ?? 'unknown', metricValues);
 	}
+	const valuesFor = (metric: string): ReadonlyArray<number> => values.get(metric) ?? [];
+	const lcp = valuesFor('lcp');
+	const fcp = valuesFor('fcp');
+	const ttfb = valuesFor('ttfb');
+	const inp = valuesFor('inp');
+	const cls = valuesFor('cls');
 	return {
-		lcpMs: lcpValues.length === 0 ? null : median(lcpValues) * 1000,
-		cls: clsValues.length === 0 ? null : median(clsValues),
-		lcpCount: lcpValues.length,
-		clsCount: clsValues.length
+		lcpMs: lcp.length === 0 ? null : median(lcp),
+		fcpMs: fcp.length === 0 ? null : median(fcp),
+		ttfbMs: ttfb.length === 0 ? null : median(ttfb),
+		inpMs: inp.length === 0 ? null : median(inp),
+		cls: cls.length === 0 ? null : median(cls),
+		lcpCount: lcp.length,
+		fcpCount: fcp.length,
+		ttfbCount: ttfb.length,
+		inpCount: inp.length,
+		clsCount: cls.length
 	};
 }
 

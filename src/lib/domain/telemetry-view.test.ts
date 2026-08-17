@@ -38,6 +38,10 @@ describe('createTelemetryView', () => {
 		];
 		const view = createTelemetryView(events, now);
 		expect(view.pageViews).toBe(3);
+		expect(view.pageViewSessions).toBe(2);
+		expect(view.performanceSessions).toBe(0);
+		expect(view.performanceCoveragePercent).toBe(0);
+		expect(view.errorCount).toBe(0);
 		expect(view.uniqueSessions).toBe(2);
 		expect(view.workspaceViews).toBe(2);
 		expect(view.paths[0]).toMatchObject({ label: '/', count: 2 });
@@ -47,6 +51,7 @@ describe('createTelemetryView', () => {
 			{ label: 'desktop', count: 2, share: 1 },
 			{ label: 'mobile', count: 1, share: 0.5 }
 		]);
+		expect(view.referrers[0]).toMatchObject({ label: 'Direct / none', count: 3 });
 	});
 
 	it('computes median Core Web Vitals from web_vital beacons only', () => {
@@ -56,14 +61,14 @@ describe('createTelemetryView', () => {
 				id: '1',
 				eventType: 'web_vital',
 				metricName: 'lcp',
-				metricValue: 1.2,
+				metricValue: 1200,
 				sessionHash: 's1'
 			}),
 			event({
 				id: '2',
 				eventType: 'web_vital',
 				metricName: 'lcp',
-				metricValue: 3.4,
+				metricValue: 3400,
 				sessionHash: 's2'
 			}),
 			event({ id: '3', eventType: 'page_view', path: '/', sessionHash: 's1' })
@@ -71,6 +76,8 @@ describe('createTelemetryView', () => {
 		const view = createTelemetryView(events, now);
 		expect(view.vitals.lcpMs).toBe(2300);
 		expect(view.vitals.lcpCount).toBe(2);
+		expect(view.performanceSessions).toBe(2);
+		expect(view.performanceCoveragePercent).toBe(100);
 		expect(view.vitals.cls).toBeNull();
 		expect(view.vitals.clsCount).toBe(0);
 	});
@@ -92,6 +99,10 @@ describe('createTelemetryView', () => {
 	it('returns empty aggregates for no events', () => {
 		const view = createTelemetryView([], new Date());
 		expect(view.pageViews).toBe(0);
+		expect(view.pageViewSessions).toBe(0);
+		expect(view.performanceSessions).toBe(0);
+		expect(view.performanceCoveragePercent).toBeNull();
+		expect(view.errorCount).toBe(0);
 		expect(view.uniqueSessions).toBe(0);
 		expect(view.paths).toEqual([]);
 		expect(view.vitals.lcpMs).toBeNull();

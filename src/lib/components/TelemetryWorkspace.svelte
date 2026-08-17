@@ -1,28 +1,47 @@
 <script lang="ts">
 	import { ChartBarIcon as ChartBar, UsersIcon as Users } from 'phosphor-svelte';
+	import type { CloudflareUsageSnapshot } from '$lib/domain/cloudflare-usage';
 	import type { TelemetryEvent } from '$lib/domain/telemetry';
 	import type { TelemetryView } from '$lib/domain/telemetry-view';
 	import { formatRelativeTime } from '$lib/presentation/dashboard-format';
 
 	type Props = {
 		readonly view: TelemetryView | null;
+		readonly cloudflare: CloudflareUsageSnapshot | null;
 		readonly referenceTime: string;
 	};
 
-	let { view, referenceTime }: Props = $props();
+	let { view, cloudflare, referenceTime }: Props = $props();
 
 	function bar(share: number): string {
 		return `${Math.round(Math.max(0, Math.min(1, share)) * 100)}%`;
 	}
 
-	function vitalsClass(lcpMs: number | null): string {
-		if (lcpMs === null) return '';
-		return lcpMs <= 2500 ? 'good' : lcpMs <= 4000 ? 'mid' : 'poor';
+	function vitalState(value: number | null, good: number, mid: number): string {
+		if (value === null) return 'pending';
+		return value <= good ? 'good' : value <= mid ? 'mid' : 'poor';
+	}
+
+	function vitalValue(value: number | null, unit: 'ms' | 'score'): string {
+		if (value === null) return 'Awaiting sample';
+		return unit === 'ms' ? `${Math.round(value)} ms` : value.toFixed(3);
+	}
+
+	function sampleLabel(count: number): string {
+		return count === 0 ? 'No sample yet' : `${count} ${count === 1 ? 'sample' : 'samples'}`;
+	}
+
+	function cloudflareMetric(id: 'workerRequests' | 'workerErrors'): string {
+		const metric = cloudflare?.metrics.find((item) => item.id === id);
+		return metric === undefined || metric.value === null
+			? 'Awaiting measurement'
+			: metric.value.toLocaleString();
 	}
 
 	function eventLabel(event: TelemetryEvent): string {
 		if (event.eventType === 'web_vital') return `${event.metricName} ${event.metricValue}`;
 		if (event.eventType === 'workspace_view') return event.workspace ?? 'workspace';
+		if (event.eventType === 'error') return event.metricName ?? 'runtime error';
 		return 'page view';
 	}
 </script>
@@ -39,6 +58,14 @@
 				<div><strong>{view.pageViews}</strong><span>page views</span></div>
 				<div><strong>{view.uniqueSessions}</strong><span>sessions</span></div>
 				<div><strong>{view.workspaceViews}</strong><span>workspace views</span></div>
+				<div><strong>{view.totalEvents}</strong><span>events stored</span></div>
+				<div>
+					<strong
+						>{view.lastRecordedAt === null
+							? '—'
+							: formatRelativeTime(view.lastRecordedAt, referenceTime)}</strong
+					><span>last signal</span>
+				</div>
 			</section>
 		{:else}
 			<section class="telemetry-empty"><span>No telemetry collected yet.</span></section>
@@ -49,24 +76,41 @@
 		<section class="telemetry-vitals">
 			<header><span>Core Web Vitals</span><small>Measured beacons · browser</small></header>
 			<div class="vital-grid">
-				<div class={vitalsClass(view.vitals.lcpMs)}>
-					<span>LCP</span>
-					<strong
-						>{view.vitals.lcpMs === null
-							? 'Unavailable'
-							: `${Math.round(view.vitals.lcpMs)} ms`}</strong
+				<div class={vitalState(view.vitals.lcpMs, 2500, 4000)}>
+					<span>LCP</span><strong>{vitalValue(view.vitals.lcpMs, 'ms')}</strong><small
+						>{sampleLabel(view.vitals.lcpCount)}</small
 					>
-					<small>{view.vitals.lcpCount} samples</small>
 				</div>
-				<div>
-					<span>CLS</span>
-					<strong>{view.vitals.cls === null ? 'Unavailable' : view.vitals.cls.toFixed(3)}</strong>
-					<small>{view.vitals.clsCount} samples</small>
+				<div class={vitalState(view.vitals.fcpMs, 1800, 3000)}>
+					<span>FCP</span><strong>{vitalValue(view.vitals.fcpMs, 'ms')}</strong><small
+						>{sampleLabel(view.vitals.fcpCount)}</small
+					>
 				</div>
-				<div>
-					<span>Traffic</span>
-					<strong>{view.pageViews}</strong>
-					<small>{view.uniqueSessions} sessions</small>
+				<div class={vitalState(view.vitals.ttfbMs, 800, 1800)}>
+					<span>TTFB</span><strong>{vitalValue(view.vitals.ttfbMs, 'ms')}</strong><small
+						>{sampleLabel(view.vitals.ttfbCount)}</small
+					>
+				</div>
+				<div class={vitalState(view.vitals.inpMs, 200, 500)}>
+					<span>INP</span><strong>{vitalValue(view.vitals.inpMs, 'ms')}</strong><small
+						>{sampleLabel(view.vitals.inpCount)}</small
+					>
+				</div>
+				<div class={vitalState(view.vitals.cls, 0.1, 0.25)}>
+					<span>CLS</span><strong>{vitalValue(view.vitals.cls, 'score')}</strong><small
+						>{sampleLabel(view.vitals.clsCount)}</small
+					>
+				</div>
+				<div class="vital-coverage">
+					<span>Coverage</span>
+					<strong
+						>{view.performanceCoveragePercent === null
+							? 'Awaiting sample'
+							: `${view.performanceCoveragePercent}%`}</strong
+					>
+					<small
+						>{view.performanceSessions} performance sessions · {view.errorCount} telemetry errors</small
+					>
 				</div>
 			</div>
 		</section>
@@ -120,8 +164,34 @@
 				{:else}<p class="empty">No device evidence yet.</p>{/each}
 			</section>
 
+			<section class="telemetry-panel" aria-labelledby="telemetry-referrers">
+				<header>
+					<span id="telemetry-referrers">Referrers</span><small>Page-entry hosts</small>
+				</header>
+				{#each view.referrers as item (item.label)}
+					<div class="bar-row">
+						<span class="bar-label">{item.label}</span>
+						<i class="bar-track"><b style="width:{bar(item.share)}"></b></i>
+						<span class="bar-count">{item.count}</span>
+					</div>
+				{:else}<p class="empty">No referrer evidence yet.</p>{/each}
+			</section>
+
+			<section class="telemetry-panel" aria-labelledby="telemetry-browsers">
+				<header>
+					<span id="telemetry-browsers">Browsers</span><small>Page-entry user agents</small>
+				</header>
+				{#each view.browsers as item (item.label)}
+					<div class="bar-row">
+						<span class="bar-label">{item.label}</span>
+						<i class="bar-track"><b style="width:{bar(item.share)}"></b></i>
+						<span class="bar-count">{item.count}</span>
+					</div>
+				{:else}<p class="empty">No browser evidence yet.</p>{/each}
+			</section>
+
 			<section class="telemetry-panel" aria-labelledby="telemetry-hours">
-				<header><span id="telemetry-hours">Hours</span><small>UTC · top 12</small></header>
+				<header><span id="telemetry-hours">Hours</span><small>UTC · page entries</small></header>
 				{#each view.hours as item (item.label)}
 					<div class="bar-row">
 						<span class="bar-label">{item.label}</span>
@@ -141,7 +211,7 @@
 							<span class="event-kind">{event.eventType}</span>
 							<strong>{eventLabel(event)}</strong>
 							<small
-								>{event.country ?? '—'} · {formatRelativeTime(
+								>{event.country ?? 'Unreported'} · {formatRelativeTime(
 									event.recordedAt,
 									referenceTime
 								)}</small
@@ -149,6 +219,53 @@
 						</article>
 					{:else}<p class="empty">No beacons received yet.</p>{/each}
 				</div>
+			</section>
+
+			<section class="telemetry-panel telemetry-cloudflare" aria-labelledby="telemetry-cloudflare">
+				<header>
+					<span id="telemetry-cloudflare">Cloudflare request boundary</span><small
+						>Account-wide · not unique visitors</small
+					>
+				</header>
+				<div class="boundary-metrics">
+					<div>
+						<span>Worker requests</span><strong>{cloudflareMetric('workerRequests')}</strong>
+					</div>
+					<div><span>Worker errors</span><strong>{cloudflareMetric('workerErrors')}</strong></div>
+				</div>
+				<p>
+					{cloudflare === null
+						? 'Cloudflare usage snapshot is unavailable.'
+						: 'Includes Worker traffic and internal fetches; use browser beacons above for page-entry evidence.'}
+				</p>
+			</section>
+
+			<section class="telemetry-panel telemetry-boundary" aria-labelledby="telemetry-boundary">
+				<header>
+					<span id="telemetry-boundary">Collection boundary</span><small>How to read this</small>
+				</header>
+				<dl>
+					<div>
+						<dt>Source</dt>
+						<dd>Browser beacons</dd>
+					</div>
+					<div>
+						<dt>Retention</dt>
+						<dd>30 days · {view.totalEvents} events</dd>
+					</div>
+					<div>
+						<dt>Edge enrichment</dt>
+						<dd>Country from Cloudflare</dd>
+					</div>
+					<div>
+						<dt>Excluded</dt>
+						<dd>Cookies, raw IPs, full user agents</dd>
+					</div>
+					<div>
+						<dt>Separate evidence</dt>
+						<dd>Cloudflare edge traffic is not mixed into page views</dd>
+					</div>
+				</dl>
 			</section>
 		</div>
 	{:else}
@@ -161,7 +278,7 @@
 <style>
 	.telemetry-screen {
 		display: grid;
-		grid-template-rows: auto minmax(0, 1fr);
+		grid-template-rows: auto auto minmax(0, 1fr);
 		gap: 1px;
 		height: 100%;
 		min-height: 0;
@@ -197,14 +314,16 @@
 		font-size: 0.8rem;
 	}
 	.telemetry-overview section {
-		display: flex;
-		gap: 1rem;
-		align-items: center;
+		display: grid;
+		grid-template-columns: repeat(5, minmax(0, 1fr));
+		gap: 0;
+		align-items: stretch;
+		min-width: min(100%, 38rem);
 	}
 	.telemetry-overview section > div {
 		display: grid;
 		gap: 0.1rem;
-		min-width: 5.5rem;
+		min-width: 0;
 		padding: 0.5rem 0.75rem;
 		border-left: 1px solid var(--line);
 	}
@@ -245,7 +364,7 @@
 	}
 	.vital-grid {
 		display: grid;
-		grid-template-columns: repeat(3, minmax(0, 1fr));
+		grid-template-columns: repeat(6, minmax(0, 1fr));
 		gap: 1rem;
 		margin-top: 0.7rem;
 	}
@@ -266,6 +385,16 @@
 	.vital-grid small {
 		color: var(--faint);
 		font-size: 0.65rem;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.vital-grid .pending strong {
+		color: var(--muted);
+		font-size: 0.95rem;
+	}
+	.vital-coverage strong {
+		color: var(--accent);
 	}
 	.vital-grid .good strong {
 		color: var(--positive);
@@ -279,6 +408,7 @@
 	.telemetry-grid {
 		display: grid;
 		grid-template-columns: repeat(3, minmax(0, 1fr));
+		grid-auto-rows: minmax(8rem, 1fr);
 		gap: 1px;
 		overflow: auto;
 		min-height: 0;
@@ -350,9 +480,61 @@
 		font: 600 0.58rem/1 var(--mono);
 		color: var(--accent);
 	}
+	.boundary-metrics {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 0.7rem;
+		margin-top: 0.7rem;
+	}
+	.boundary-metrics div {
+		display: grid;
+		gap: 0.25rem;
+		padding: 0.65rem;
+		border: 1px solid var(--line);
+		background: var(--surface-deep);
+	}
+	.boundary-metrics span {
+		color: var(--muted);
+		font: 600 0.6rem/1.2 var(--mono);
+		text-transform: uppercase;
+	}
+	.boundary-metrics strong {
+		font: 700 1.1rem/1 var(--mono);
+	}
+	.telemetry-cloudflare p {
+		margin: 0.7rem 0 0;
+		color: var(--muted);
+		font-size: 0.68rem;
+		line-height: 1.4;
+	}
+	.telemetry-boundary dl {
+		display: grid;
+		gap: 0.42rem;
+		margin: 0.7rem 0 0;
+	}
+	.telemetry-boundary dl div {
+		display: grid;
+		grid-template-columns: 6rem minmax(0, 1fr);
+		gap: 0.6rem;
+		padding-bottom: 0.35rem;
+		border-bottom: 1px solid var(--line);
+	}
+	.telemetry-boundary dt {
+		color: var(--muted);
+		font: 600 0.6rem/1.2 var(--mono);
+		text-transform: uppercase;
+	}
+	.telemetry-boundary dd {
+		margin: 0;
+		color: var(--ink);
+		font-size: 0.7rem;
+	}
 	@media (max-width: 900px) {
 		.telemetry-grid {
 			grid-template-columns: 1fr 1fr;
+		}
+		.vital-grid {
+			grid-template-columns: repeat(3, minmax(0, 1fr));
 		}
 	}
 	@media (max-width: 640px) {
@@ -362,6 +544,13 @@
 		.telemetry-overview {
 			flex-direction: column;
 			gap: 0.8rem;
+		}
+		.telemetry-overview section {
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+			min-width: 0;
+		}
+		.vital-grid {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
 		}
 	}
 </style>
