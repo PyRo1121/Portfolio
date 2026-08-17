@@ -1,13 +1,14 @@
 <script lang="ts">
 	import {
-		Briefcase,
-		ChartLineUp,
-		CirclesThreePlus,
-		Cloud,
-		Flask,
-		Package,
-		SquaresFour,
-		SunHorizon
+		BriefcaseIcon as Briefcase,
+		ChartBarIcon as ChartBar,
+		ChartLineUpIcon as ChartLineUp,
+		CirclesThreePlusIcon as CirclesThreePlus,
+		CloudIcon as Cloud,
+		FlaskIcon as Flask,
+		PackageIcon as Package,
+		SquaresFourIcon as SquaresFour,
+		SunHorizonIcon as SunHorizon
 	} from 'phosphor-svelte';
 	import type { Component } from 'svelte';
 	import type { WorkspaceSignal } from '$lib/domain/dashboard-navigation';
@@ -28,7 +29,8 @@
 		repositories: 'Project',
 		activity: 'Commits',
 		cloudflare: 'Cloud',
-		career: 'Career'
+		career: 'Career',
+		telemetry: 'Visit'
 	};
 	const icons: Readonly<Record<DashboardWorkspace, Component>> = {
 		today: SunHorizon,
@@ -38,7 +40,8 @@
 		activity: ChartLineUp,
 		repositories: CirclesThreePlus,
 		cloudflare: Cloud,
-		career: Briefcase
+		career: Briefcase,
+		telemetry: ChartBar
 	};
 </script>
 

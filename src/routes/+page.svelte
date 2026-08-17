@@ -19,6 +19,7 @@
 	import DashboardSkeleton from '$lib/components/DashboardSkeleton.svelte';
 	import DeliveryWorkspace from '$lib/components/DeliveryWorkspace.svelte';
 	import ProjectsWorkspace from '$lib/components/ProjectsWorkspace.svelte';
+	import TelemetryWorkspace from '$lib/components/TelemetryWorkspace.svelte';
 	import TodayWorkspace from '$lib/components/TodayWorkspace.svelte';
 	import WorkspaceRail from '$lib/components/WorkspaceRail.svelte';
 	import type { CareerSnapshot } from '$lib/domain/career-accountability';
@@ -43,6 +44,8 @@
 	import type { GitHubDashboardSnapshot } from '$lib/domain/github-intelligence';
 	import type { OwnerProjectSnapshot } from '$lib/domain/owner-project';
 	import { createOwnerProjectNavigationSignal } from '$lib/domain/owner-project-navigation';
+	import type { TelemetryView } from '$lib/domain/telemetry-view';
+	import { ClientTelemetry } from '$lib/telemetry/client-telemetry';
 	import { DashboardView } from '$lib/state/dashboard-view.svelte';
 
 	type DashboardPageData = {
@@ -69,6 +72,7 @@
 			readonly cachedAt: string | null;
 		};
 		readonly cloudflareDeploymentRefresh: Promise<CloudflareDeploymentRefreshResult>;
+		readonly telemetry: TelemetryView | null;
 	};
 	type ActionData = {
 		readonly careerMessage?: string;
@@ -99,6 +103,7 @@
 	let viewerTimeZone = $derived(SSR_VIEWER_TIME_ZONE);
 	const viewerToday = $derived(zonedDateKey(new Date(), viewerTimeZone));
 	const dashboardView = new DashboardView();
+	const clientTelemetry = typeof window === 'undefined' ? null : new ClientTelemetry();
 	const viewerProjection = $derived(
 		snapshot === null ? null : createViewerActivityProjection(snapshot, viewerTimeZone)
 	);
@@ -113,11 +118,14 @@
 	const workspaceSignals = $derived.by(() => {
 		if (snapshot === null || viewerProjection === null) return null;
 		return {
-			...createWorkspaceSignals(snapshot, viewerProjection, cloudflare),
+			...createWorkspaceSignals(snapshot, viewerProjection, cloudflare, data.telemetry),
 			repositories: createOwnerProjectNavigationSignal(data.ownerProjects),
 			career: createCareerNavigationSignal(career, viewerToday)
 		};
 	});
+	const telemetryReferenceTime = $derived(
+		data.telemetry?.recent.at(0)?.recordedAt ?? new Date().toISOString()
+	);
 	const status = $derived.by(() => {
 		const audience = data.ownerAuthorized ? 'Owner' : 'Public';
 		if (refreshState === 'Refreshing')
@@ -129,6 +137,11 @@
 
 	$effect(() => {
 		viewerTimeZone = resolvedViewerTimeZone();
+	});
+
+	$effect(() => {
+		if (clientTelemetry === null) return;
+		clientTelemetry.recordWorkspace(dashboardView.activeWorkspace);
 	});
 
 	$effect(() => {
@@ -362,6 +375,15 @@
 					actionMessage={form?.ownerProjectMessage ?? ''}
 					requestedRepository={dashboardView.selectedRepository}
 				/>
+			</section>
+		{:else if dashboardView.activeWorkspace === 'telemetry'}
+			<section
+				class="active"
+				aria-hidden="false"
+				tabindex="-1"
+				{@attach dashboardView.workspaceAttachment('telemetry')}
+			>
+				<TelemetryWorkspace view={data.telemetry} referenceTime={telemetryReferenceTime} />
 			</section>
 		{:else if snapshot === null}
 			<DashboardSkeleton

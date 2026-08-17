@@ -9,6 +9,7 @@ import type {
 	CloudflareUsageSnapshot
 } from '$lib/domain/cloudflare-usage';
 import type { OwnerProjectSnapshot } from '$lib/domain/owner-project';
+import type { TelemetryView } from '$lib/domain/telemetry-view';
 
 // See https://svelte.dev/docs/kit/types#app.d.ts
 // for information about these interfaces
@@ -18,6 +19,7 @@ declare global {
 		// interface Locals {}
 		interface PageData {
 			ownerAuthorized: boolean;
+			telemetry: TelemetryView | null;
 			career: CareerSnapshot | null;
 			ownerProjects: OwnerProjectSnapshot | null;
 			ownerProjectAccess: {

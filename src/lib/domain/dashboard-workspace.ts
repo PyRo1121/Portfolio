@@ -1,6 +1,14 @@
 /** Top-level analytical workspaces available in the dashboard. */
 export type DashboardWorkspace =
-	'today' | 'brief' | 'delivery' | 'craft' | 'repositories' | 'activity' | 'cloudflare' | 'career';
+	| 'today'
+	| 'brief'
+	| 'delivery'
+	| 'craft'
+	| 'repositories'
+	| 'activity'
+	| 'cloudflare'
+	| 'career'
+	| 'telemetry';
 
 /** Metadata for one dashboard workspace. */
 export type WorkspaceDefinition = {
@@ -68,5 +76,12 @@ export const workspaceDefinitions: ReadonlyArray<WorkspaceDefinition> = [
 		label: 'Career',
 		description: 'Applications, commitments, and interview stories',
 		shortcut: '8'
+	},
+	{
+		id: 'telemetry',
+		index: 9,
+		label: 'Visitors',
+		description: 'Visitor telemetry and Core Web Vitals',
+		shortcut: '9'
 	}
 ];

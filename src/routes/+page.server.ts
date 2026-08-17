@@ -14,6 +14,7 @@ import {
 import type { CloudflareDeploymentRefreshResult } from '$lib/domain/cloudflare-deployments';
 import type { CloudflareUsageRefreshResult } from '$lib/domain/cloudflare-usage';
 import type { DashboardRefreshResult } from '$lib/domain/dashboard-hydration';
+import { createTelemetryView } from '$lib/domain/telemetry-view';
 import {
 	parseAddOwnerProjectResource,
 	parseCreateOwnerProject,
@@ -42,6 +43,7 @@ import { cloudflareUsageCacheFor } from '$lib/server/cloudflare-usage-cache';
 import { loadLiveDashboardSnapshot } from '$lib/server/dashboard-loader';
 import { parseGitHubChecksAppConfig } from '$lib/server/github-app-auth';
 import { dashboardSnapshotCacheFor } from '$lib/server/dashboard-snapshot-cache';
+import { loadTelemetryEvents } from '$lib/server/telemetry-store';
 import {
 	addOwnerProjectResource,
 	createOwnerProject,
@@ -51,6 +53,7 @@ import {
 } from '$lib/server/owner-project-store';
 
 const DEFAULT_USERNAME = 'PyRo1121';
+const TELEMETRY_RETENTION_DAYS = 30;
 
 export const load: PageServerLoad = async ({ platform, request, setHeaders }) => {
 	const username = env['GITHUB_USERNAME']?.trim() || DEFAULT_USERNAME;
@@ -132,6 +135,22 @@ export const load: PageServerLoad = async ({ platform, request, setHeaders }) =>
 		}
 	}
 	const ownerProjectData = { ownerProjects, ownerProjectAccess };
+
+	let telemetry: App.PageData['telemetry'] = null;
+	if (expectedOwnerEmail !== null) {
+		const telemetryExit = await Effect.runPromiseExit(
+			loadTelemetryEvents(
+				platform.env.OWNER_DB,
+				expectedOwnerEmail,
+				new Date(now.getTime() - TELEMETRY_RETENTION_DAYS * 24 * 60 * 60 * 1000)
+			)
+		);
+		if (telemetryExit._tag === 'Success') {
+			telemetry = createTelemetryView(telemetryExit.value, now);
+		} else {
+			console.warn('Visitor telemetry load failed:', telemetryExit.cause);
+		}
+	}
 
 	const cloudflareToken =
 		platform.env.CLOUDFLARE_API_TOKEN?.trim() || env['CLOUDFLARE_API_TOKEN']?.trim();
@@ -235,7 +254,8 @@ export const load: PageServerLoad = async ({ platform, request, setHeaders }) =>
 			}),
 			...cloudflareData,
 			...careerPageData,
-			...ownerProjectData
+			...ownerProjectData,
+			telemetry
 		};
 	}
 
@@ -260,7 +280,8 @@ export const load: PageServerLoad = async ({ platform, request, setHeaders }) =>
 			refresh,
 			...cloudflareData,
 			...careerPageData,
-			...ownerProjectData
+			...ownerProjectData,
+			telemetry
 		};
 	}
 
@@ -270,7 +291,8 @@ export const load: PageServerLoad = async ({ platform, request, setHeaders }) =>
 		refresh,
 		...cloudflareData,
 		...careerPageData,
-		...ownerProjectData
+		...ownerProjectData,
+		telemetry
 	};
 };
 

@@ -1,5 +1,6 @@
 import type { CloudflareUsageSnapshot } from './cloudflare-usage';
 import { createCraftIntelligence } from './dashboard-craft';
+import type { TelemetryView } from './telemetry-view';
 import { createTodayIntelligence } from './dashboard-today';
 import type { ViewerActivityProjection } from './dashboard-viewer-time';
 import type { DashboardWorkspace } from './dashboard-workspace';
@@ -15,7 +16,8 @@ export type WorkspaceSignal = {
 export function createWorkspaceSignals(
 	snapshot: GitHubDashboardSnapshot,
 	projection: ViewerActivityProjection,
-	cloudflare: CloudflareUsageSnapshot | null = null
+	cloudflare: CloudflareUsageSnapshot | null = null,
+	telemetry: TelemetryView | null = null
 ): Readonly<Record<DashboardWorkspace, WorkspaceSignal>> {
 	const today = createTodayIntelligence(snapshot, projection);
 	const craft = createCraftIntelligence(snapshot);
@@ -52,6 +54,10 @@ export function createWorkspaceSignals(
 					? 'attention'
 					: 'neutral'
 		},
-		career: { value: '—', label: 'locked', tone: 'neutral' }
+		career: { value: '—', label: 'locked', tone: 'neutral' },
+		telemetry:
+			telemetry === null
+				? { value: '—', label: 'visits', tone: 'neutral' }
+				: { value: String(telemetry.pageViews), label: 'visits', tone: 'neutral' }
 	};
 }
