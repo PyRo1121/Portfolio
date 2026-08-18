@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { createOwnerProjectNavigationSignal } from './owner-project-navigation';
+import {
+	createOwnerProjectNavigationSignal,
+	createPublicShippingNavigationSignal
+} from './owner-project-navigation';
 
 describe('owner project navigation signal', () => {
 	it('shows the persisted project count without falling back to repository activity', () => {
@@ -16,5 +19,25 @@ describe('owner project navigation signal', () => {
 			label: 'pending',
 			tone: 'neutral'
 		});
+	});
+});
+
+describe('createPublicShippingNavigationSignal', () => {
+	it('counts public shipping projects without using the owner registry', () => {
+		expect(
+			createPublicShippingNavigationSignal({
+				_tag: 'Current',
+				reason: 'Public shipping links.',
+				projects: [
+					{
+						id: 'one',
+						name: 'One',
+						description: 'Ship',
+						links: [],
+						deployments: []
+					}
+				]
+			})
+		).toEqual({ value: '1', label: 'projects', tone: 'neutral' });
 	});
 });

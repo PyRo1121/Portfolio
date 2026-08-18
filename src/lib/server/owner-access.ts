@@ -1,3 +1,5 @@
+import { error } from '@sveltejs/kit';
+
 /** Normalize the configured owner identity used to scope public reads and private writes. */
 export function configuredOwnerEmail(value: string | undefined): string | null {
 	const normalized = value?.trim().toLocaleLowerCase();
@@ -33,3 +35,14 @@ export function resolveOwnerAccess(
 	}
 	return { _tag: 'Allowed', ownerEmail: expected };
 }
+
+/** Throw SvelteKit `error(403)` for a denied owner page load. Do not use `fail(403)`. */
+export function rejectDeniedOwnerLoad(decision: OwnerAccessDecision): asserts decision is {
+	readonly _tag: 'Allowed';
+	readonly ownerEmail: string;
+} {
+	if (decision._tag === 'Denied') {
+		error(403, decision.reason);
+	}
+}
+

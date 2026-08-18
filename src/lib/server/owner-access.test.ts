@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { configuredOwnerEmail, isOwnerMutationPath, resolveOwnerAccess } from './owner-access';
+import { configuredOwnerEmail, isOwnerMutationPath, rejectDeniedOwnerLoad, resolveOwnerAccess } from './owner-access';
 
 describe('configuredOwnerEmail', () => {
 	it('normalizes a configured public-read identity', () => {
@@ -42,5 +42,19 @@ describe('resolveOwnerAccess', () => {
 			'cf-access-jwt-assertion': 'signed-access-assertion'
 		});
 		expect(resolveOwnerAccess(headers, 'olen@latham.cloud')._tag).toBe('Denied');
+	});
+});
+
+describe('rejectDeniedOwnerLoad', () => {
+	it('throws HTTP 403 for a denied Access identity', () => {
+		try {
+			rejectDeniedOwnerLoad({
+				_tag: 'Denied',
+				reason: 'Owner data requires the configured Access identity.'
+			});
+			expect.fail('expected error(403)');
+		} catch (cause) {
+			expect(cause).toMatchObject({ status: 403 });
+		}
 	});
 });

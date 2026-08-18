@@ -2,7 +2,7 @@
 
 ## Status
 
-Superseded in part by [ADR 0009](0009-public-read-owner-write-boundary.md). The registry and exact-ID joins remain accepted; reads are now public.
+Superseded in part by [ADR 0009](0009-public-read-owner-write-boundary.md) and [ADR 0010](0010-public-portfolio-owner-ops-read-boundary.md). The registry and exact-ID joins remain accepted. Raw registry **reads** and mapping edits are owner-only on `/owner`. Public `/` may show a shipping-link projection (GitHub, Worker, and domain identities) and must not serialize the owner-project snapshot, D1/KV/R2 inventory, or usage.
 
 ## Context
 

@@ -2,7 +2,7 @@
 
 ## Status
 
-Superseded in part by [ADR 0009](0009-public-read-owner-write-boundary.md). The dedicated store and owner-scoped mutations remain accepted; reads are now public.
+Superseded in part by [ADR 0009](0009-public-read-owner-write-boundary.md) and [ADR 0010](0010-public-portfolio-owner-ops-read-boundary.md). The dedicated store and owner-scoped mutations remain accepted. Career record **reads** are owner-only on `/owner`; they are withheld from public `/`. The Markdown ShareDraft export at `/career/portfolio.md` remains public.
 
 ## Context
 

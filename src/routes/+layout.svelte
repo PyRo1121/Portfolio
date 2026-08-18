@@ -3,6 +3,7 @@
 	import type { LayoutProps } from './$types';
 	import { getClientTelemetry } from '$lib/telemetry/client-telemetry';
 	import '../app.css';
+	import '$lib/styles/desk.css';
 
 	let { children }: LayoutProps = $props();
 	const telemetry = getClientTelemetry();
@@ -13,3 +14,4 @@
 </script>
 
 {@render children()}
+

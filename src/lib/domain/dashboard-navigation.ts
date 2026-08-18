@@ -1,9 +1,7 @@
-import type { CloudflareUsageSnapshot } from './cloudflare-usage';
 import { createCraftIntelligence } from './dashboard-craft';
-import type { TelemetryView } from './telemetry-view';
 import { createTodayIntelligence } from './dashboard-today';
 import type { ViewerActivityProjection } from './dashboard-viewer-time';
-import type { DashboardWorkspace } from './dashboard-workspace';
+import type { PublicWorkspace } from './dashboard-workspace';
 import type { GitHubDashboardSnapshot } from './github-intelligence';
 
 export type WorkspaceSignal = {
@@ -12,13 +10,13 @@ export type WorkspaceSignal = {
 	readonly tone: 'neutral' | 'attention';
 };
 
-/** Derive one compact, exact information-scent signal for each workspace. */
+export type PublicWorkspaceSignals = Readonly<Record<PublicWorkspace, WorkspaceSignal>>;
+
+/** Derive one compact signal for each public portfolio workspace. */
 export function createWorkspaceSignals(
 	snapshot: GitHubDashboardSnapshot,
-	projection: ViewerActivityProjection,
-	cloudflare: CloudflareUsageSnapshot | null = null,
-	telemetry: TelemetryView | null = null
-): Readonly<Record<DashboardWorkspace, WorkspaceSignal>> {
+	projection: ViewerActivityProjection
+): PublicWorkspaceSignals {
 	const today = createTodayIntelligence(snapshot, projection);
 	const craft = createCraftIntelligence(snapshot);
 	const failedChecks = craft.observed.failedChecks;
@@ -44,20 +42,6 @@ export function createWorkspaceSignals(
 			value: String(snapshot.intelligence.commits.length),
 			label: 'commits',
 			tone: 'neutral'
-		},
-		cloudflare: {
-			value: cloudflare === null ? '—' : String(cloudflare.summary.availableProducts),
-			label: cloudflare === null ? 'pending' : 'products',
-			tone:
-				cloudflare !== null &&
-				cloudflare.summary.availableProducts < cloudflare.summary.totalProducts
-					? 'attention'
-					: 'neutral'
-		},
-		career: { value: '—', label: 'locked', tone: 'neutral' },
-		telemetry:
-			telemetry === null
-				? { value: '—', label: 'visits', tone: 'neutral' }
-				: { value: String(telemetry.pageViews), label: 'visits', tone: 'neutral' }
+		}
 	};
 }
