@@ -31,7 +31,6 @@
 </script>
 
 <ProjectsWorkspace
-	audience="owner"
 	{registry}
 	{snapshot}
 	{cloudflare}

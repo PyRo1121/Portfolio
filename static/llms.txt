@@ -1,0 +1,10 @@
+# Olen Latham
+
+> Software developer shipping TypeScript, Svelte, and Cloudflare Workers.
+
+- Site: https://latham.cloud/
+- About: https://latham.cloud/about
+- GitHub: https://github.com/PyRo1121
+- Email: olen@latham.cloud
+
+Weeknote is the public engineering dashboard: GitHub delivery evidence, confirmed project links, and Cloudflare Worker deployments.

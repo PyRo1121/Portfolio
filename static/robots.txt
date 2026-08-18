@@ -1,5 +1,7 @@
-# allow crawling everything by default
 User-agent: *
 Allow: /
+Disallow: /owner
+Disallow: /__warm
+Disallow: /api/telemetry
 
 Sitemap: https://latham.cloud/sitemap.xml
