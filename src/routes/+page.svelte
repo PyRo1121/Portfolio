@@ -142,12 +142,7 @@
 			<span class="brand"><GithubLogo size={18} weight="fill" /><span>Olen Latham</span></span>
 		{:else}
 			<div class="brand-group">
-				<a
-					class="brand"
-					href={PUBLIC_GITHUB_URL}
-					target="_blank"
-					rel="external noreferrer"
-				>
+				<a class="brand" href={PUBLIC_GITHUB_URL} target="_blank" rel="external noreferrer">
 					<span class="brand__portrait">
 						<img
 							src={snapshot.profile.avatarUrl}
