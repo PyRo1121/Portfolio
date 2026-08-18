@@ -3,6 +3,10 @@ export const PUBLIC_SITE_ORIGIN = 'https://latham.cloud';
 
 export const PUBLIC_PERSON_ID = `${PUBLIC_SITE_ORIGIN}/#olen-latham`;
 
+export const PUBLIC_GITHUB_URL = 'https://github.com/PyRo1121';
+export const PUBLIC_X_URL = 'https://x.com/PyRo1121';
+export const PUBLIC_LINKEDIN_URL = 'https://www.linkedin.com/in/olen-latham-9b647654/';
+
 const PUBLIC_IMAGE = `${PUBLIC_SITE_ORIGIN}/og-image.svg`;
 
 export const PUBLIC_SEO_SKILLS = [
@@ -30,7 +34,7 @@ function personNode(): Record<string, unknown> {
 		jobTitle: 'Software developer',
 		email: 'mailto:olen@latham.cloud',
 		knowsAbout: [...PUBLIC_SEO_SKILLS],
-		sameAs: ['https://github.com/PyRo1121', 'https://x.com/PyRo1121']
+		sameAs: [PUBLIC_GITHUB_URL, PUBLIC_X_URL, PUBLIC_LINKEDIN_URL]
 	};
 }
 

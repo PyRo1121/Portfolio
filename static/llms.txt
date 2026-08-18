@@ -5,6 +5,7 @@
 - Site: https://latham.cloud/
 - About: https://latham.cloud/about
 - GitHub: https://github.com/PyRo1121
+- LinkedIn: https://www.linkedin.com/in/olen-latham-9b647654/
 - Email: olen@latham.cloud
 
 Weeknote is the public engineering dashboard: GitHub delivery evidence, confirmed project links, and Cloudflare Worker deployments.
