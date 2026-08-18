@@ -10,13 +10,8 @@
 	import { invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import type { PageProps } from './$types';
-	import ActivityWorkspace from '$lib/components/ActivityWorkspace.svelte';
-	import BriefWorkspace from '$lib/components/BriefWorkspace.svelte';
 	import CommandPalette from '$lib/components/CommandPalette.svelte';
-	import CraftWorkspace from '$lib/components/CraftWorkspace.svelte';
 	import DashboardSkeleton from '$lib/components/DashboardSkeleton.svelte';
-	import DeliveryWorkspace from '$lib/components/DeliveryWorkspace.svelte';
-	import ProjectsWorkspace from '$lib/components/ProjectsWorkspace.svelte';
 	import TodayWorkspace from '$lib/components/TodayWorkspace.svelte';
 	import WorkspaceRail from '$lib/components/WorkspaceRail.svelte';
 	import { createWorkspaceSignals } from '$lib/domain/dashboard-navigation';
@@ -29,6 +24,7 @@
 	import { createViewerActivityProjection } from '$lib/domain/dashboard-viewer-time';
 	import type { GitHubDashboardSnapshot } from '$lib/domain/github-intelligence';
 	import { createPublicShippingNavigationSignal } from '$lib/domain/owner-project-navigation';
+	import { homeSeo, jsonLdScriptTag } from '$lib/domain/public-seo';
 	import { getClientTelemetry } from '$lib/telemetry/client-telemetry';
 	import { DashboardView } from '$lib/state/dashboard-view.svelte';
 
@@ -109,52 +105,26 @@
 <svelte:document onvisibilitychange={() => stayAlive.noticeVisibility()} />
 
 <svelte:head>
-	<meta
-		name="description"
-		content="Olen Latham’s public engineering dashboard covering GitHub development activity, software projects, deployments, Cloudflare Workers, and a transition into full-stack development."
-	/>
-	<link rel="canonical" href="https://latham.cloud/" />
+	<title>{homeSeo.title}</title>
+	<meta name="description" content={homeSeo.description} />
+	<link rel="canonical" href={homeSeo.canonical} />
+	<link rel="me" href="https://github.com/PyRo1121" />
 	<meta property="og:type" content="profile" />
-	<meta
-		property="og:title"
-		content="Olen Latham - Software developer building toward full-stack work"
-	/>
-	<meta
-		property="og:description"
-		content="Public engineering activity, delivery evidence, deployments, and Cloudflare projects."
-	/>
-	<meta property="og:url" content="https://latham.cloud/" />
+	<meta property="og:site_name" content="latham.cloud" />
+	<meta property="og:locale" content="en_US" />
+	<meta property="og:title" content={homeSeo.title} />
+	<meta property="og:description" content={homeSeo.description} />
+	<meta property="og:url" content={homeSeo.canonical} />
 	<meta property="og:image" content="https://latham.cloud/og-image.svg" />
 	<meta name="twitter:card" content="summary_large_image" />
 	<meta name="theme-color" content="#0b0d0e" />
 	<link rel="icon" href="/og-image.svg" type="image/svg+xml" />
-	<meta
-		name="twitter:title"
-		content="Olen Latham - Software developer building toward full-stack work"
-	/>
-	<meta
-		name="twitter:description"
-		content="Public engineering activity, delivery evidence, deployments, and Cloudflare projects."
-	/>
+	<meta name="twitter:title" content={homeSeo.title} />
+	<meta name="twitter:description" content={homeSeo.description} />
 	<meta name="twitter:image" content="https://latham.cloud/og-image.svg" />
-	<script type="application/ld+json">
-		{
-			"@context": "https://schema.org",
-			"@type": "ProfilePage",
-			"@id": "https://latham.cloud/#profile",
-			"url": "https://latham.cloud/",
-			"name": "Olen Latham - Software developer building toward full-stack work",
-			"mainEntity": {
-				"@type": "Person",
-				"@id": "https://latham.cloud/#olen-latham",
-				"name": "Olen Latham",
-				"url": "https://latham.cloud/",
-				"jobTitle": "Software developer",
-				"sameAs": ["https://github.com/PyRo1121", "https://x.com/PyRo1121"]
-			}
-		}
-	</script>
-	<title>Olen Latham — Software developer building toward full-stack work</title>
+	<!-- JSON-LD is serialized from local constants, not untrusted input. -->
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html jsonLdScriptTag(homeSeo.jsonLd)}
 </svelte:head>
 <a class="skip-link" href="#workspace-stage">Skip to dashboard</a>
 
@@ -215,6 +185,7 @@
 			<span class={connectionClass} title={refreshMessage}>
 				<i></i><GlobeSimple size={12} />{status}
 			</span>
+			<a href={resolve('/about')}>About</a>
 			<a href={resolve('/owner')} data-sveltekit-reload aria-label="Owner home">Owner</a>
 			<button
 				type="button"
@@ -239,11 +210,12 @@
 				tabindex="-1"
 				{@attach dashboardView.workspaceAttachment('repositories')}
 			>
-				<ProjectsWorkspace
-					audience="public"
-					shipping={data.shipping}
-					requestedRepository={dashboardView.selectedRepository}
-				/>
+				{#await import('$lib/components/PublicProjectsWorkspace.svelte') then { default: PublicProjectsWorkspace }}
+					<PublicProjectsWorkspace
+						shipping={data.shipping}
+						requestedRepository={dashboardView.selectedRepository}
+					/>
+				{/await}
 			</section>
 		{:else if snapshot === null}
 			<DashboardSkeleton
@@ -251,54 +223,66 @@
 				message={refreshMessage}
 				onRetry={() => invalidateAll()}
 			/>
-		{:else if viewerProjection !== null}
+		{:else if viewerProjection !== null && dashboardView.activeWorkspace === 'today'}
 			<section
-				class={dashboardView.activeWorkspace === 'today' ? 'active' : ''}
-				aria-hidden={dashboardView.activeWorkspace !== 'today'}
+				class="active"
+				aria-hidden="false"
 				tabindex="-1"
 				{@attach dashboardView.workspaceAttachment('today')}
 			>
 				<TodayWorkspace {snapshot} projection={viewerProjection} />
 			</section>
+		{:else if viewerProjection !== null && dashboardView.activeWorkspace === 'brief'}
 			<section
-				class={dashboardView.activeWorkspace === 'brief' ? 'active' : ''}
-				aria-hidden={dashboardView.activeWorkspace !== 'brief'}
+				class="active"
+				aria-hidden="false"
 				tabindex="-1"
 				{@attach dashboardView.workspaceAttachment('brief')}
 			>
-				<BriefWorkspace
-					{snapshot}
-					projection={viewerProjection}
-					onSelectRepository={(fullName) => {
-						dashboardView.selectRepository(fullName);
-						dashboardView.navigate('repositories');
-						clientTelemetry?.recordWorkspace('repositories');
-					}}
-				/>
+				{#await import('$lib/components/BriefWorkspace.svelte') then { default: BriefWorkspace }}
+					<BriefWorkspace
+						{snapshot}
+						projection={viewerProjection}
+						onSelectRepository={(fullName) => {
+							dashboardView.selectRepository(fullName);
+							dashboardView.navigate('repositories');
+							clientTelemetry?.recordWorkspace('repositories');
+						}}
+					/>
+				{/await}
 			</section>
+		{:else if viewerProjection !== null && dashboardView.activeWorkspace === 'delivery'}
 			<section
-				class={dashboardView.activeWorkspace === 'delivery' ? 'active' : ''}
-				aria-hidden={dashboardView.activeWorkspace !== 'delivery'}
+				class="active"
+				aria-hidden="false"
 				tabindex="-1"
 				{@attach dashboardView.workspaceAttachment('delivery')}
 			>
-				<DeliveryWorkspace {snapshot} />
+				{#await import('$lib/components/DeliveryWorkspace.svelte') then { default: DeliveryWorkspace }}
+					<DeliveryWorkspace {snapshot} />
+				{/await}
 			</section>
+		{:else if viewerProjection !== null && dashboardView.activeWorkspace === 'craft'}
 			<section
-				class={dashboardView.activeWorkspace === 'craft' ? 'active' : ''}
-				aria-hidden={dashboardView.activeWorkspace !== 'craft'}
+				class="active"
+				aria-hidden="false"
 				tabindex="-1"
 				{@attach dashboardView.workspaceAttachment('craft')}
 			>
-				<CraftWorkspace {snapshot} />
+				{#await import('$lib/components/CraftWorkspace.svelte') then { default: CraftWorkspace }}
+					<CraftWorkspace {snapshot} />
+				{/await}
 			</section>
+		{:else if viewerProjection !== null && dashboardView.activeWorkspace === 'activity'}
 			<section
-				class={dashboardView.activeWorkspace === 'activity' ? 'active' : ''}
-				aria-hidden={dashboardView.activeWorkspace !== 'activity'}
+				class="active"
+				aria-hidden="false"
 				tabindex="-1"
 				{@attach dashboardView.workspaceAttachment('activity')}
 			>
-				<ActivityWorkspace {snapshot} projection={viewerProjection} />
+				{#await import('$lib/components/ActivityWorkspace.svelte') then { default: ActivityWorkspace }}
+					<ActivityWorkspace {snapshot} projection={viewerProjection} />
+				{/await}
 			</section>
 		{/if}
 	</main>

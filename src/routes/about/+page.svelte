@@ -1,69 +1,67 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import { aboutSeo, jsonLdScriptTag } from '$lib/domain/public-seo';
 </script>
 
 <svelte:head>
-	<title>About Olen Latham — Software developer building toward full-stack work</title>
-	<meta
-		name="description"
-		content="Olen Latham is transitioning from finance into software development and full-stack engineering through sustained open-source and product work."
-	/>
-	<link rel="canonical" href="https://latham.cloud/about" />
+	<title>{aboutSeo.title}</title>
+	<meta name="description" content={aboutSeo.description} />
+	<link rel="canonical" href={aboutSeo.canonical} />
+	<link rel="me" href="https://github.com/PyRo1121" />
 	<meta property="og:type" content="profile" />
-	<meta property="og:title" content="About Olen Latham — Software developer" />
-	<meta
-		property="og:description"
-		content="A finance-to-software transition grounded in open-source development, product interfaces, and Cloudflare Workers."
-	/>
-	<meta property="og:url" content="https://latham.cloud/about" />
+	<meta property="og:site_name" content="latham.cloud" />
+	<meta property="og:locale" content="en_US" />
+	<meta property="og:title" content={aboutSeo.title} />
+	<meta property="og:description" content={aboutSeo.description} />
+	<meta property="og:url" content={aboutSeo.canonical} />
 	<meta property="og:image" content="https://latham.cloud/og-image.svg" />
-	<script type="application/ld+json">
-		{
-			"@context": "https://schema.org",
-			"@type": "ProfilePage",
-			"@id": "https://latham.cloud/about#profile",
-			"url": "https://latham.cloud/about",
-			"name": "About Olen Latham",
-			"mainEntity": {
-				"@type": "Person",
-				"@id": "https://latham.cloud/#olen-latham",
-				"name": "Olen Latham",
-				"url": "https://latham.cloud/",
-				"jobTitle": "Software developer",
-				"sameAs": ["https://github.com/PyRo1121", "https://x.com/PyRo1121"]
-			}
-		}
-	</script>
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:title" content={aboutSeo.title} />
+	<meta name="twitter:description" content={aboutSeo.description} />
+	<meta name="twitter:image" content="https://latham.cloud/og-image.svg" />
+	<!-- JSON-LD is serialized from local constants, not untrusted input. -->
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html jsonLdScriptTag(aboutSeo.jsonLd)}
 </svelte:head>
 
 <main class="about-page">
 	<nav aria-label="Page navigation"><a href={resolve('/')}>← Weeknote</a></nav>
 	<header>
 		<p class="eyebrow">About Olen Latham</p>
-		<h1>Building toward full-stack software work.</h1>
+		<h1>Software developer working in TypeScript, Svelte, and Cloudflare.</h1>
 		<p class="lead">
-			I’m transitioning from finance into software development by building consistently, studying
-			real systems, and contributing work in public where it is useful.
+			I design and ship production web apps: TypeScript, Svelte 5, GitHub delivery, and Cloudflare
+			Workers. Weeknote is my public engineering dashboard and portfolio.
 		</p>
 	</header>
-	<section aria-labelledby="what-i-am-building">
-		<h2 id="what-i-am-building">What I’m working on</h2>
+	<section aria-labelledby="what-i-build">
+		<h2 id="what-i-build">What I build</h2>
 		<p>
-			My current practice spans product interfaces, TypeScript and Svelte, GitHub delivery, backend
-			services, and Cloudflare Workers. Weeknote is a public engineering log that records activity
-			and deployment evidence without treating commit volume as a quality score.
+			Weeknote is a live SvelteKit app on Cloudflare Workers. It shows GitHub activity, delivery
+			evidence, and confirmed project links without treating commit volume as a quality score. The
+			same stack shows up in the rest of my public work: typed domain logic, explicit failure modes,
+			and small interfaces that stay fast.
+		</p>
+	</section>
+	<section aria-labelledby="stack">
+		<h2 id="stack">Stack</h2>
+		<p>
+			TypeScript, Svelte 5 and SvelteKit, Cloudflare Workers, GitHub, and Effect at server and
+			domain boundaries. I care about evidence you can inspect: pull requests, checks, releases, and
+			deployed Workers.
 		</p>
 	</section>
 	<section aria-labelledby="work-together">
 		<h2 id="work-together">Work together</h2>
 		<p>
-			If you work on an open-source project, have useful feedback, or are hiring for a role where I
-			can grow into full-stack ownership, I’d be glad to hear from you.
+			If you are hiring for a software or full-stack role, maintaining an open-source project, or
+			have useful feedback on the work here, I would be glad to hear from you.
 		</p>
 		<div class="links">
 			<a href="mailto:olen@latham.cloud">Email me</a>
 			<a href="https://github.com/PyRo1121" target="_blank" rel="external noreferrer">GitHub</a>
 			<a href="https://x.com/PyRo1121" target="_blank" rel="external noreferrer">X</a>
+			<a href={resolve('/')}>Weeknote dashboard</a>
 		</div>
 	</section>
 </main>
@@ -106,7 +104,7 @@
 		text-transform: uppercase;
 	}
 	h1 {
-		max-width: 11ch;
+		max-width: 16ch;
 		margin: 1rem 0;
 		font-size: clamp(3rem, 9vw, 6.5rem);
 		line-height: 0.92;

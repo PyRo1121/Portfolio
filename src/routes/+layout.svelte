@@ -13,4 +13,8 @@
 	});
 </script>
 
+<svelte:head>
+	<link rel="sitemap" type="application/xml" href="/sitemap.xml" />
+</svelte:head>
+
 {@render children()}
