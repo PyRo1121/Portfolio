@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
 	aboutSeo,
 	homeSeo,
+	PUBLIC_IDENTITY_LINE,
 	PUBLIC_SEO_SKILLS,
 	publicSitemapPaths,
 	renderPublicSitemapXml
@@ -22,6 +23,10 @@ describe('public SEO copy', () => {
 		for (const skill of PUBLIC_SEO_SKILLS) {
 			expect(`${publicCopy} ${homeSeo.jsonLd}`).toContain(skill);
 		}
+	});
+
+	it('keeps the top-bar identity line on software work', () => {
+		expect(PUBLIC_IDENTITY_LINE).toBe('Software developer · TypeScript · Svelte · Cloudflare');
 	});
 
 	it('keeps the public sitemap on crawlable URLs only', () => {

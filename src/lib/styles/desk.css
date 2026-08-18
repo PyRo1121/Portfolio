@@ -161,6 +161,11 @@ a {
 	font-weight: 680;
 	letter-spacing: -0.035em;
 }
+.brand__identity small {
+	font: 450 0.58rem/1.25 var(--sans);
+	color: var(--muted);
+	letter-spacing: 0.01em;
+}
 .workspace-rail {
 	display: flex;
 	height: 100%;
@@ -2477,6 +2482,9 @@ a {
 	}
 	.brand__identity strong {
 		font-size: 0.72rem;
+	}
+	.brand__identity small {
+		font-size: 0.5rem;
 	}
 	.workspace-link svg {
 		display: none;

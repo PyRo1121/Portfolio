@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { ArrowDownRight, ArrowUpRight } from 'phosphor-svelte';
 	import type { GitHubDashboardSnapshot } from '$lib/domain/github-intelligence';
-	import { createTodayIntelligence } from '$lib/domain/dashboard-today';
+	import { createTodayChangeScope, createTodayIntelligence } from '$lib/domain/dashboard-today';
 	import type { ViewerActivityProjection } from '$lib/domain/dashboard-viewer-time';
 	import {
 		formatCompact,
@@ -31,9 +31,43 @@
 			0
 		)
 	);
-	let selectedHour = $state<number | null>(null);
+	let hoveredHour = $state<number | null>(null);
+	let pinnedHour = $state<number | null>(null);
 	let mobilePanel = $state<TodayMobilePanel>('rhythm');
-	const displayedHour = $derived(selectedHour ?? peakHour);
+	const inspectedHour = $derived(hoveredHour ?? pinnedHour);
+	const displayedHour = $derived(inspectedHour ?? peakHour);
+	const changeScope = $derived(createTodayChangeScope(today, inspectedHour));
+	const changeCaption = $derived(
+		changeScope._tag === 'Hour'
+			? `${changeScope.caption} ${projection.timeLabel}`
+			: changeScope.caption
+	);
+	const fourthChangeLabel = $derived(changeScope._tag === 'Hour' ? 'Commits' : 'Prior average');
+	const fourthChangeValue = $derived(
+		changeScope._tag === 'Hour'
+			? formatInteger(changeScope.commits)
+			: today.priorDailyAverage.toFixed(1)
+	);
+
+	function inspectHour(hour: number): void {
+		hoveredHour = hour;
+	}
+
+	function pinHour(hour: number): void {
+		pinnedHour = pinnedHour === hour ? null : hour;
+	}
+
+	function clearHover(event: FocusEvent | PointerEvent): void {
+		const next = event.relatedTarget;
+		if (
+			event.currentTarget instanceof HTMLElement &&
+			next instanceof Node &&
+			event.currentTarget.contains(next)
+		) {
+			return;
+		}
+		hoveredHour = null;
+	}
 
 	function hourLabel(hour: number): string {
 		return `${String(hour).padStart(2, '0')}:00`;
@@ -86,12 +120,14 @@
 	<section
 		class={mobilePanel === 'change' ? 'today-change-panel panel-visible' : 'today-change-panel'}
 	>
-		<header><span>Changes</span><small>Current local day</small></header>
-		<div class="today-change-grid">
-			<div><span>Added</span><strong>+{formatCompact(today.additions)}</strong></div>
-			<div><span>Removed</span><strong>−{formatCompact(today.deletions)}</strong></div>
-			<div><span>Files touched</span><strong>{formatInteger(today.changedFiles)}</strong></div>
-			<div><span>Prior average</span><strong>{today.priorDailyAverage.toFixed(1)}</strong></div>
+		<header><span>Changes</span><small>{changeCaption}</small></header>
+		<div class="today-change-grid" aria-live="polite">
+			<div><span>Added</span><strong>+{formatCompact(changeScope.additions)}</strong></div>
+			<div><span>Removed</span><strong>−{formatCompact(changeScope.deletions)}</strong></div>
+			<div>
+				<span>Files touched</span><strong>{formatInteger(changeScope.changedFiles)}</strong>
+			</div>
+			<div><span>{fourthChangeLabel}</span><strong>{fourthChangeValue}</strong></div>
 		</div>
 		<div class="today-pace">
 			{#if today.paceDelta >= 0}<ArrowUpRight size={18} weight="bold" />{:else}<ArrowDownRight
@@ -115,16 +151,23 @@
 				{(today.hourlyCommits[displayedHour] ?? 0) === 1 ? 'commit' : 'commits'}</small
 			>
 		</header>
-		<div class="today-hours" role="list" aria-label={`Commits by hour in ${projection.timeZone}`}>
+		<div
+			class="today-hours"
+			role="list"
+			aria-label={`Commits by hour in ${projection.timeZone}`}
+			onpointerleave={clearHover}
+			onfocusout={clearHover}
+		>
 			{#each today.hourlyCommits as commits, hour (hour)}
 				<button
 					type="button"
 					class={hour === displayedHour ? 'selected active' : commits > 0 ? 'active' : ''}
-					onpointerenter={() => (selectedHour = hour)}
-					onclick={() => (selectedHour = hour)}
-					onfocus={() => (selectedHour = hour)}
+					onpointerenter={() => inspectHour(hour)}
+					onclick={() => pinHour(hour)}
+					onfocus={() => inspectHour(hour)}
 					aria-label={`${hourLabel(hour)} ${projection.timeLabel}, ${commits} commits`}
 					aria-current={hour === displayedHour ? 'true' : undefined}
+					aria-pressed={pinnedHour === hour}
 				>
 					<i
 						style={`--hour-height:${Math.max(commits === 0 ? 0.012 : commits / maximumHour, 0.035)}`}
