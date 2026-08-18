@@ -41,6 +41,7 @@ a {
 	--accent-soft: rgba(216, 165, 74, 0.12);
 	--positive: #93b49b;
 	--negative: #c98272;
+	--sans: 'Geist Variable', sans-serif;
 	--mono: 'Observatory Mono', 'JetBrains Mono Variable', monospace;
 	--ease: cubic-bezier(0.16, 1, 0.3, 1);
 	display: grid;

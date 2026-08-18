@@ -8,9 +8,10 @@ describe('forbiddenPublicPageKeys', () => {
 				snapshot: null,
 				career: null,
 				cloudflareRefresh: Promise.resolve(null),
-				ownerAuthorized: true
+				ownerAuthorized: true,
+				ownerProjectAccess: { _tag: 'Current', reason: 'Owner.' }
 			})
-		).toEqual(['career', 'ownerAuthorized', 'cloudflareRefresh']);
+		).toEqual(['career', 'ownerAuthorized', 'cloudflareRefresh', 'ownerProjectAccess']);
 	});
 
 	it('accepts a public payload with shipping and GitHub snapshot only', () => {

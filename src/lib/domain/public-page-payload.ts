@@ -10,7 +10,8 @@ export const PUBLIC_PAGE_FORBIDDEN_KEYS = [
 	'cloudflareDeployments',
 	'cloudflareDeploymentCache',
 	'cloudflareDeploymentRefresh',
-	'ownerProjects'
+	'ownerProjects',
+	'ownerProjectAccess'
 ] as const;
 
 /** List forbidden keys present on an untrusted public payload object. */
