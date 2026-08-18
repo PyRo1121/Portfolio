@@ -8,6 +8,7 @@ import {
 	type CreateOwnerProjectInput,
 	type OwnerProject,
 	type OwnerProjectResource,
+	type OwnerProjectResourceKind,
 	type OwnerProjectSnapshot,
 	type UpdateOwnerProjectInput
 } from '$lib/domain/owner-project';
@@ -59,13 +60,39 @@ export function ownerProjectResourceFromRow(
 	};
 }
 
-/** Load the complete owner-scoped project registry from D1. */
+const OWNER_RESOURCE_KINDS: ReadonlyArray<OwnerProjectResourceKind> = [
+	'GitHubRepository',
+	'CloudflareWorker',
+	'D1Database',
+	'KVNamespace',
+	'R2Bucket',
+	'Domain'
+];
+
+/** Bound D1 query that loads owner-project resources for the requested kinds. */
+export function ownerProjectResourceQuery(
+	ownerEmail: string,
+	resourceKinds: ReadonlyArray<OwnerProjectResourceKind>
+): { readonly sql: string; readonly binds: ReadonlyArray<string> } {
+	const placeholders = resourceKinds.map(() => '?').join(', ');
+	return {
+		sql: `SELECT id, project_id, kind, environment, provider_id, display_name,
+		             canonical_url, created_at
+		      FROM owner_project_resources WHERE owner_email = ? AND kind IN (${placeholders})
+		      ORDER BY kind ASC, display_name ASC`,
+		binds: [ownerEmail, ...resourceKinds]
+	};
+}
+
+/** Load the owner-scoped project registry from D1, optionally limited to shipping kinds. */
 export function loadOwnerProjectSnapshot(
 	database: D1Database,
-	ownerEmail: string
+	ownerEmail: string,
+	resourceKinds: ReadonlyArray<OwnerProjectResourceKind> = OWNER_RESOURCE_KINDS
 ): Effect.Effect<OwnerProjectSnapshot, OwnerProjectStoreError> {
 	return Effect.tryPromise({
 		try: async () => {
+			const resourceQuery = ownerProjectResourceQuery(ownerEmail, resourceKinds);
 			const [projectResult, resourceResult] = await Promise.all([
 				database
 					.prepare(
@@ -75,13 +102,8 @@ export function loadOwnerProjectSnapshot(
 					.bind(ownerEmail)
 					.all(),
 				database
-					.prepare(
-						`SELECT id, project_id, kind, environment, provider_id, display_name,
-						        canonical_url, created_at
-						 FROM owner_project_resources WHERE owner_email = ?
-						 ORDER BY kind ASC, display_name ASC`
-					)
-					.bind(ownerEmail)
+					.prepare(resourceQuery.sql)
+					.bind(...resourceQuery.binds)
 					.all()
 			]);
 			const projectRows = Schema.decodeUnknownSync(Schema.Array(ProjectRowSchema))(

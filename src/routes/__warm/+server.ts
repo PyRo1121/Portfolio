@@ -2,6 +2,7 @@ import { env } from '$env/dynamic/private';
 import { json } from '@sveltejs/kit';
 import { Effect } from 'effect';
 import type { RequestHandler } from './$types';
+import { PUBLIC_SHIPPING_RESOURCE_KINDS } from '$lib/domain/owner-project';
 import { loadLiveDashboardSnapshot } from '$lib/server/dashboard-loader';
 import { dashboardSnapshotCacheFor } from '$lib/server/dashboard-snapshot-cache';
 import { parseGitHubChecksAppConfig } from '$lib/server/github-app-auth';
@@ -9,10 +10,9 @@ import { loadCloudflareUsageSnapshot } from '$lib/server/cloudflare-api';
 import { cloudflareUsageCacheFor } from '$lib/server/cloudflare-usage-cache';
 import { loadCloudflareDeploymentSnapshot } from '$lib/server/cloudflare-deployments-api';
 import { cloudflareDeploymentCacheFor } from '$lib/server/cloudflare-deployment-cache';
+import { configuredGitHubUsername } from '$lib/server/github-dashboard-page';
 import { configuredOwnerEmail } from '$lib/server/owner-access';
 import { loadOwnerProjectSnapshot } from '$lib/server/owner-project-store';
-
-const DEFAULT_USERNAME = 'PyRo1121';
 
 /**
  * Server-only warm-refresh endpoint. A separate scheduled Worker calls this on a
@@ -35,8 +35,7 @@ export const GET: RequestHandler = async ({ platform, request, setHeaders }) => 
 	}
 
 	const now = new Date();
-	const username =
-		platform.env.GITHUB_USERNAME?.trim() || env['GITHUB_USERNAME']?.trim() || DEFAULT_USERNAME;
+	const username = configuredGitHubUsername(env['GITHUB_USERNAME'], platform.env.GITHUB_USERNAME);
 	const token = platform.env.GITHUB_TOKEN?.trim() || env['GITHUB_TOKEN']?.trim();
 	const checksApp = parseGitHubChecksAppConfig({
 		appId: platform.env.GITHUB_CHECKS_APP_ID?.trim() || env['GITHUB_CHECKS_APP_ID']?.trim(),
@@ -94,7 +93,13 @@ export const GET: RequestHandler = async ({ platform, request, setHeaders }) => 
 	const ownerExit =
 		ownerEmail === null
 			? null
-			: await Effect.runPromiseExit(loadOwnerProjectSnapshot(platform.env.OWNER_DB, ownerEmail));
+			: await Effect.runPromiseExit(
+					loadOwnerProjectSnapshot(
+						platform.env.OWNER_DB,
+						ownerEmail,
+						PUBLIC_SHIPPING_RESOURCE_KINDS
+					)
+				);
 	const workerNames =
 		ownerEmail === null || ownerExit === null || ownerExit._tag === 'Failure'
 			? []

@@ -1,5 +1,6 @@
 import { env } from '$env/dynamic/private';
 import type { PageServerLoad } from './$types';
+import { PUBLIC_SHIPPING_RESOURCE_KINDS } from '$lib/domain/owner-project';
 import { createPublicShippingProjection } from '$lib/domain/owner-project-view';
 import { configuredOwnerEmail } from '$lib/server/owner-access';
 import { loadGitHubDashboardPageSlice } from '$lib/server/github-dashboard-page';
@@ -30,7 +31,11 @@ export const load: PageServerLoad = async ({ platform, setHeaders }) => {
 	};
 	if (expectedOwnerEmail !== null) {
 		const ownerProjectExit = await Effect.runPromiseExit(
-			loadOwnerProjectSnapshot(platform.env.OWNER_DB, expectedOwnerEmail)
+			loadOwnerProjectSnapshot(
+				platform.env.OWNER_DB,
+				expectedOwnerEmail,
+				PUBLIC_SHIPPING_RESOURCE_KINDS
+			)
 		);
 		if (ownerProjectExit._tag === 'Success') {
 			registry = ownerProjectExit.value;

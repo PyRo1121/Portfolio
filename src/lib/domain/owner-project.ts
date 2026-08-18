@@ -20,6 +20,14 @@ export const OwnerProjectResourceKindSchema = Schema.Union(
 );
 export type OwnerProjectResourceKind = Schema.Schema.Type<typeof OwnerProjectResourceKindSchema>;
 
+/** Resource kinds allowed on public shipping-link reads. */
+export const PUBLIC_SHIPPING_RESOURCE_KINDS = [
+	'GitHubRepository',
+	'CloudflareWorker',
+	'Domain'
+] as const satisfies ReadonlyArray<OwnerProjectResourceKind>;
+export type PublicShippingResourceKind = (typeof PUBLIC_SHIPPING_RESOURCE_KINDS)[number];
+
 /** Deployment environment assigned by the owner to a linked resource. */
 export const OwnerProjectEnvironmentSchema = Schema.Union(
 	Schema.Literal('Production'),

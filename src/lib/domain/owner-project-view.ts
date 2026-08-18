@@ -13,7 +13,12 @@ import type {
 	RepositoryWorkflowSummaryInput,
 	WorkflowRunInput
 } from './github-intelligence';
-import type { OwnerProject, OwnerProjectResource, OwnerProjectSnapshot } from './owner-project';
+import {
+	PUBLIC_SHIPPING_RESOURCE_KINDS,
+	type OwnerProject,
+	type OwnerProjectResource,
+	type OwnerProjectSnapshot
+} from './owner-project';
 
 /** Evidence state for one owner-confirmed project association. */
 export type OwnerProjectResourceView = {
@@ -227,11 +232,10 @@ export function createOwnerProjectDossiers(
 	});
 }
 
-const PUBLIC_SHIPPING_KINDS = ['GitHubRepository', 'CloudflareWorker', 'Domain'] as const;
-type PublicShippingKind = (typeof PUBLIC_SHIPPING_KINDS)[number];
+type PublicShippingKind = (typeof PUBLIC_SHIPPING_RESOURCE_KINDS)[number];
 
 function isPublicShippingKind(kind: OwnerProjectResource['kind']): kind is PublicShippingKind {
-	return PUBLIC_SHIPPING_KINDS.some((allowed) => allowed === kind);
+	return PUBLIC_SHIPPING_RESOURCE_KINDS.some((allowed) => allowed === kind);
 }
 
 /** True when a URL would expose a Cloudflare account dashboard path. */
