@@ -60,7 +60,7 @@
 		<div>
 			<span><FolderOpen size={14} weight="fill" /> Shipping links</span>
 			<h1>Projects</h1>
-			<p>Confirmed GitHub, Worker, and domain links.</p>
+			<p>GitHub work from this window, plus confirmed Worker and domain links.</p>
 		</div>
 		{#if shipping._tag === 'Current'}
 			<section aria-label="Shipping summary">
@@ -84,7 +84,7 @@
 	{#if shipping._tag === 'Current'}
 		<aside class={mobilePanel === 'projects' ? 'project-list panel-visible' : 'project-list'}>
 			<header>
-				<span>Shipped projects</span><small>Public portfolio mappings</small>
+				<span>Shipped projects</span><small>Live repositories and confirmed links</small>
 			</header>
 			<div>
 				{#each shippingProjects as project (project.id)}

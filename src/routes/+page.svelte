@@ -29,6 +29,7 @@
 		homeSeo,
 		jsonLdScriptTag,
 		PUBLIC_GITHUB_URL,
+		PUBLIC_IDENTITY_LINE,
 		PUBLIC_LINKEDIN_URL,
 		PUBLIC_X_URL
 	} from '$lib/domain/public-seo';
@@ -139,7 +140,11 @@
 <div class="app" {@attach dashboardView.attachApplication}>
 	<header class="topbar">
 		{#if snapshot === null}
-			<span class="brand"><GithubLogo size={18} weight="fill" /><span>Olen Latham</span></span>
+			<span class="brand"
+				><GithubLogo size={18} weight="fill" /><span class="brand__identity"
+					><strong>Olen Latham</strong><small>{PUBLIC_IDENTITY_LINE}</small></span
+				></span
+			>
 		{:else}
 			<div class="brand-group">
 				<a class="brand" href={PUBLIC_GITHUB_URL} target="_blank" rel="external noreferrer">
@@ -152,7 +157,9 @@
 							fetchpriority="high"
 						/>
 					</span>
-					<span class="brand__identity"><strong>Olen Latham</strong></span>
+					<span class="brand__identity"
+						><strong>Olen Latham</strong><small>{PUBLIC_IDENTITY_LINE}</small></span
+					>
 				</a>
 				<nav class="social-links" aria-label="Social profiles">
 					<a

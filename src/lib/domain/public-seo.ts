@@ -17,6 +17,9 @@ export const PUBLIC_SEO_SKILLS = [
 	'GitHub'
 ] as const;
 
+/** One-line identity under the public top-bar name. */
+export const PUBLIC_IDENTITY_LINE = 'Software developer · TypeScript · Svelte · Cloudflare';
+
 export type PublicSeoPage = {
 	readonly title: string;
 	readonly description: string;

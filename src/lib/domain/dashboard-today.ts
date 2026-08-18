@@ -13,6 +13,24 @@ type TodayRepositorySignal = {
 	readonly share: number;
 };
 
+/** Line-change totals for one viewer-local hour. */
+export type TodayHourlyChanges = {
+	readonly commits: number;
+	readonly additions: number;
+	readonly deletions: number;
+	readonly changedFiles: number;
+};
+
+/** Day-wide or hour-scoped totals for the Today Changes panel. */
+export type TodayChangeScope = {
+	readonly _tag: 'Day' | 'Hour';
+	readonly caption: string;
+	readonly commits: number;
+	readonly additions: number;
+	readonly deletions: number;
+	readonly changedFiles: number;
+};
+
 /** Exact viewer-local-day activity derived from the rolling-window commit evidence. */
 export type TodayIntelligence = {
 	readonly date: string;
@@ -30,6 +48,7 @@ export type TodayIntelligence = {
 	readonly activitySpanHours: number | null;
 	readonly peakHour: string;
 	readonly hourlyCommits: ReadonlyArray<number>;
+	readonly hourlyChanges: ReadonlyArray<TodayHourlyChanges>;
 	readonly repositories: ReadonlyArray<TodayRepositorySignal>;
 	readonly recentCommits: ReadonlyArray<CommitSignal>;
 	readonly labelText: string;
@@ -45,14 +64,26 @@ function hourLabel(hour: number): string {
 	return `${hour % 12 || 12}:00 ${suffix}`;
 }
 
-function buildHourlyCommits(
+function buildHourlyChanges(
 	commits: ReadonlyArray<CommitSignal>,
 	timeZone: string
-): ReadonlyArray<number> {
-	const hourly = Array.from({ length: 24 }, () => 0);
+): ReadonlyArray<TodayHourlyChanges> {
+	const hourly: TodayHourlyChanges[] = Array.from({ length: 24 }, () => ({
+		commits: 0,
+		additions: 0,
+		deletions: 0,
+		changedFiles: 0
+	}));
 	for (const commit of commits) {
 		const hour = zonedHour(new Date(commit.committedAt), timeZone);
-		hourly[hour] = (hourly[hour] ?? 0) + 1;
+		const current = hourly[hour];
+		if (current === undefined) continue;
+		hourly[hour] = {
+			commits: current.commits + 1,
+			additions: current.additions + commit.additions,
+			deletions: current.deletions + commit.deletions,
+			changedFiles: current.changedFiles + commit.changedFiles
+		};
 	}
 	return hourly;
 }
@@ -135,7 +166,8 @@ export function createTodayIntelligence(
 		...commitsForViewerDate(snapshot.intelligence.commits, date, projection.timeZone)
 	].sort((left, right) => left.committedAt.localeCompare(right.committedAt));
 	const repositories = buildTodayRepositories(commits);
-	const hourlyCommits = buildHourlyCommits(commits, projection.timeZone);
+	const hourlyChanges = buildHourlyChanges(commits, projection.timeZone);
+	const hourlyCommits = hourlyChanges.map((hour) => hour.commits);
 	const peakHourIndex = hourlyCommits.reduce(
 		(best, value, index) => (value > (hourlyCommits[best] ?? 0) ? index : best),
 		0
@@ -170,8 +202,42 @@ export function createTodayIntelligence(
 		activitySpanHours: timing.spanHours,
 		peakHour: commits.length === 0 ? 'No peak yet' : hourLabel(peakHourIndex),
 		hourlyCommits,
+		hourlyChanges,
 		repositories,
 		recentCommits: [...commits].reverse().slice(0, 6),
 		...narrative
+	};
+}
+
+const EMPTY_HOURLY_CHANGES: TodayHourlyChanges = {
+	commits: 0,
+	additions: 0,
+	deletions: 0,
+	changedFiles: 0
+};
+
+/** Resolve day-wide or hour-scoped change totals for the Today Changes panel. */
+export function createTodayChangeScope(
+	today: TodayIntelligence,
+	hour: number | null
+): TodayChangeScope {
+	if (hour === null) {
+		return {
+			_tag: 'Day',
+			caption: 'Current local day',
+			commits: today.commits,
+			additions: today.additions,
+			deletions: today.deletions,
+			changedFiles: today.changedFiles
+		};
+	}
+	const bucket = today.hourlyChanges[hour] ?? EMPTY_HOURLY_CHANGES;
+	return {
+		_tag: 'Hour',
+		caption: hourLabel(hour),
+		commits: bucket.commits,
+		additions: bucket.additions,
+		deletions: bucket.deletions,
+		changedFiles: bucket.changedFiles
 	};
 }

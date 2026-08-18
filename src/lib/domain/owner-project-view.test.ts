@@ -396,4 +396,47 @@ describe('public shipping projection', () => {
 		expect(serialized).not.toContain('dash.cloudflare.com');
 		expect(projection.projects[0]?.deployments[0]?.commitSha).toBe(commitSha);
 	});
+
+	it('includes unmapped GitHub repositories that already have window commits', () => {
+		const snapshot = createDemoIntelligence(
+			createDemoSnapshot(new Date('2026-08-15T00:00:00.000Z'), 'octocat', 'Test fixture.')
+		);
+		const projection = createPublicShippingProjection(registry, snapshot, null, {
+			_tag: 'Current',
+			reason: 'Public shipping links.'
+		});
+		expect(projection.projects.map((project) => project.name)).toEqual([
+			'Signal Garden',
+			'weeknote'
+		]);
+		expect(projection.projects[1]).toEqual({
+			id: 'github:octocat/weeknote',
+			name: 'weeknote',
+			description: 'A public notebook for shipped work.',
+			links: [
+				{
+					kind: 'GitHubRepository',
+					providerId: 'octocat/weeknote',
+					displayName: 'octocat/weeknote',
+					href: 'https://github.com/octocat'
+				}
+			],
+			deployments: []
+		});
+	});
+
+	it('still publishes observed GitHub work when the owner registry is unavailable', () => {
+		const snapshot = createDemoIntelligence(
+			createDemoSnapshot(new Date('2026-08-15T00:00:00.000Z'), 'octocat', 'Test fixture.')
+		);
+		const projection = createPublicShippingProjection(null, snapshot, null, {
+			_tag: 'Unavailable',
+			reason: 'Owner storage unavailable.'
+		});
+		expect(projection._tag).toBe('Current');
+		expect(projection.projects.map((project) => project.id)).toEqual([
+			'github:octocat/signal-garden',
+			'github:octocat/weeknote'
+		]);
+	});
 });
