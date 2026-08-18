@@ -5,6 +5,7 @@
 		EnvelopeSimpleIcon as EnvelopeSimple,
 		GithubLogoIcon as GithubLogo,
 		GlobeSimpleIcon as GlobeSimple,
+		LinkedinLogoIcon as LinkedinLogo,
 		XLogoIcon as XLogo
 	} from 'phosphor-svelte';
 	import { invalidateAll } from '$app/navigation';
@@ -24,7 +25,13 @@
 	import { createViewerActivityProjection } from '$lib/domain/dashboard-viewer-time';
 	import type { GitHubDashboardSnapshot } from '$lib/domain/github-intelligence';
 	import { createPublicShippingNavigationSignal } from '$lib/domain/owner-project-navigation';
-	import { homeSeo, jsonLdScriptTag } from '$lib/domain/public-seo';
+	import {
+		homeSeo,
+		jsonLdScriptTag,
+		PUBLIC_GITHUB_URL,
+		PUBLIC_LINKEDIN_URL,
+		PUBLIC_X_URL
+	} from '$lib/domain/public-seo';
 	import { getClientTelemetry } from '$lib/telemetry/client-telemetry';
 	import { DashboardView } from '$lib/state/dashboard-view.svelte';
 
@@ -108,7 +115,8 @@
 	<title>{homeSeo.title}</title>
 	<meta name="description" content={homeSeo.description} />
 	<link rel="canonical" href={homeSeo.canonical} />
-	<link rel="me" href="https://github.com/PyRo1121" />
+	<link rel="me" href={PUBLIC_GITHUB_URL} />
+	<link rel="me" href={PUBLIC_LINKEDIN_URL} />
 	<meta property="og:type" content="profile" />
 	<meta property="og:site_name" content="latham.cloud" />
 	<meta property="og:locale" content="en_US" />
@@ -136,7 +144,7 @@
 			<div class="brand-group">
 				<a
 					class="brand"
-					href="https://github.com/PyRo1121"
+					href={PUBLIC_GITHUB_URL}
 					target="_blank"
 					rel="external noreferrer"
 				>
@@ -153,14 +161,21 @@
 				</a>
 				<nav class="social-links" aria-label="Social profiles">
 					<a
-						href="https://github.com/PyRo1121"
+						href={PUBLIC_GITHUB_URL}
 						target="_blank"
 						rel="external noreferrer"
 						aria-label="Olen Latham on GitHub"
 						title="GitHub"><GithubLogo size={15} weight="fill" /></a
 					>
 					<a
-						href="https://x.com/PyRo1121"
+						href={PUBLIC_LINKEDIN_URL}
+						target="_blank"
+						rel="external noreferrer"
+						aria-label="Olen Latham on LinkedIn"
+						title="LinkedIn"><LinkedinLogo size={15} weight="fill" /></a
+					>
+					<a
+						href={PUBLIC_X_URL}
 						target="_blank"
 						rel="external noreferrer"
 						aria-label="Olen Latham on X"

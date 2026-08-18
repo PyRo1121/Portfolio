@@ -1,13 +1,20 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { aboutSeo, jsonLdScriptTag } from '$lib/domain/public-seo';
+	import {
+		aboutSeo,
+		jsonLdScriptTag,
+		PUBLIC_GITHUB_URL,
+		PUBLIC_LINKEDIN_URL,
+		PUBLIC_X_URL
+	} from '$lib/domain/public-seo';
 </script>
 
 <svelte:head>
 	<title>{aboutSeo.title}</title>
 	<meta name="description" content={aboutSeo.description} />
 	<link rel="canonical" href={aboutSeo.canonical} />
-	<link rel="me" href="https://github.com/PyRo1121" />
+	<link rel="me" href={PUBLIC_GITHUB_URL} />
+	<link rel="me" href={PUBLIC_LINKEDIN_URL} />
 	<meta property="og:type" content="profile" />
 	<meta property="og:site_name" content="latham.cloud" />
 	<meta property="og:locale" content="en_US" />
@@ -59,8 +66,9 @@
 		</p>
 		<div class="links">
 			<a href="mailto:olen@latham.cloud">Email me</a>
-			<a href="https://github.com/PyRo1121" target="_blank" rel="external noreferrer">GitHub</a>
-			<a href="https://x.com/PyRo1121" target="_blank" rel="external noreferrer">X</a>
+			<a href={PUBLIC_GITHUB_URL} target="_blank" rel="external noreferrer">GitHub</a>
+			<a href={PUBLIC_LINKEDIN_URL} target="_blank" rel="external noreferrer">LinkedIn</a>
+			<a href={PUBLIC_X_URL} target="_blank" rel="external noreferrer">X</a>
 			<a href={resolve('/')}>Weeknote dashboard</a>
 		</div>
 	</section>
