@@ -1,46 +1,9 @@
 import type { D1Database, KVNamespace } from '@cloudflare/workers-types';
-import type { CareerSnapshot } from '$lib/domain/career-accountability';
-import type {
-	CloudflareDeploymentRefreshResult,
-	CloudflareDeploymentSnapshot
-} from '$lib/domain/cloudflare-deployments';
-import type {
-	CloudflareUsageRefreshResult,
-	CloudflareUsageSnapshot
-} from '$lib/domain/cloudflare-usage';
-import type { OwnerProjectSnapshot } from '$lib/domain/owner-project';
-import type { TelemetryView } from '$lib/domain/telemetry-view';
 
 // See https://svelte.dev/docs/kit/types#app.d.ts
 // for information about these interfaces
 declare global {
 	namespace App {
-		// interface Error {}
-		// interface Locals {}
-		interface PageData {
-			ownerAuthorized: boolean;
-			telemetry: TelemetryView | null;
-			career: CareerSnapshot | null;
-			ownerProjects: OwnerProjectSnapshot | null;
-			ownerProjectAccess: {
-				readonly _tag: 'Current' | 'Unavailable';
-				readonly reason: string;
-			};
-			careerAccess: {
-				readonly _tag: 'Current' | 'Unavailable';
-				readonly reason: string;
-			};
-			cloudflare: CloudflareUsageSnapshot | null;
-			cloudflareCache: { readonly _tag: 'Cold' | 'Cached'; readonly cachedAt: string | null };
-			cloudflareRefresh: Promise<CloudflareUsageRefreshResult>;
-			cloudflareDeployments: CloudflareDeploymentSnapshot | null;
-			cloudflareDeploymentCache: {
-				readonly _tag: 'Cold' | 'Cached';
-				readonly cachedAt: string | null;
-			};
-			cloudflareDeploymentRefresh: Promise<CloudflareDeploymentRefreshResult>;
-		}
-		// interface PageState {}
 		interface Platform {
 			env: {
 				CAREER_DB: D1Database;

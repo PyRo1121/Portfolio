@@ -1,4 +1,4 @@
-/** Top-level analytical workspaces available in the dashboard. */
+/** Top-level analytical workspaces available in either audience. */
 export type DashboardWorkspace =
 	| 'today'
 	| 'brief'
@@ -6,9 +6,23 @@ export type DashboardWorkspace =
 	| 'craft'
 	| 'repositories'
 	| 'activity'
+	| 'briefing'
 	| 'cloudflare'
 	| 'career'
-	| 'telemetry';
+	| 'telemetry'
+	| 'mappings';
+
+/** Public portfolio workspace ids. */
+export type PublicWorkspace =
+	| 'today'
+	| 'brief'
+	| 'delivery'
+	| 'craft'
+	| 'repositories'
+	| 'activity';
+
+/** Owner-home workspace ids. Week's `brief` is not reused. */
+export type OwnerWorkspace = 'briefing' | 'career' | 'cloudflare' | 'telemetry' | 'mappings';
 
 /** Metadata for one dashboard workspace. */
 export type WorkspaceDefinition = {
@@ -19,8 +33,7 @@ export type WorkspaceDefinition = {
 	readonly shortcut: string;
 };
 
-/** Ordered dashboard workspace configuration. */
-export const workspaceDefinitions: ReadonlyArray<WorkspaceDefinition> = [
+const publicList: ReadonlyArray<WorkspaceDefinition> = [
 	{
 		id: 'today',
 		index: 1,
@@ -62,26 +75,56 @@ export const workspaceDefinitions: ReadonlyArray<WorkspaceDefinition> = [
 		label: 'Commits',
 		description: 'Individual commit records',
 		shortcut: '6'
-	},
+	}
+];
+
+const ownerList: ReadonlyArray<WorkspaceDefinition> = [
 	{
-		id: 'cloudflare',
-		index: 7,
-		label: 'Cloudflare',
-		description: 'Resources and measured usage',
-		shortcut: '7'
+		id: 'briefing',
+		index: 1,
+		label: 'Briefing',
+		description: 'Due work and next action',
+		shortcut: '1'
 	},
 	{
 		id: 'career',
-		index: 8,
+		index: 2,
 		label: 'Career',
 		description: 'Applications, commitments, and interview stories',
-		shortcut: '8'
+		shortcut: '2'
+	},
+	{
+		id: 'cloudflare',
+		index: 3,
+		label: 'Cloudflare',
+		description: 'Resources and measured usage',
+		shortcut: '3'
 	},
 	{
 		id: 'telemetry',
-		index: 9,
+		index: 4,
 		label: 'Visitors',
 		description: 'Visitor telemetry and Core Web Vitals',
-		shortcut: '9'
+		shortcut: '4'
+	},
+	{
+		id: 'mappings',
+		index: 5,
+		label: 'Mappings',
+		description: 'GitHub and Cloudflare project links',
+		shortcut: '5'
 	}
 ];
+
+/** Ordered public portfolio workspaces. */
+export const publicWorkspaceDefinitions: ReadonlyArray<WorkspaceDefinition> = publicList;
+
+/** Ordered owner-home workspaces. */
+export const ownerWorkspaceDefinitions: ReadonlyArray<WorkspaceDefinition> = ownerList;
+
+/** Keyboard shortcut map for one audience list. */
+export function shortcutMapFor(
+	definitions: ReadonlyArray<WorkspaceDefinition>
+): Readonly<Partial<Record<string, DashboardWorkspace>>> {
+	return Object.fromEntries(definitions.map((workspace) => [workspace.shortcut, workspace.id]));
+}

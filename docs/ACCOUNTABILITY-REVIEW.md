@@ -1,6 +1,6 @@
 # Accountability Review evidence contract
 
-The publicly readable Career workspace opens on a decision-first Accountability Review. It connects engineering evidence to two deliberate commitments without converting activity into a productivity or hiring score.
+The Career workspace on `/owner` opens on a decision-first Accountability Review. It connects engineering evidence to two deliberate commitments without converting activity into a productivity or hiring score.
 
 ## Strongest retained outcome
 
@@ -30,7 +30,7 @@ The coverage map remains lane-based and is never summed into a score:
 - **Automated verification — Observed:** a successful retained workflow matches the selected repository.
 - **Runtime operation — Measured:** Cloudflare reports a Worker request metric. This is account-level evidence unless deployment linkage is collected.
 - **Data platform — Provisioned:** Cloudflare inventories D1 databases. Provisioning does not prove ownership of the selected artifact.
-- **Outcome communication — Observed:** an interview story is recorded. Story visibility controls inclusion in the public Markdown export, while the dashboard itself is publicly readable. A story links externally only when its GitHub outcome was server-verified and stored as an Observed association. Legacy free-form links remain Unavailable.
+- **Outcome communication — Observed:** an interview story is recorded. Story visibility controls inclusion in the public Markdown export, while the Accountability Review itself is owner-only on `/owner`. A story links externally only when its GitHub outcome was server-verified and stored as an Observed association. Legacy free-form links remain Unavailable.
 
 ## Role relevance
 

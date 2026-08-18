@@ -226,3 +226,96 @@ export function createOwnerProjectDossiers(
 		};
 	});
 }
+
+const PUBLIC_SHIPPING_KINDS = ['GitHubRepository', 'CloudflareWorker', 'Domain'] as const;
+type PublicShippingKind = (typeof PUBLIC_SHIPPING_KINDS)[number];
+
+function isPublicShippingKind(kind: OwnerProjectResource['kind']): kind is PublicShippingKind {
+	return PUBLIC_SHIPPING_KINDS.some((allowed) => allowed === kind);
+}
+
+/** True when a URL would expose a Cloudflare account dashboard path. */
+export function isCloudflareDashboardUrl(url: string): boolean {
+	try {
+		return new URL(url).hostname === 'dash.cloudflare.com';
+	} catch {
+		return true;
+	}
+}
+
+function publicHref(canonicalUrl: string): string | null {
+	return isCloudflareDashboardUrl(canonicalUrl) ? null : canonicalUrl;
+}
+
+/** One public shipping link for a confirmed GitHub, Worker, or domain identity. */
+export type PublicShippingLink = {
+	readonly kind: PublicShippingKind;
+	readonly providerId: string;
+	readonly displayName: string;
+	readonly href: string | null;
+};
+
+/** Deployment join facts stripped of operator identity and account dashboard URLs. */
+export type PublicShippingDeployment = {
+	readonly workerName: string;
+	readonly state: 'Linked' | 'PartiallyLinked' | 'Unavailable';
+	readonly detail: string;
+	readonly commitSha: string | null;
+};
+
+/** One public project card. Does not embed OwnerProject or D1/KV/R2 resources. */
+export type PublicProjectShipping = {
+	readonly id: string;
+	readonly name: string;
+	readonly description: string;
+	readonly links: ReadonlyArray<PublicShippingLink>;
+	readonly deployments: ReadonlyArray<PublicShippingDeployment>;
+};
+
+/** Public load payload for Projects. */
+export type PublicShippingProjection = {
+	readonly _tag: 'Current' | 'Unavailable';
+	readonly reason: string;
+	readonly projects: ReadonlyArray<PublicProjectShipping>;
+};
+
+/** Build the public shipping-link projection. Does not use CloudflareUsageSnapshot. */
+export function createPublicShippingProjection(
+	registry: OwnerProjectSnapshot | null,
+	snapshot: GitHubDashboardSnapshot | null,
+	deployments: CloudflareDeploymentSnapshot | null,
+	access: { readonly _tag: 'Current' | 'Unavailable'; readonly reason: string }
+): PublicShippingProjection {
+	if (registry === null) {
+		return { _tag: access._tag, reason: access.reason, projects: [] };
+	}
+	const dossiers = createOwnerProjectDossiers(registry, snapshot, null, deployments);
+	return {
+		_tag: 'Current',
+		reason: access.reason,
+		projects: dossiers.map((dossier) => ({
+			id: dossier.project.id,
+			name: dossier.project.name,
+			description: dossier.project.description,
+			links: dossier.project.resources.flatMap((resource) =>
+				isPublicShippingKind(resource.kind)
+					? [
+							{
+								kind: resource.kind,
+								providerId: resource.providerId,
+								displayName: resource.displayName,
+								href: publicHref(resource.canonicalUrl)
+							}
+						]
+					: []
+			),
+			deployments: dossier.deployments.map((item) => ({
+				workerName: item.resource.providerId,
+				state: item.state,
+				detail: item.detail,
+				commitSha: item.commitSha
+			}))
+		}))
+	};
+}
+

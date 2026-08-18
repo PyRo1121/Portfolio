@@ -4,7 +4,7 @@ import type { CloudflareUsageSnapshot } from './cloudflare-usage';
 import { createDemoIntelligence } from './github-intelligence';
 import { createDemoSnapshot } from './github-stats';
 import type { OwnerProjectSnapshot } from './owner-project';
-import { createOwnerProjectDossiers } from './owner-project-view';
+import { createOwnerProjectDossiers, createPublicShippingProjection } from './owner-project-view';
 
 const registry: OwnerProjectSnapshot = {
 	projects: [
@@ -248,5 +248,89 @@ describe('owner project dossier', () => {
 			pullRequest: { url: 'https://github.com/octocat/signal-garden/pull/12' },
 			activeVersion: { versionId: 'version-id', build: { buildId: 'build-id' } }
 		});
+	});
+});
+
+describe('public shipping projection', () => {
+	it('keeps confirmed GitHub, Worker, and domain links and omits D1/KV/R2', () => {
+		const snapshot = createDemoIntelligence(
+			createDemoSnapshot(new Date('2026-08-15T00:00:00.000Z'), 'octocat', 'Test fixture.')
+		);
+		const project = registry.projects[0];
+		if (project === undefined) {
+			throw new Error('Expected the shipping fixture to include one project.');
+		}
+		const withInventory: OwnerProjectSnapshot = {
+			projects: [
+				{
+					...project,
+					resources: [
+						...project.resources,
+						{
+							id: 'd1-id',
+							kind: 'D1Database',
+							environment: 'Production',
+							providerId: 'career-db',
+							displayName: 'career-db',
+							canonicalUrl: 'https://dash.cloudflare.com/example/d1',
+							createdAt: '2026-08-15T00:00:00.000Z'
+						}
+					]
+				}
+			]
+		};
+		const projection = createPublicShippingProjection(withInventory, snapshot, null, {
+			_tag: 'Current',
+			reason: 'Public shipping links.'
+		});
+		const serialized = JSON.stringify(projection);
+		expect(serialized).not.toContain('D1Database');
+		expect(serialized).not.toContain('KVNamespace');
+		expect(serialized).not.toContain('R2Bucket');
+		expect(serialized).not.toContain('sizeBytes');
+		expect(serialized).not.toContain('authorEmail');
+		expect(serialized).not.toContain('triggeredBy');
+		expect(projection.projects[0]?.links.map((link) => link.kind)).toEqual([
+			'GitHubRepository',
+			'CloudflareWorker'
+		]);
+		expect(projection.projects[0]?.links.find((link) => link.kind === 'CloudflareWorker')?.href).toBe(
+			null
+		);
+	});
+
+	it('strips operator identity from public deployment join facts', () => {
+		const commitSha = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+		const base = createDemoIntelligence(
+			createDemoSnapshot(new Date('2026-08-15T00:00:00.000Z'), 'octocat', 'Test fixture.')
+		);
+		const deploymentSnapshot: CloudflareDeploymentSnapshot = {
+			generatedAt: '2026-08-15T09:00:00.000Z',
+			workers: [
+				{
+					workerName: 'signal-garden',
+					state: 'Observed',
+					detail: 'Observed',
+					deploymentId: 'deployment-id',
+					createdAt: '2026-08-15T08:40:22.000Z',
+					source: 'wrangler',
+					strategy: 'percentage',
+					authorEmail: 'owner@example.com',
+					message: `git:${commitSha}`,
+					triggeredBy: 'deployment',
+					versionsTruncated: false,
+					evidenceUrl: 'https://dash.cloudflare.com/acct/deployments',
+					versions: []
+				}
+			]
+		};
+		const projection = createPublicShippingProjection(registry, base, deploymentSnapshot, {
+			_tag: 'Current',
+			reason: 'Public shipping links.'
+		});
+		const serialized = JSON.stringify(projection);
+		expect(serialized).not.toContain('owner@example.com');
+		expect(serialized).not.toContain('dash.cloudflare.com');
+		expect(projection.projects[0]?.deployments[0]?.commitSha).toBe(commitSha);
 	});
 });

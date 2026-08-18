@@ -21,13 +21,21 @@
 	import type { OwnerProjectResourceKind, OwnerProjectSnapshot } from '$lib/domain/owner-project';
 	import {
 		createOwnerProjectDossiers,
+		type PublicProjectShipping,
+		type PublicShippingProjection,
 		type OwnerProjectResourceView
 	} from '$lib/domain/owner-project-view';
 	import { formatInteger, formatRelativeTime } from '$lib/presentation/dashboard-format';
 	import { formatCloudflareResourceBytes } from '$lib/presentation/cloudflare-resource-format';
 	import { formatGitHubArtifactTitle } from '$lib/presentation/github-artifact-title';
 
-	type Props = {
+	type PublicProps = {
+		readonly audience: 'public';
+		readonly shipping: PublicShippingProjection;
+		readonly requestedRepository: string | null;
+	};
+	type OwnerProps = {
+		readonly audience: 'owner';
 		readonly registry: OwnerProjectSnapshot | null;
 		readonly snapshot: GitHubDashboardSnapshot | null;
 		readonly cloudflare: CloudflareUsageSnapshot | null;
@@ -38,21 +46,26 @@
 		readonly actionMessage: string;
 		readonly requestedRepository: string | null;
 	};
+	type Props = PublicProps | OwnerProps;
 
-	let {
-		registry,
-		snapshot,
-		cloudflare,
-		deployments,
-		deploymentState,
-		deploymentMessage,
-		accessReason,
-		actionMessage,
-		requestedRepository
-	}: Props = $props();
+	let props: Props = $props();
 	let selectedProjectId = $state('');
 	let mobilePanel = $state<'projects' | 'dossier' | 'manage'>('dossier');
 	let dossierTab = $state<'overview' | 'deployments' | 'resources'>('overview');
+	const registry = $derived(props.audience === 'owner' ? props.registry : null);
+	const snapshot = $derived(props.audience === 'owner' ? props.snapshot : null);
+	const cloudflare = $derived(props.audience === 'owner' ? props.cloudflare : null);
+	const deployments = $derived(props.audience === 'owner' ? props.deployments : null);
+	const deploymentState = $derived(
+		props.audience === 'owner' ? props.deploymentState : 'Unavailable'
+	);
+	const deploymentMessage = $derived(props.audience === 'owner' ? props.deploymentMessage : '');
+	const accessReason = $derived(
+		props.audience === 'owner' ? props.accessReason : props.shipping.reason
+	);
+	const actionMessage = $derived(props.audience === 'owner' ? props.actionMessage : '');
+	const requestedRepository = $derived(props.requestedRepository);
+	const shippingProjects = $derived(props.audience === 'public' ? props.shipping.projects : []);
 	const dossiers = $derived(
 		registry === null ? [] : createOwnerProjectDossiers(registry, snapshot, cloudflare, deployments)
 	);
@@ -65,6 +78,16 @@
 				)
 			) ??
 			dossiers[0] ??
+			null
+	);
+	const selectedShipping: PublicProjectShipping | null = $derived(
+		shippingProjects.find((project) => project.id === selectedProjectId) ??
+			shippingProjects.find((project) =>
+				project.links.some(
+					(link) => link.kind === 'GitHubRepository' && link.providerId === requestedRepository
+				)
+			) ??
+			shippingProjects[0] ??
 			null
 	);
 	const referenceTime = $derived.by(
@@ -82,11 +105,18 @@
 	const observedResourceCount = $derived(
 		selected?.resources.filter((resource) => resource.state !== 'Unavailable').length ?? 0
 	);
-	const panels = [
-		{ id: 'projects' as const, label: 'Projects' },
-		{ id: 'dossier' as const, label: 'Dossier' },
-		{ id: 'manage' as const, label: 'Manage' }
-	];
+	const panels = $derived(
+		props.audience === 'owner'
+			? [
+					{ id: 'projects' as const, label: 'Projects' },
+					{ id: 'dossier' as const, label: 'Dossier' },
+					{ id: 'manage' as const, label: 'Manage' }
+				]
+			: [
+					{ id: 'projects' as const, label: 'Projects' },
+					{ id: 'dossier' as const, label: 'Dossier' }
+				]
+	);
 	const resourceKinds: ReadonlyArray<{
 		readonly id: OwnerProjectResourceKind;
 		readonly label: string;
@@ -138,6 +168,138 @@
 	}
 </script>
 
+{#if props.audience === 'public'}
+	<div class="projects-screen projects-screen--public">
+		<nav class="workspace-pages" aria-label="Project panels">
+			{#each panels as panel (panel.id)}
+				<button
+					type="button"
+					class={mobilePanel === panel.id ? 'active' : ''}
+					aria-pressed={mobilePanel === panel.id}
+					onclick={() => (mobilePanel = panel.id)}>{panel.label}</button
+				>
+			{/each}
+		</nav>
+
+		<header class="projects-overview">
+			<div>
+				<span><FolderOpen size={14} weight="fill" /> Shipping links</span>
+				<h1>Projects</h1>
+				<p>Confirmed GitHub, Worker, and domain links.</p>
+			</div>
+			{#if props.shipping._tag === 'Current'}
+				<section aria-label="Shipping summary">
+					<div><strong>{shippingProjects.length}</strong><span>projects</span></div>
+					<div>
+						<strong>{selectedShipping?.links.length ?? 0}</strong><span>shipping links</span>
+					</div>
+					<div>
+						<strong>{selectedShipping?.deployments.length ?? 0}</strong><span>worker deploys</span>
+					</div>
+				</section>
+			{:else}
+				<section class="projects-unavailable">
+					<WarningCircle size={20} weight="duotone" />
+					<strong>Shipping links unavailable</strong>
+					<span>{accessReason}</span>
+				</section>
+			{/if}
+		</header>
+
+		{#if props.shipping._tag === 'Current'}
+			<aside class={mobilePanel === 'projects' ? 'project-list panel-visible' : 'project-list'}>
+				<header>
+					<span>Shipped projects</span><small>Public portfolio mappings</small>
+				</header>
+				<div>
+					{#each shippingProjects as project (project.id)}
+						<button
+							type="button"
+							class={selectedShipping?.id === project.id ? 'active' : ''}
+							aria-pressed={selectedShipping?.id === project.id}
+							onclick={() => selectProject(project.id)}
+						>
+							<strong>{project.name}</strong>
+							<small>{project.links.length} shipping links</small>
+						</button>
+					{:else}
+						<p>No confirmed shipping links are published.</p>
+					{/each}
+				</div>
+			</aside>
+
+			<main class={mobilePanel === 'dossier' ? 'project-dossier panel-visible' : 'project-dossier'}>
+				{#if selectedShipping !== null}
+					<header class="dossier-header">
+						<div>
+							<h2>{selectedShipping.name}</h2>
+							<p>{selectedShipping.description}</p>
+						</div>
+					</header>
+					<section class="project-resources dossier-panel">
+						<header><span>Shipping links</span><small>GitHub, Worker, and domain</small></header>
+						<div>
+							{#each selectedShipping.links as link (`${link.kind}:${link.providerId}`)}
+								<article>
+									<div>
+										<span class="observed">{link.kind}</span>
+										<strong>{link.displayName}</strong>
+										<small>{link.providerId}</small>
+									</div>
+									{#if link.href !== null}
+										<a
+											href={link.href}
+											target="_blank"
+											rel="external noreferrer"
+											aria-label={`Open ${link.displayName}`}
+											><ArrowUpRight size={13} /></a
+										>
+									{/if}
+								</article>
+							{:else}
+								<p class="dossier-missing">No public shipping links are attached.</p>
+							{/each}
+						</div>
+					</section>
+					<section class="project-deployments dossier-panel">
+						<header
+							><span>Worker deployments</span><small>Join facts without operator identity</small
+							></header
+						>
+						<div class="deployment-list">
+							{#each selectedShipping.deployments as deployment (deployment.workerName)}
+								<article class="deployment-record">
+									<header>
+										<div>
+											<span
+												class={deployment.state === 'Linked'
+													? 'linked'
+													: deployment.state === 'PartiallyLinked'
+														? 'partial'
+														: 'unavailable'}>{deploymentStateLabel(deployment.state)}</span
+											>
+											<strong>{deployment.workerName}</strong>
+											<small>{deployment.detail}</small>
+										</div>
+									</header>
+									{#if deployment.commitSha !== null}
+										<p class="dossier-missing">
+											Commit {shortIdentifier(deployment.commitSha)}
+										</p>
+									{/if}
+								</article>
+							{:else}
+								<p class="dossier-missing">No Worker deployment facts are published.</p>
+							{/each}
+						</div>
+					</section>
+				{:else}
+					<p class="dossier-missing">No confirmed projects are published yet.</p>
+				{/if}
+			</main>
+		{/if}
+	</div>
+{:else}
 <div class="projects-screen">
 	<nav class="workspace-pages" aria-label="Project panels">
 		{#each panels as panel (panel.id)}
@@ -581,6 +743,7 @@
 		</aside>
 	{/if}
 </div>
+{/if}
 
 <style>
 	.projects-screen {
@@ -591,6 +754,9 @@
 		height: 100%;
 		min-height: 0;
 		background: var(--line);
+	}
+	.projects-screen--public {
+		grid-template-columns: minmax(13rem, 0.52fr) minmax(0, 1.45fr);
 	}
 	:global(.projects-screen .workspace-pages) {
 		display: none;

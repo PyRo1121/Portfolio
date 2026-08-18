@@ -3,13 +3,22 @@ import { SvelteMap } from 'svelte/reactivity';
 import type { Attachment } from 'svelte/attachments';
 import type { DashboardWorkspace } from '$lib/domain/dashboard-workspace';
 
-/** Rune-backed interaction state for the GitHub intelligence desk. */
+/** Rune-backed interaction state for one audience's workspace desk. */
 export class DashboardView {
 	#activeWorkspace = $state<DashboardWorkspace>('today');
 	#selectedRepository = $state<string | null>(null);
 	#commandOpen = $state(false);
 	#isRefreshing = $state(false);
+	#shortcuts: Readonly<Partial<Record<string, DashboardWorkspace>>>;
 	#workspaceNodes = new SvelteMap<DashboardWorkspace, HTMLElement>();
+
+	constructor(options: {
+		readonly initialWorkspace: DashboardWorkspace;
+		readonly shortcuts: Readonly<Partial<Record<string, DashboardWorkspace>>>;
+	}) {
+		this.#activeWorkspace = options.initialWorkspace;
+		this.#shortcuts = options.shortcuts;
+	}
 
 	/** Currently visible analytical workspace. */
 	get activeWorkspace(): DashboardWorkspace {
@@ -85,18 +94,7 @@ export class DashboardView {
 				return;
 			}
 			if (isTyping) return;
-			const shortcuts: Readonly<Record<string, DashboardWorkspace>> = {
-				'1': 'today',
-				'2': 'brief',
-				'3': 'delivery',
-				'4': 'craft',
-				'5': 'repositories',
-				'6': 'activity',
-				'7': 'cloudflare',
-				'8': 'career',
-				'9': 'telemetry'
-			};
-			const workspace = shortcuts[event.key];
+			const workspace = this.#shortcuts[event.key];
 			if (workspace !== undefined) this.navigate(workspace);
 		};
 		window.addEventListener('keydown', onKeyDown);

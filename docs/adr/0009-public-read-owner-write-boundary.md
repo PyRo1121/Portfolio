@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Superseded in part by [ADR 0010](0010-public-portfolio-owner-ops-read-boundary.md). The `/owner` mutation rule remains accepted; Career, Cloudflare usage, and visitor telemetry reads are no longer public.
 
 ## Context
 

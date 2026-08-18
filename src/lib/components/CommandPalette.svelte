@@ -1,14 +1,15 @@
 <script lang="ts">
 	import { ArrowRight, Command, MagnifyingGlass, X } from 'phosphor-svelte';
-	import { workspaceDefinitions, type DashboardWorkspace } from '$lib/domain/dashboard-workspace';
+	import type { DashboardWorkspace, WorkspaceDefinition } from '$lib/domain/dashboard-workspace';
 
 	type Props = {
 		readonly open: boolean;
+		readonly workspaces: ReadonlyArray<WorkspaceDefinition>;
 		readonly onClose: () => void;
 		readonly onWorkspace: (workspace: DashboardWorkspace) => void;
 	};
 
-	let { open, onClose, onWorkspace }: Props = $props();
+	let { open, workspaces, onClose, onWorkspace }: Props = $props();
 </script>
 
 {#if open}
@@ -33,7 +34,7 @@
 				</button>
 			</header>
 			<div class="command-list">
-				{#each workspaceDefinitions as workspace (workspace.id)}
+				{#each workspaces as workspace (workspace.id)}
 					<button type="button" onclick={() => onWorkspace(workspace.id)}>
 						<kbd>{workspace.shortcut}</kbd>
 						<span>
