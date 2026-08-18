@@ -29,7 +29,11 @@
 		SSR_VIEWER_TIME_ZONE,
 		zonedDateKey
 	} from '$lib/domain/dashboard-time';
-	import { ownerWorkspaceDefinitions, shortcutMapFor, type DashboardWorkspace } from '$lib/domain/dashboard-workspace';
+	import {
+		ownerWorkspaceDefinitions,
+		shortcutMapFor,
+		type DashboardWorkspace
+	} from '$lib/domain/dashboard-workspace';
 	import { createOwnerBriefingView } from '$lib/domain/owner-briefing';
 	import { createOwnerWorkspaceSignals } from '$lib/domain/owner-workspace-navigation';
 	import type { GitHubDashboardSnapshot } from '$lib/domain/github-intelligence';

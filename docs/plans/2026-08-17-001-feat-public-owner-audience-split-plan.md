@@ -492,4 +492,3 @@ Product Contract preservation: changed R5, R6, R7 — withhold boundary is the p
 - Cloudflare Access application for `/owner` stays as-is.
 - No Wrangler secret changes are required.
 - After deploy, confirm `https://latham.cloud/` HTML/JSON has no Career or telemetry keys, and `https://latham.cloud/owner` still challenges Access.
-

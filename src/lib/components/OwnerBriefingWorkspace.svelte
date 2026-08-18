@@ -55,11 +55,7 @@
 			<h1>{view.primary.company}</h1>
 			<p>{view.primary.action}</p>
 			{#if extrasLabel !== null}
-				<button
-					type="button"
-					onclick={() => onWorkspace('career')}
-					aria-label={extrasLabel}
-				>
+				<button type="button" onclick={() => onWorkspace('career')} aria-label={extrasLabel}>
 					{extrasLabel}
 				</button>
 			{/if}

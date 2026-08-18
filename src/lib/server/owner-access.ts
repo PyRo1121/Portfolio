@@ -45,4 +45,3 @@ export function rejectDeniedOwnerLoad(decision: OwnerAccessDecision): asserts de
 		error(403, decision.reason);
 	}
 }
-

@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { configuredOwnerEmail, isOwnerMutationPath, rejectDeniedOwnerLoad, resolveOwnerAccess } from './owner-access';
+import {
+	configuredOwnerEmail,
+	isOwnerMutationPath,
+	rejectDeniedOwnerLoad,
+	resolveOwnerAccess
+} from './owner-access';
 
 describe('configuredOwnerEmail', () => {
 	it('normalizes a configured public-read identity', () => {

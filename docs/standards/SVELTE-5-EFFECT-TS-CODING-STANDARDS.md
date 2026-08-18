@@ -38,18 +38,18 @@ New code paths, modules, adapters, and services should generally follow these st
 Avoid raw primitive types (`string`, `number`) for database identifiers, currencies, or domain-critical keys. Enforce structural uniqueness using Effect's branding or nominal schemas to eliminate accidental assignment bugs.
 
 ```ts
-import { Schema } from "@effect/schema";
+import { Schema } from '@effect/schema';
 
 // Define strict branded schemas
-export const UserId = Schema.String.pipe(Schema.brand("UserId"));
+export const UserId = Schema.String.pipe(Schema.brand('UserId'));
 export type UserId = Schema.Type<typeof UserId>;
 
-export const ProductId = Schema.String.pipe(Schema.brand("ProductId"));
+export const ProductId = Schema.String.pipe(Schema.brand('ProductId'));
 export type ProductId = Schema.Type<typeof ProductId>;
 
 export const EmailAddress = Schema.String.pipe(
-  Schema.pattern(/^[^@]+@[^@]+\.[^@]+$/),
-  Schema.brand("EmailAddress")
+	Schema.pattern(/^[^@]+@[^@]+\.[^@]+$/),
+	Schema.brand('EmailAddress')
 );
 export type EmailAddress = Schema.Type<typeof EmailAddress>;
 ```
@@ -60,10 +60,10 @@ Parse external inputs (API payloads, local storage, form submissions) explicitly
 
 ```ts
 export const UserProfileSchema = Schema.Struct({
-  id: UserId,
-  username: Schema.NonEmptyString,
-  email: EmailAddress,
-  createdAt: Schema.DateFromString,
+	id: UserId,
+	username: Schema.NonEmptyString,
+	email: EmailAddress,
+	createdAt: Schema.DateFromString
 });
 
 export type UserProfile = Schema.Type<typeof UserProfileSchema>;
@@ -80,55 +80,52 @@ Prefer `Schema.decodeUnknown` / `Schema.decodeUnknownEither` at every boundary. 
 House domain mechanics in pure functions or domain services rather than distributed inline across UI layout events. Express computational tracks through piping (`pipe`) or generator patterns (`Effect.gen`), yielding explicit success and error vectors.
 
 ```ts
-import { Effect, Schema } from "effect";
-import { UserId, UserProfile, UserProfileSchema } from "./types";
+import { Effect, Schema } from 'effect';
+import { UserId, UserProfile, UserProfileSchema } from './types';
 
 export class UserNotFoundError extends Error {
-  readonly _tag = "UserNotFoundError";
-  constructor(readonly id: UserId) {
-    super(`User ${id} not found`);
-  }
+	readonly _tag = 'UserNotFoundError';
+	constructor(readonly id: UserId) {
+		super(`User ${id} not found`);
+	}
 }
 
 export class NetworkFetchError extends Error {
-  readonly _tag = "NetworkFetchError";
-  constructor(readonly reason: string, readonly cause?: unknown) {
-    super(reason);
-  }
+	readonly _tag = 'NetworkFetchError';
+	constructor(
+		readonly reason: string,
+		readonly cause?: unknown
+	) {
+		super(reason);
+	}
 }
 
 export const fetchUserProfile = (
-  id: UserId
+	id: UserId
 ): Effect.Effect<UserProfile, UserNotFoundError | NetworkFetchError, never> =>
-  Effect.gen(function* () {
-    const response = yield* Effect.tryPromise({
-      try: () => fetch(`/api/users/${id}`),
-      catch: (cause) => new NetworkFetchError("Network boundary failed", cause),
-    });
+	Effect.gen(function* () {
+		const response = yield* Effect.tryPromise({
+			try: () => fetch(`/api/users/${id}`),
+			catch: (cause) => new NetworkFetchError('Network boundary failed', cause)
+		});
 
-    if (response.status === 404) {
-      yield* Effect.fail(new UserNotFoundError(id));
-    }
+		if (response.status === 404) {
+			yield* Effect.fail(new UserNotFoundError(id));
+		}
 
-    if (!response.ok) {
-      yield* Effect.fail(
-        new NetworkFetchError(`Unexpected status ${response.status}`)
-      );
-    }
+		if (!response.ok) {
+			yield* Effect.fail(new NetworkFetchError(`Unexpected status ${response.status}`));
+		}
 
-    const rawData = yield* Effect.tryPromise({
-      try: () => response.json(),
-      catch: (cause) =>
-        new NetworkFetchError("Invalid JSON structure received", cause),
-    });
+		const rawData = yield* Effect.tryPromise({
+			try: () => response.json(),
+			catch: (cause) => new NetworkFetchError('Invalid JSON structure received', cause)
+		});
 
-    return yield* Schema.decodeUnknown(UserProfileSchema)(rawData).pipe(
-      Effect.mapError(
-        (parseError) =>
-          new NetworkFetchError("Schema decode failed", parseError)
-      )
-    );
-  });
+		return yield* Schema.decodeUnknown(UserProfileSchema)(rawData).pipe(
+			Effect.mapError((parseError) => new NetworkFetchError('Schema decode failed', parseError))
+		);
+	});
 ```
 
 ### Errors as Values
@@ -147,59 +144,57 @@ Never wrap unparsed `Promise` states directly in UI layers. Run Effect sequences
 
 ```ts
 // src/lib/state/user-view.svelte.ts
-import { Effect, Exit } from "effect";
+import { Effect, Exit } from 'effect';
 import {
-  fetchUserProfile,
-  type UserProfile,
-  type UserNotFoundError,
-  type NetworkFetchError,
-} from "$lib/domain/user";
-import { UserId } from "$lib/domain/types";
-import { Schema } from "@effect/schema";
+	fetchUserProfile,
+	type UserProfile,
+	type UserNotFoundError,
+	type NetworkFetchError
+} from '$lib/domain/user';
+import { UserId } from '$lib/domain/types';
+import { Schema } from '@effect/schema';
 
 export class UserViewState {
-  // Svelte 5 Native Reactive Properties
-  #data = $state<UserProfile | null>(null);
-  #error = $state<UserNotFoundError | NetworkFetchError | null>(null);
-  #isLoading = $state(false);
+	// Svelte 5 Native Reactive Properties
+	#data = $state<UserProfile | null>(null);
+	#error = $state<UserNotFoundError | NetworkFetchError | null>(null);
+	#isLoading = $state(false);
 
-  // Read-only getters for the UI
-  get data() {
-    return this.#data;
-  }
-  get error() {
-    return this.#error;
-  }
-  get isLoading() {
-    return this.#isLoading;
-  }
+	// Read-only getters for the UI
+	get data() {
+		return this.#data;
+	}
+	get error() {
+		return this.#error;
+	}
+	get isLoading() {
+		return this.#isLoading;
+	}
 
-  load(rawId: string) {
-    this.#isLoading = true;
-    this.#error = null;
-    this.#data = null;
+	load(rawId: string) {
+		this.#isLoading = true;
+		this.#error = null;
+		this.#data = null;
 
-    const pipeline = Schema.decodeUnknown(UserId)(rawId).pipe(
-      Effect.flatMap(fetchUserProfile)
-    );
+		const pipeline = Schema.decodeUnknown(UserId)(rawId).pipe(Effect.flatMap(fetchUserProfile));
 
-    // Run the Effect into Svelte reactive boundaries
-    Effect.runPromiseExit(pipeline).then((exit) => {
-      this.#isLoading = false;
-      Exit.match(exit, {
-        onFailure: (cause) => {
-          // Unify failure track to reactive state
-          // Prefer extracting the first typed error when possible
-          this.#error = (cause as any).errors?.[0] ?? cause;
-          this.#data = null;
-        },
-        onSuccess: (profile) => {
-          this.#data = profile;
-          this.#error = null;
-        },
-      });
-    });
-  }
+		// Run the Effect into Svelte reactive boundaries
+		Effect.runPromiseExit(pipeline).then((exit) => {
+			this.#isLoading = false;
+			Exit.match(exit, {
+				onFailure: (cause) => {
+					// Unify failure track to reactive state
+					// Prefer extracting the first typed error when possible
+					this.#error = (cause as any).errors?.[0] ?? cause;
+					this.#data = null;
+				},
+				onSuccess: (profile) => {
+					this.#data = profile;
+					this.#error = null;
+				}
+			});
+		});
+	}
 }
 ```
 
@@ -221,34 +216,34 @@ Svelte components (`.svelte`) must only execute DOM assembly, style coordination
 ```svelte
 <!-- src/routes/user/+page.svelte -->
 <script lang="ts">
-  import { UserViewState } from "$lib/state/user-view.svelte";
+	import { UserViewState } from '$lib/state/user-view.svelte';
 
-  // Single source of truth instantiated locally or injected via Context
-  const userView = new UserViewState();
+	// Single source of truth instantiated locally or injected via Context
+	const userView = new UserViewState();
 
-  let searchId = $state("");
+	let searchId = $state('');
 </script>
 
 <div class="user-container">
-  <input type="text" bind:value={searchId} placeholder="Enter User ID..." />
-  <button onclick={() => userView.load(searchId)}>Fetch Profile</button>
+	<input type="text" bind:value={searchId} placeholder="Enter User ID..." />
+	<button onclick={() => userView.load(searchId)}>Fetch Profile</button>
 
-  {#if userView.isLoading}
-    <p>Loading profile safely...</p>
-  {:else if userView.error}
-    <div class="error-banner">
-      {#if userView.error._tag === "UserNotFoundError"}
-        <span>The user account does not exist.</span>
-      {:else}
-        <span>A communication failure occurred. Please retry.</span>
-      {/if}
-    </div>
-  {:else if userView.data}
-    <main class="profile-card">
-      <h1>{userView.data.username}</h1>
-      <p>Contact: {userView.data.email}</p>
-    </main>
-  {/if}
+	{#if userView.isLoading}
+		<p>Loading profile safely...</p>
+	{:else if userView.error}
+		<div class="error-banner">
+			{#if userView.error._tag === 'UserNotFoundError'}
+				<span>The user account does not exist.</span>
+			{:else}
+				<span>A communication failure occurred. Please retry.</span>
+			{/if}
+		</div>
+	{:else if userView.data}
+		<main class="profile-card">
+			<h1>{userView.data.username}</h1>
+			<p>Contact: {userView.data.email}</p>
+		</main>
+	{/if}
 </div>
 ```
 
@@ -299,15 +294,15 @@ At boundaries, translate between local typed errors and whatever the framework o
 
 ## Quick Reference for Agents
 
-| Concern                    | Preferred                                      | Avoid                                      |
-|----------------------------|------------------------------------------------|--------------------------------------------|
-| Reactivity                 | `$state`, `$derived`, `$effect`                | `let` + `$:` , `writable()`                |
-| Props                      | `$props()`                                     | `export let`                               |
-| Events                     | `onclick={...}`                                | `on:click`                                 |
-| Errors                     | Effect error channel + tagged classes          | `throw` for expected failures              |
-| Parsing                    | `@effect/schema` + branded types               | Raw `JSON.parse` / untyped payloads        |
-| Domain logic location      | Pure Effect modules + `.svelte.ts` view models | Inside `.svelte` `<script>`                |
-| Component thickness        | DOM + event bridging only                      | Validation, fetch, arithmetic              |
-| Class binding              | `class={expr}` or array                        | `class:name={bool}`                        |
+| Concern               | Preferred                                      | Avoid                               |
+| --------------------- | ---------------------------------------------- | ----------------------------------- |
+| Reactivity            | `$state`, `$derived`, `$effect`                | `let` + `$:` , `writable()`         |
+| Props                 | `$props()`                                     | `export let`                        |
+| Events                | `onclick={...}`                                | `on:click`                          |
+| Errors                | Effect error channel + tagged classes          | `throw` for expected failures       |
+| Parsing               | `@effect/schema` + branded types               | Raw `JSON.parse` / untyped payloads |
+| Domain logic location | Pure Effect modules + `.svelte.ts` view models | Inside `.svelte` `<script>`         |
+| Component thickness   | DOM + event bridging only                      | Validation, fetch, arithmetic       |
+| Class binding         | `class={expr}` or array                        | `class:name={bool}`                 |
 
 When in doubt: make the error track explicit, keep the component thin, and parse at the boundary.
