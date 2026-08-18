@@ -144,7 +144,7 @@ Never wrap unparsed `Promise` states directly in UI layers. Run Effect sequences
 
 ```ts
 // src/lib/state/user-view.svelte.ts
-import { Effect, Exit } from 'effect';
+import { Cause, Effect, Exit } from 'effect';
 import {
 	fetchUserProfile,
 	type UserProfile,
@@ -183,9 +183,11 @@ export class UserViewState {
 			this.#isLoading = false;
 			Exit.match(exit, {
 				onFailure: (cause) => {
-					// Unify failure track to reactive state
-					// Prefer extracting the first typed error when possible
-					this.#error = (cause as any).errors?.[0] ?? cause;
+					const squashed = Cause.squash(cause);
+					this.#error =
+						squashed instanceof UserNotFoundError || squashed instanceof NetworkFetchError
+							? squashed
+							: new NetworkFetchError('Profile load failed', squashed);
 					this.#data = null;
 				},
 				onSuccess: (profile) => {
