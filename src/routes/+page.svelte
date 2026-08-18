@@ -20,6 +20,10 @@
 	import TodayWorkspace from '$lib/components/TodayWorkspace.svelte';
 	import WorkspaceRail from '$lib/components/WorkspaceRail.svelte';
 	import { createWorkspaceSignals } from '$lib/domain/dashboard-navigation';
+	import {
+		createDashboardStayAlive,
+		PUBLIC_DASHBOARD_STAY_ALIVE_MS
+	} from '$lib/domain/dashboard-stay-alive';
 	import { resolvedViewerTimeZone, SSR_VIEWER_TIME_ZONE } from '$lib/domain/dashboard-time';
 	import { publicWorkspaceDefinitions, shortcutMapFor } from '$lib/domain/dashboard-workspace';
 	import { createViewerActivityProjection } from '$lib/domain/dashboard-viewer-time';
@@ -37,6 +41,15 @@
 	const dashboardView = new DashboardView({
 		initialWorkspace: 'today',
 		shortcuts: shortcutMapFor(publicWorkspaceDefinitions)
+	});
+	const stayAlive = createDashboardStayAlive(PUBLIC_DASHBOARD_STAY_ALIVE_MS, {
+		now: () => Date.now(),
+		isVisible: () => document.visibilityState === 'visible',
+		schedule: (callback, delayMs) => {
+			const id = window.setTimeout(callback, delayMs);
+			return () => window.clearTimeout(id);
+		},
+		reload: invalidateAll
 	});
 	const clientTelemetry = getClientTelemetry();
 	const viewerProjection = $derived(
@@ -75,8 +88,9 @@
 	$effect(() => {
 		const activeRefresh = data.refresh;
 		freshSnapshot = null;
-		refreshState = 'Refreshing';
+		if (data.snapshot === null) refreshState = 'Refreshing';
 		refreshMessage = data.cache.cachedAt === null ? '' : `cached ${data.cache.cachedAt}`;
+		stayAlive.markReloaded();
 		let cancelled = false;
 		void activeRefresh.then((result) => {
 			if (cancelled) return;
@@ -88,7 +102,11 @@
 			cancelled = true;
 		};
 	});
+
+	$effect(() => stayAlive.start());
 </script>
+
+<svelte:document onvisibilitychange={() => stayAlive.noticeVisibility()} />
 
 <svelte:head>
 	<meta
