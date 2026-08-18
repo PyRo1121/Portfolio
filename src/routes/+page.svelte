@@ -8,6 +8,7 @@
 		XLogoIcon as XLogo
 	} from 'phosphor-svelte';
 	import { invalidateAll } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import type { PageProps } from './$types';
 	import ActivityWorkspace from '$lib/components/ActivityWorkspace.svelte';
 	import BriefWorkspace from '$lib/components/BriefWorkspace.svelte';
@@ -196,7 +197,7 @@
 			<span class={connectionClass} title={refreshMessage}>
 				<i></i><GlobeSimple size={12} />{status}
 			</span>
-			<a href="/owner" data-sveltekit-reload aria-label="Owner home">Owner</a>
+			<a href={resolve('/owner')} data-sveltekit-reload aria-label="Owner home">Owner</a>
 			<button
 				type="button"
 				onclick={() => dashboardView.toggleCommand()}

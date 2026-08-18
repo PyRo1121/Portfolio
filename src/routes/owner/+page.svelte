@@ -6,6 +6,7 @@
 		LockSimpleIcon as LockSimple
 	} from 'phosphor-svelte';
 	import { invalidateAll } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import type { PageProps } from './$types';
 	import CareerAccountabilityWorkspace from '$lib/components/CareerAccountabilityWorkspace.svelte';
 	import CloudflareWorkspace from '$lib/components/CloudflareWorkspace.svelte';
@@ -183,7 +184,7 @@
 <div class="app" {@attach dashboardView.attachApplication}>
 	<header class="topbar">
 		<div class="brand-group">
-			<a class="brand" href="/" aria-label="Public portfolio">
+			<a class="brand" href={resolve('/')} aria-label="Public portfolio">
 				<GithubLogo size={18} weight="fill" /><span>Olen Latham</span>
 			</a>
 		</div>
