@@ -294,9 +294,9 @@ describe('public shipping projection', () => {
 			'GitHubRepository',
 			'CloudflareWorker'
 		]);
-		expect(projection.projects[0]?.links.find((link) => link.kind === 'CloudflareWorker')?.href).toBe(
-			null
-		);
+		expect(
+			projection.projects[0]?.links.find((link) => link.kind === 'CloudflareWorker')?.href
+		).toBe(null);
 	});
 
 	it('strips operator identity from public deployment join facts', () => {

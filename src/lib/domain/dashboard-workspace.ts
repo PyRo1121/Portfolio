@@ -14,12 +14,7 @@ export type DashboardWorkspace =
 
 /** Public portfolio workspace ids. */
 export type PublicWorkspace =
-	| 'today'
-	| 'brief'
-	| 'delivery'
-	| 'craft'
-	| 'repositories'
-	| 'activity';
+	'today' | 'brief' | 'delivery' | 'craft' | 'repositories' | 'activity';
 
 /** Owner-home workspace ids. Week's `brief` is not reused. */
 export type OwnerWorkspace = 'briefing' | 'career' | 'cloudflare' | 'telemetry' | 'mappings';
