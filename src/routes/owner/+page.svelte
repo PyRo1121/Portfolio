@@ -61,7 +61,8 @@
 	);
 	let deploymentMessage = $state('');
 	let viewerTimeZone = $derived(SSR_VIEWER_TIME_ZONE);
-	const viewerToday = $derived(zonedDateKey(new Date(), viewerTimeZone));
+	let clockMs = $state(Date.now());
+	const viewerToday = $derived(zonedDateKey(new Date(clockMs), viewerTimeZone));
 	const dashboardView = new DashboardView({
 		initialWorkspace: 'briefing',
 		shortcuts: shortcutMapFor(ownerWorkspaceDefinitions)
@@ -110,6 +111,13 @@
 
 	$effect(() => {
 		viewerTimeZone = resolvedViewerTimeZone();
+	});
+
+	$effect(() => {
+		const id = window.setInterval(() => {
+			clockMs = Date.now();
+		}, 60_000);
+		return () => window.clearInterval(id);
 	});
 
 	$effect(() => {

@@ -1253,6 +1253,9 @@
 		.projects-overview > section strong {
 			font-size: 1.05rem;
 		}
+		.projects-unavailable {
+			grid-column: 1 / -1;
+		}
 		.project-list,
 		.project-dossier,
 		.project-manage {

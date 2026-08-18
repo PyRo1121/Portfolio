@@ -237,7 +237,8 @@ function isPublicShippingKind(kind: OwnerProjectResource['kind']): kind is Publi
 /** True when a URL would expose a Cloudflare account dashboard path. */
 export function isCloudflareDashboardUrl(url: string): boolean {
 	try {
-		return new URL(url).hostname === 'dash.cloudflare.com';
+		const hostname = new URL(url).hostname.replace(/\.+$/, '').toLocaleLowerCase();
+		return hostname === 'dash.cloudflare.com';
 	} catch {
 		return true;
 	}
@@ -289,32 +290,47 @@ export function createPublicShippingProjection(
 	if (registry === null) {
 		return { _tag: access._tag, reason: access.reason, projects: [] };
 	}
-	const dossiers = createOwnerProjectDossiers(registry, snapshot, null, deployments);
 	return {
 		_tag: 'Current',
 		reason: access.reason,
-		projects: dossiers.map((dossier) => ({
-			id: dossier.project.id,
-			name: dossier.project.name,
-			description: dossier.project.description,
-			links: dossier.project.resources.flatMap((resource) =>
-				isPublicShippingKind(resource.kind)
-					? [
-							{
-								kind: resource.kind,
-								providerId: resource.providerId,
-								displayName: resource.displayName,
-								href: publicHref(resource.canonicalUrl)
-							}
-						]
-					: []
-			),
-			deployments: dossier.deployments.map((item) => ({
-				workerName: item.resource.providerId,
-				state: item.state,
-				detail: item.detail,
-				commitSha: item.commitSha
-			}))
-		}))
+		projects: registry.projects.map((project) => {
+			const repositoryLink = project.resources.find(
+				(resource) => resource.kind === 'GitHubRepository'
+			);
+			const repository =
+				repositoryLink === undefined || snapshot === null
+					? null
+					: (snapshot.intelligence.repositories.find(
+							(item) => item.fullName === repositoryLink.providerId
+						) ?? null);
+			return {
+				id: project.id,
+				name: project.name,
+				description: project.description,
+				links: project.resources.flatMap((resource) =>
+					isPublicShippingKind(resource.kind)
+						? [
+								{
+									kind: resource.kind,
+									providerId: resource.providerId,
+									displayName: resource.displayName,
+									href: publicHref(resource.canonicalUrl)
+								}
+							]
+						: []
+				),
+				deployments: project.resources
+					.filter((resource) => resource.kind === 'CloudflareWorker')
+					.map((resource) => {
+						const joined = deploymentView(resource, repository, snapshot, deployments);
+						return {
+							workerName: resource.providerId,
+							state: joined.state,
+							detail: joined.detail,
+							commitSha: joined.commitSha
+						};
+					})
+			};
+		})
 	};
 }

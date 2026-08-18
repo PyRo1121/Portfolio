@@ -40,7 +40,10 @@ import { loadCloudflareUsageSnapshot } from '$lib/server/cloudflare-api';
 import { cloudflareDeploymentCacheFor } from '$lib/server/cloudflare-deployment-cache';
 import { loadCloudflareDeploymentSnapshot } from '$lib/server/cloudflare-deployments-api';
 import { cloudflareUsageCacheFor } from '$lib/server/cloudflare-usage-cache';
-import { DEFAULT_USERNAME, loadGitHubDashboardPageSlice } from '$lib/server/github-dashboard-page';
+import {
+	configuredGitHubUsername,
+	loadGitHubDashboardPageSlice
+} from '$lib/server/github-dashboard-page';
 import { loadTelemetryEvents } from '$lib/server/telemetry-store';
 import {
 	addOwnerProjectResource,
@@ -241,10 +244,10 @@ function actionAccess(event: CareerActionEvent) {
 				database: event.platform.env.CAREER_DB,
 				ownerDatabase: event.platform.env.OWNER_DB,
 				cache: event.platform.env.WEEKNOTE_CACHE,
-				username:
-					event.platform.env.GITHUB_USERNAME?.trim() ||
-					env['GITHUB_USERNAME']?.trim() ||
-					DEFAULT_USERNAME
+				username: configuredGitHubUsername(
+					env['GITHUB_USERNAME'],
+					event.platform.env.GITHUB_USERNAME
+				)
 			};
 }
 

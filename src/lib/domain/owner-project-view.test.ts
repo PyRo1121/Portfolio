@@ -4,7 +4,11 @@ import type { CloudflareUsageSnapshot } from './cloudflare-usage';
 import { createDemoIntelligence } from './github-intelligence';
 import { createDemoSnapshot } from './github-stats';
 import type { OwnerProjectSnapshot } from './owner-project';
-import { createOwnerProjectDossiers, createPublicShippingProjection } from './owner-project-view';
+import {
+	createOwnerProjectDossiers,
+	createPublicShippingProjection,
+	isCloudflareDashboardUrl
+} from './owner-project-view';
 
 const registry: OwnerProjectSnapshot = {
 	projects: [
@@ -251,6 +255,13 @@ describe('owner project dossier', () => {
 	});
 });
 
+describe('isCloudflareDashboardUrl', () => {
+	it('withholds trailing-dot Cloudflare dashboard hosts', () => {
+		expect(isCloudflareDashboardUrl('https://dash.cloudflare.com./acct/workers')).toBe(true);
+		expect(isCloudflareDashboardUrl('https://github.com/octocat/signal-garden')).toBe(false);
+	});
+});
+
 describe('public shipping projection', () => {
 	it('keeps confirmed GitHub, Worker, and domain links and omits D1/KV/R2', () => {
 		const snapshot = createDemoIntelligence(
@@ -274,12 +285,59 @@ describe('public shipping projection', () => {
 							displayName: 'career-db',
 							canonicalUrl: 'https://dash.cloudflare.com/example/d1',
 							createdAt: '2026-08-15T00:00:00.000Z'
+						},
+						{
+							id: 'kv-id',
+							kind: 'KVNamespace',
+							environment: 'Production',
+							providerId: 'weeknote-cache',
+							displayName: 'weeknote-cache',
+							canonicalUrl: 'https://dash.cloudflare.com/example/kv',
+							createdAt: '2026-08-15T00:00:00.000Z'
+						},
+						{
+							id: 'r2-id',
+							kind: 'R2Bucket',
+							environment: 'Production',
+							providerId: 'weeknote-assets',
+							displayName: 'weeknote-assets',
+							canonicalUrl: 'https://dash.cloudflare.com/example/r2',
+							createdAt: '2026-08-15T00:00:00.000Z'
+						},
+						{
+							id: 'domain-id',
+							kind: 'Domain',
+							environment: 'Production',
+							providerId: 'signal.garden',
+							displayName: 'signal.garden',
+							canonicalUrl: 'https://signal.garden/',
+							createdAt: '2026-08-15T00:00:00.000Z'
 						}
 					]
 				}
 			]
 		};
-		const projection = createPublicShippingProjection(withInventory, snapshot, null, {
+		const deploymentSnapshot: CloudflareDeploymentSnapshot = {
+			generatedAt: '2026-08-15T09:00:00.000Z',
+			workers: [
+				{
+					workerName: 'signal-garden',
+					state: 'Observed',
+					detail: 'Observed',
+					deploymentId: 'deployment-id',
+					createdAt: '2026-08-15T08:40:22.000Z',
+					source: 'wrangler',
+					strategy: 'percentage',
+					authorEmail: 'owner@example.com',
+					message: 'git:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+					triggeredBy: 'deployment',
+					versionsTruncated: false,
+					evidenceUrl: 'https://dash.cloudflare.com/acct/deployments',
+					versions: []
+				}
+			]
+		};
+		const projection = createPublicShippingProjection(withInventory, snapshot, deploymentSnapshot, {
 			_tag: 'Current',
 			reason: 'Public shipping links.'
 		});
@@ -290,13 +348,18 @@ describe('public shipping projection', () => {
 		expect(serialized).not.toContain('sizeBytes');
 		expect(serialized).not.toContain('authorEmail');
 		expect(serialized).not.toContain('triggeredBy');
+		expect(serialized).not.toContain('owner@example.com');
 		expect(projection.projects[0]?.links.map((link) => link.kind)).toEqual([
 			'GitHubRepository',
-			'CloudflareWorker'
+			'CloudflareWorker',
+			'Domain'
 		]);
 		expect(
 			projection.projects[0]?.links.find((link) => link.kind === 'CloudflareWorker')?.href
 		).toBe(null);
+		expect(projection.projects[0]?.links.find((link) => link.kind === 'Domain')?.href).toBe(
+			'https://signal.garden/'
+		);
 	});
 
 	it('strips operator identity from public deployment join facts', () => {
