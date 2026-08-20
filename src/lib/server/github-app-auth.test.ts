@@ -1,6 +1,10 @@
 import { Effect, Redacted } from 'effect';
 import { describe, expect, it } from 'vitest';
-import { fetchGitHubChecksToken, type GitHubChecksAppConfig } from './github-app-auth';
+import {
+	fetchGitHubChecksToken,
+	parseGitHubChecksAppConfig,
+	type GitHubChecksAppConfig
+} from './github-app-auth';
 
 const NOW = new Date('2026-08-14T23:40:00.000Z');
 
@@ -45,6 +49,45 @@ async function appFixture(): Promise<{
 		publicKey: pair.publicKey
 	};
 }
+
+describe('parseGitHubChecksAppConfig', () => {
+	it('distinguishes an intentionally absent optional app', () => {
+		expect(
+			parseGitHubChecksAppConfig({
+				appId: undefined,
+				installationId: undefined,
+				privateKey: undefined
+			})
+		).toEqual({ _tag: 'Unconfigured' });
+	});
+
+	it('rejects partial configuration instead of silently disabling checks', () => {
+		expect(
+			parseGitHubChecksAppConfig({
+				appId: '4598962',
+				installationId: undefined,
+				privateKey: undefined
+			})
+		).toMatchObject({ _tag: 'Invalid' });
+	});
+
+	it('returns validated complete configuration', () => {
+		expect(
+			parseGitHubChecksAppConfig({
+				appId: '4598962',
+				installationId: '153820305',
+				privateKey: 'private-key'
+			})
+		).toEqual({
+			_tag: 'Configured',
+			config: {
+				appId: '4598962',
+				installationId: '153820305',
+				privateKey: 'private-key'
+			}
+		});
+	});
+});
 
 describe('fetchGitHubChecksToken', () => {
 	it('signs a bounded app JWT and requests a checks-read installation token', async () => {

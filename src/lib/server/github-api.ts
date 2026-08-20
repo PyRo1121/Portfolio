@@ -331,6 +331,11 @@ export function fetchWeeklySnapshot(
 		const checksToken = yield* config.checksApp === undefined
 			? Effect.succeed<Redacted.Redacted<string> | undefined>(undefined)
 			: fetchGitHubChecksToken(fetch, config.checksApp, now).pipe(
+					Effect.tapError((cause) =>
+						Effect.sync(() =>
+							console.warn('GitHub Checks app authentication failed:', cause.message)
+						)
+					),
 					Effect.catchAll(() => Effect.succeed(undefined))
 				);
 		const workflows = yield* fetchWorkflowCoverage(

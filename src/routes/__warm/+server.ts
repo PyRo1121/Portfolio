@@ -40,7 +40,7 @@ export const GET: RequestHandler = async ({ platform, request, setHeaders, url }
 	const refreshLeaseClient = refreshLeaseClientFor(platform.env.REFRESH_COORDINATOR);
 	const username = configuredGitHubUsername(env['GITHUB_USERNAME'], platform.env.GITHUB_USERNAME);
 	const token = platform.env.GITHUB_TOKEN?.trim() || env['GITHUB_TOKEN']?.trim();
-	const checksApp = parseGitHubChecksAppConfig({
+	const checksAppState = parseGitHubChecksAppConfig({
 		appId: platform.env.GITHUB_CHECKS_APP_ID?.trim() || env['GITHUB_CHECKS_APP_ID']?.trim(),
 		installationId:
 			platform.env.GITHUB_CHECKS_INSTALLATION_ID?.trim() ||
@@ -56,23 +56,31 @@ export const GET: RequestHandler = async ({ platform, request, setHeaders, url }
 
 	const dashboardCache = dashboardSnapshotCacheFor(platform.env.WEEKNOTE_CACHE, refreshLeaseClient);
 	const cachedDashboard = await dashboardCache.read(username);
-	const dashboardRefresh =
-		token === undefined || token.length === 0
-			? Promise.resolve<Awaited<ReturnType<typeof dashboardCache.refresh>>>({
-					_tag: 'Unavailable',
-					attemptedAt: now.toISOString(),
-					reason: 'GitHub authentication is not configured.'
-				})
-			: dashboardCache.refresh(username, cachedDashboard, now, () =>
-					loadLiveDashboardSnapshot({
-						fetch: globalThis.fetch,
-						username,
-						token,
-						...(checksApp === undefined ? {} : { checksApp }),
-						now,
-						cacheStore: platform.env.WEEKNOTE_CACHE
-					})
-				);
+	let dashboardRefresh: Promise<Awaited<ReturnType<typeof dashboardCache.refresh>>>;
+	if (token === undefined || token.length === 0) {
+		dashboardRefresh = Promise.resolve({
+			_tag: 'Unavailable',
+			attemptedAt: now.toISOString(),
+			reason: 'GitHub authentication is not configured.'
+		});
+	} else if (checksAppState._tag === 'Invalid') {
+		dashboardRefresh = Promise.resolve({
+			_tag: 'Unavailable',
+			attemptedAt: now.toISOString(),
+			reason: checksAppState.reason
+		});
+	} else {
+		dashboardRefresh = dashboardCache.refresh(username, cachedDashboard, now, () =>
+			loadLiveDashboardSnapshot({
+				fetch: globalThis.fetch,
+				username,
+				token,
+				...(checksAppState._tag === 'Configured' ? { checksApp: checksAppState.config } : {}),
+				now,
+				cacheStore: platform.env.WEEKNOTE_CACHE
+			})
+		);
+	}
 
 	const usageCache = cloudflareUsageCacheFor(platform.env.WEEKNOTE_CACHE, refreshLeaseClient);
 	const cachedUsage =

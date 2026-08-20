@@ -16,10 +16,38 @@ export const GitHubChecksAppConfigSchema = Schema.Struct({
 
 export type GitHubChecksAppConfig = Schema.Schema.Type<typeof GitHubChecksAppConfigSchema>;
 
-/** Parse optional runtime bindings without allowing partial GitHub App configuration through. */
-export function parseGitHubChecksAppConfig(input: unknown): GitHubChecksAppConfig | undefined {
-	const decoded = Schema.decodeUnknownEither(GitHubChecksAppConfigSchema)(input);
-	return Either.isLeft(decoded) ? undefined : decoded.right;
+export type GitHubChecksAppConfigState =
+	| { readonly _tag: 'Configured'; readonly config: GitHubChecksAppConfig }
+	| { readonly _tag: 'Unconfigured' }
+	| { readonly _tag: 'Invalid'; readonly reason: string };
+
+const GitHubChecksAppRuntimeInputSchema = Schema.Struct({
+	appId: Schema.optional(Schema.String),
+	installationId: Schema.optional(Schema.String),
+	privateKey: Schema.optional(Schema.String)
+});
+
+/** Distinguish an intentionally absent optional app from malformed or partial configuration. */
+export function parseGitHubChecksAppConfig(input: unknown): GitHubChecksAppConfigState {
+	const runtimeInput = Schema.decodeUnknownEither(GitHubChecksAppRuntimeInputSchema)(input);
+	if (Either.isLeft(runtimeInput)) {
+		return { _tag: 'Invalid', reason: 'GitHub Checks app configuration had an invalid shape.' };
+	}
+	const values = [
+		runtimeInput.right.appId,
+		runtimeInput.right.installationId,
+		runtimeInput.right.privateKey
+	];
+	if (values.every((value) => value === undefined || value.trim().length === 0)) {
+		return { _tag: 'Unconfigured' };
+	}
+	const decoded = Schema.decodeUnknownEither(GitHubChecksAppConfigSchema)(runtimeInput.right);
+	return Either.isLeft(decoded)
+		? {
+				_tag: 'Invalid',
+				reason: 'GitHub Checks app configuration was partial or malformed.'
+			}
+		: { _tag: 'Configured', config: decoded.right };
 }
 
 const InstallationTokenResponseSchema = Schema.Struct({

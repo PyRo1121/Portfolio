@@ -35,7 +35,7 @@ export async function loadGitHubDashboardPageSlice(
 ): Promise<GitHubDashboardPageSlice> {
 	const username = configuredGitHubUsername(env['GITHUB_USERNAME'], platform.env.GITHUB_USERNAME);
 	const token = env['GITHUB_TOKEN']?.trim();
-	const checksApp = parseGitHubChecksAppConfig({
+	const checksAppState = parseGitHubChecksAppConfig({
 		appId: platform.env.GITHUB_CHECKS_APP_ID?.trim() || env['GITHUB_CHECKS_APP_ID']?.trim(),
 		installationId:
 			platform.env.GITHUB_CHECKS_INSTALLATION_ID?.trim() ||
@@ -61,16 +61,23 @@ export async function loadGitHubDashboardPageSlice(
 		refreshLeaseClient
 	);
 	const cached = await dashboardSnapshotCache.read(username);
-	const refresh = dashboardSnapshotCache.refresh(username, cached, now, () =>
-		loadLiveDashboardSnapshot({
-			fetch: globalThis.fetch,
-			username,
-			token,
-			...(checksApp === undefined ? {} : { checksApp }),
-			now,
-			cacheStore: platform.env.WEEKNOTE_CACHE
-		})
-	);
+	const refresh: Promise<DashboardRefreshResult> =
+		checksAppState._tag === 'Invalid'
+			? Promise.resolve({
+					_tag: 'Unavailable',
+					attemptedAt: now.toISOString(),
+					reason: checksAppState.reason
+				})
+			: dashboardSnapshotCache.refresh(username, cached, now, () =>
+					loadLiveDashboardSnapshot({
+						fetch: globalThis.fetch,
+						username,
+						token,
+						...(checksAppState._tag === 'Configured' ? { checksApp: checksAppState.config } : {}),
+						now,
+						cacheStore: platform.env.WEEKNOTE_CACHE
+					})
+				);
 	platform.ctx.waitUntil(refresh.then(() => undefined));
 	if (cached !== null) {
 		return {
