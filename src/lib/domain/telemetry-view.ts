@@ -21,6 +21,18 @@ export type TelemetryVitals = {
 	readonly clsCount: number;
 };
 
+/** Exact owner-scoped totals computed over the complete retention window. */
+export type TelemetryTotals = {
+	readonly totalEvents: number;
+	readonly pageViews: number;
+	readonly workspaceViews: number;
+	readonly uniqueSessions: number;
+	readonly pageViewSessions: number;
+	readonly performanceSessions: number;
+	readonly errorCount: number;
+	readonly lastRecordedAt: string | null;
+};
+
 /** Aggregate visitor-telemetry view for the owner dashboard. */
 export type TelemetryView = {
 	readonly pageViews: number;
@@ -38,7 +50,7 @@ export type TelemetryView = {
 	readonly referrers: ReadonlyArray<TelemetryBar>;
 	readonly hours: ReadonlyArray<TelemetryBar>;
 	readonly totalEvents: number;
-	readonly truncated: boolean;
+	readonly detailsTruncated: boolean;
 	readonly lastRecordedAt: string | null;
 	readonly vitals: TelemetryVitals;
 	readonly recent: ReadonlyArray<TelemetryEvent>;
@@ -58,27 +70,14 @@ const WORKSPACE_LABELS: Readonly<Record<string, string>> = {
 
 export function createTelemetryView(
 	events: ReadonlyArray<TelemetryEvent>,
-	now: Date,
-	truncated = false
+	totals: TelemetryTotals,
+	detailsTruncated = false
 ): TelemetryView {
 	const recent = events.slice(0, 12);
-	const pageViewEvents = events.filter((event) => event.eventType === 'page_view');
-	const pageViews = pageViewEvents.length;
-	const workspaceViews = events.filter((event) => event.eventType === 'workspace_view').length;
-	const uniqueSessions = new Set(events.map((event) => event.sessionHash).filter(Boolean)).size;
-	const pageViewSessions = new Set(pageViewEvents.map((event) => event.sessionHash).filter(Boolean))
-		.size;
-	const performanceSessions = new Set(
-		events
-			.filter((event) => event.eventType === 'web_vital')
-			.map((event) => event.sessionHash)
-			.filter(Boolean)
-	).size;
 	const performanceCoveragePercent =
-		pageViewSessions === 0
+		totals.pageViewSessions === 0
 			? null
-			: Math.min(100, Math.round((performanceSessions / pageViewSessions) * 100));
-	const errorCount = events.filter((event) => event.eventType === 'error').length;
+			: Math.min(100, Math.round((totals.performanceSessions / totals.pageViewSessions) * 100));
 
 	const paths = rank(
 		events,
@@ -126,16 +125,15 @@ export function createTelemetryView(
 	}));
 
 	const vitals = computeVitals(events);
-	void now;
 
 	return {
-		pageViews,
-		workspaceViews,
-		uniqueSessions,
-		pageViewSessions,
-		performanceSessions,
+		pageViews: totals.pageViews,
+		workspaceViews: totals.workspaceViews,
+		uniqueSessions: totals.uniqueSessions,
+		pageViewSessions: totals.pageViewSessions,
+		performanceSessions: totals.performanceSessions,
 		performanceCoveragePercent,
-		errorCount,
+		errorCount: totals.errorCount,
 		paths: top(paths, 8),
 		workspaces: top(workspaces, 8),
 		countries: top(countries, 10),
@@ -143,9 +141,9 @@ export function createTelemetryView(
 		browsers: top(browsers, 6),
 		referrers: top(referrers, 8),
 		hours: hoursWithShare.slice(0, 12),
-		totalEvents: events.length,
-		truncated,
-		lastRecordedAt: events[0]?.recordedAt ?? null,
+		totalEvents: totals.totalEvents,
+		detailsTruncated,
+		lastRecordedAt: totals.lastRecordedAt,
 		vitals,
 		recent
 	};

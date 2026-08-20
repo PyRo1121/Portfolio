@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { telemetryRetentionQuery, telemetryEventFromRow } from './telemetry-store';
+import {
+	telemetryEventFromRow,
+	telemetryRetentionQuery,
+	telemetryTotalsFromRow
+} from './telemetry-store.js';
 
 describe('telemetry retention', () => {
 	it('deletes only owner-scoped rows older than the reporting window', () => {
@@ -14,6 +18,30 @@ describe('telemetry retention', () => {
 });
 
 describe('telemetry D1 row mapping', () => {
+	it('maps complete retention-window totals from a SQL aggregate row', () => {
+		expect(
+			telemetryTotalsFromRow({
+				total_events: 5_001,
+				page_views: 2_400,
+				workspace_views: 1_200,
+				unique_sessions: 800,
+				page_view_sessions: 750,
+				performance_sessions: 600,
+				error_count: 12,
+				last_recorded_at: '2026-08-17T05:00:00.000Z'
+			})
+		).toEqual({
+			totalEvents: 5_001,
+			pageViews: 2_400,
+			workspaceViews: 1_200,
+			uniqueSessions: 800,
+			pageViewSessions: 750,
+			performanceSessions: 600,
+			errorCount: 12,
+			lastRecordedAt: '2026-08-17T05:00:00.000Z'
+		});
+	});
+
 	it('preserves the full beacon evidence with nulls intact', () => {
 		expect(
 			telemetryEventFromRow({

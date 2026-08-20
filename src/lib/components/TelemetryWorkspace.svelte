@@ -31,6 +31,10 @@
 		return count === 0 ? 'No sample yet' : `${count} ${count === 1 ? 'sample' : 'samples'}`;
 	}
 
+	function detailLabel(label: string): string {
+		return view?.detailsTruncated === true ? `${label} · sampled` : label;
+	}
+
 	function cloudflareMetric(id: 'workerRequests' | 'workerErrors'): string {
 		const metric = cloudflare?.metrics.find((item) => item.id === id);
 		return metric === undefined || metric.value === null
@@ -58,11 +62,7 @@
 				<div><strong>{view.pageViews}</strong><span>page views</span></div>
 				<div><strong>{view.uniqueSessions}</strong><span>sessions</span></div>
 				<div><strong>{view.workspaceViews}</strong><span>workspace views</span></div>
-				<div>
-					<strong>{view.totalEvents}</strong><span
-						>{view.truncated ? 'events sampled' : 'events stored'}</span
-					>
-				</div>
+				<div><strong>{view.totalEvents}</strong><span>events stored</span></div>
 				<div>
 					<strong
 						>{view.lastRecordedAt === null
@@ -78,7 +78,9 @@
 
 	{#if view !== null}
 		<section class="telemetry-vitals">
-			<header><span>Core Web Vitals</span><small>Measured beacons · browser</small></header>
+			<header>
+				<span>Core Web Vitals</span><small>{detailLabel('Measured beacons · browser')}</small>
+			</header>
 			<div class="vital-grid">
 				<div class={vitalState(view.vitals.lcpMs, 2500, 4000)}>
 					<span>LCP</span><strong>{vitalValue(view.vitals.lcpMs, 'ms')}</strong><small
@@ -121,7 +123,9 @@
 
 		<div class="telemetry-grid">
 			<section class="telemetry-panel" aria-labelledby="telemetry-paths">
-				<header><span id="telemetry-paths">Pages</span><small>Most visited</small></header>
+				<header>
+					<span id="telemetry-paths">Pages</span><small>{detailLabel('Most visited')}</small>
+				</header>
 				{#each view.paths as item (item.label)}
 					<div class="bar-row">
 						<span class="bar-label">{item.label}</span>
@@ -133,7 +137,9 @@
 
 			<section class="telemetry-panel" aria-labelledby="telemetry-workspaces">
 				<header>
-					<span id="telemetry-workspaces">Workspaces</span><small>Dashboard sections</small>
+					<span id="telemetry-workspaces">Workspaces</span><small
+						>{detailLabel('Dashboard sections')}</small
+					>
 				</header>
 				{#each view.workspaces as item (item.label)}
 					<div class="bar-row">
@@ -146,7 +152,9 @@
 
 			<section class="telemetry-panel" aria-labelledby="telemetry-countries">
 				<header>
-					<span id="telemetry-countries">Countries</span><small>Cloudflare edge</small>
+					<span id="telemetry-countries">Countries</span><small
+						>{detailLabel('Cloudflare edge')}</small
+					>
 				</header>
 				{#each view.countries as item (item.label)}
 					<div class="bar-row">
@@ -158,7 +166,10 @@
 			</section>
 
 			<section class="telemetry-panel" aria-labelledby="telemetry-devices">
-				<header><span id="telemetry-devices">Devices</span><small>User agent class</small></header>
+				<header>
+					<span id="telemetry-devices">Devices</span><small>{detailLabel('User agent class')}</small
+					>
+				</header>
 				{#each view.devices as item (item.label)}
 					<div class="bar-row">
 						<span class="bar-label">{item.label}</span>
@@ -170,7 +181,9 @@
 
 			<section class="telemetry-panel" aria-labelledby="telemetry-referrers">
 				<header>
-					<span id="telemetry-referrers">Referrers</span><small>Page-entry hosts</small>
+					<span id="telemetry-referrers">Referrers</span><small
+						>{detailLabel('Page-entry hosts')}</small
+					>
 				</header>
 				{#each view.referrers as item (item.label)}
 					<div class="bar-row">
@@ -183,7 +196,9 @@
 
 			<section class="telemetry-panel" aria-labelledby="telemetry-browsers">
 				<header>
-					<span id="telemetry-browsers">Browsers</span><small>Page-entry user agents</small>
+					<span id="telemetry-browsers">Browsers</span><small
+						>{detailLabel('Page-entry user agents')}</small
+					>
 				</header>
 				{#each view.browsers as item (item.label)}
 					<div class="bar-row">
@@ -195,7 +210,9 @@
 			</section>
 
 			<section class="telemetry-panel" aria-labelledby="telemetry-hours">
-				<header><span id="telemetry-hours">Hours</span><small>UTC · page entries</small></header>
+				<header>
+					<span id="telemetry-hours">Hours</span><small>{detailLabel('UTC · page entries')}</small>
+				</header>
 				{#each view.hours as item (item.label)}
 					<div class="bar-row">
 						<span class="bar-label">{item.label}</span>
@@ -259,7 +276,11 @@
 					</div>
 					<div>
 						<dt>Completeness</dt>
-						<dd>{view.truncated ? 'Newest 5,000 events; totals truncated' : 'Complete window'}</dd>
+						<dd>
+							{view.detailsTruncated
+								? 'Complete totals; breakdowns sample the newest 5,000 events'
+								: 'Complete 30-day window'}
+						</dd>
 					</div>
 					<div>
 						<dt>Edge enrichment</dt>
