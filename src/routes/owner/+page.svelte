@@ -131,14 +131,22 @@
 		refreshState = 'Refreshing';
 		refreshMessage = data.cache.cachedAt === null ? '' : `cached ${data.cache.cachedAt}`;
 		let cancelled = false;
+		let retryId: number | undefined;
 		void activeRefresh.then((result) => {
 			if (cancelled) return;
+			if (result._tag === 'Deferred') {
+				refreshState = 'Refreshing';
+				refreshMessage = 'Another edge isolate is publishing verified evidence.';
+				retryId = window.setTimeout(() => void invalidateAll(), result.retryAfterMs);
+				return;
+			}
 			refreshState = result._tag;
 			if (result._tag === 'Fresh') freshSnapshot = result.snapshot;
 			if (result._tag === 'Unavailable') refreshMessage = result.reason;
 		});
 		return () => {
 			cancelled = true;
+			if (retryId !== undefined) window.clearTimeout(retryId);
 		};
 	});
 
@@ -149,14 +157,22 @@
 		cloudflareMessage =
 			data.cloudflareCache.cachedAt === null ? '' : `cached ${data.cloudflareCache.cachedAt}`;
 		let cancelled = false;
+		let retryId: number | undefined;
 		void activeRefresh.then((result: CloudflareUsageRefreshResult) => {
 			if (cancelled) return;
+			if (result._tag === 'Deferred') {
+				cloudflareRefreshState = 'Refreshing';
+				cloudflareMessage = 'Another edge isolate is publishing Cloudflare evidence.';
+				retryId = window.setTimeout(() => void invalidateAll(), result.retryAfterMs);
+				return;
+			}
 			cloudflareRefreshState = result._tag;
 			if (result._tag === 'Fresh') freshCloudflare = result.snapshot;
 			if (result._tag === 'Unavailable') cloudflareMessage = result.reason;
 		});
 		return () => {
 			cancelled = true;
+			if (retryId !== undefined) window.clearTimeout(retryId);
 		};
 	});
 
@@ -171,14 +187,22 @@
 					: ''
 				: `cached ${data.cloudflareDeploymentCache.cachedAt}`;
 		let cancelled = false;
+		let retryId: number | undefined;
 		void activeRefresh.then((result: CloudflareDeploymentRefreshResult) => {
 			if (cancelled) return;
+			if (result._tag === 'Deferred') {
+				deploymentRefreshState = 'Refreshing';
+				deploymentMessage = 'Another edge isolate is publishing deployment evidence.';
+				retryId = window.setTimeout(() => void invalidateAll(), result.retryAfterMs);
+				return;
+			}
 			deploymentRefreshState = result._tag;
 			if (result._tag === 'Fresh') freshCloudflareDeployments = result.snapshot;
 			if (result._tag === 'Unavailable') deploymentMessage = result.reason;
 		});
 		return () => {
 			cancelled = true;
+			if (retryId !== undefined) window.clearTimeout(retryId);
 		};
 	});
 </script>

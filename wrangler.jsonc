@@ -22,6 +22,12 @@
 			"id": "70db94b6340347d0b6a1f7ce236b7cff"
 		}
 	],
+	"services": [
+		{
+			"binding": "REFRESH_COORDINATOR",
+			"service": "weeknote-refresh-coordinator"
+		}
+	],
 	"ratelimits": [
 		{
 			"name": "TELEMETRY_RATE_LIMITER",

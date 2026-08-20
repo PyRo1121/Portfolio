@@ -1,4 +1,4 @@
-import type { D1Database, KVNamespace, RateLimit } from '@cloudflare/workers-types';
+import type { D1Database, Fetcher, KVNamespace, RateLimit } from '@cloudflare/workers-types';
 
 // See https://svelte.dev/docs/kit/types#app.d.ts
 // for information about these interfaces
@@ -8,6 +8,7 @@ declare global {
 			env: {
 				CAREER_DB: D1Database;
 				OWNER_DB: D1Database;
+				REFRESH_COORDINATOR: Fetcher;
 				CAREER_OWNER_EMAIL?: string;
 				CLOUDFLARE_ACCESS_AUD?: string;
 				CLOUDFLARE_ACCESS_TEAM_DOMAIN?: string;

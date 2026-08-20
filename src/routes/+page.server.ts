@@ -7,6 +7,7 @@ import { loadGitHubDashboardPageSlice } from '$lib/server/github-dashboard-page'
 import { cloudflareDeploymentCacheFor } from '$lib/server/cloudflare-deployment-cache';
 import { loadCloudflareDeploymentSnapshot } from '$lib/server/cloudflare-deployments-api';
 import { loadOwnerProjectSnapshot } from '$lib/server/owner-project-store';
+import { refreshLeaseClientFor } from '$lib/server/refresh-lease-client';
 import { Effect } from 'effect';
 
 const PUBLIC_REGISTRY_REASON = 'Public shipping links.';
@@ -19,6 +20,7 @@ export const load: PageServerLoad = async ({ platform, setHeaders }) => {
 	if (platform === undefined) {
 		throw new Error('Weeknote bindings are unavailable outside the configured Cloudflare runtime.');
 	}
+	const refreshLeaseClient = refreshLeaseClientFor(platform.env.REFRESH_COORDINATOR);
 
 	const github = await loadGitHubDashboardPageSlice(platform, now);
 	const expectedOwnerEmail = configuredOwnerEmail(
@@ -59,7 +61,10 @@ export const load: PageServerLoad = async ({ platform, setHeaders }) => {
 				resource.kind === 'CloudflareWorker' ? [resource.providerId] : []
 			)
 		) ?? [];
-	const deploymentCache = cloudflareDeploymentCacheFor(platform.env.WEEKNOTE_CACHE);
+	const deploymentCache = cloudflareDeploymentCacheFor(
+		platform.env.WEEKNOTE_CACHE,
+		refreshLeaseClient
+	);
 	const cachedDeployments =
 		cloudflareAccountId === undefined || deploymentWorkerNames.length === 0
 			? null

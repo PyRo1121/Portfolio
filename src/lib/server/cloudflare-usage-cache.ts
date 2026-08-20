@@ -6,6 +6,7 @@ import {
 	type CloudflareUsageSnapshot
 } from '$lib/domain/cloudflare-usage';
 import type { DashboardCacheStore } from './dashboard-snapshot-cache';
+import { runWithRefreshLease, type RefreshLeaseClient } from './refresh-lease-client';
 
 const CACHE_VERSION = 2;
 const DEFAULT_FRESHNESS_MS = 15 * 60_000;
@@ -37,11 +38,17 @@ function errorMessage(cause: unknown): string {
 export class CloudflareUsageCache {
 	readonly #store: DashboardCacheStore;
 	readonly #freshnessMs: number;
+	readonly #leaseClient: RefreshLeaseClient | undefined;
 	readonly #refreshes = new Map<string, Promise<CloudflareUsageRefreshResult>>();
 
-	constructor(store: DashboardCacheStore, freshnessMs = DEFAULT_FRESHNESS_MS) {
+	constructor(
+		store: DashboardCacheStore,
+		freshnessMs = DEFAULT_FRESHNESS_MS,
+		leaseClient?: RefreshLeaseClient
+	) {
 		this.#store = store;
 		this.#freshnessMs = freshnessMs;
+		this.#leaseClient = leaseClient;
 	}
 
 	async read(accountId: string): Promise<CloudflareUsageCacheRecord | null> {
@@ -75,7 +82,16 @@ export class CloudflareUsageCache {
 		const key = cacheKey(accountId);
 		const active = this.#refreshes.get(key);
 		if (active !== undefined) return active;
-		const refresh = this.#runRefresh(accountId, loader).finally(() => this.#refreshes.delete(key));
+		const refresh = runWithRefreshLease<CloudflareUsageRefreshResult>({
+			client: this.#leaseClient,
+			key: `cloudflare-usage:${key}`,
+			work: () => this.#runRefresh(accountId, loader),
+			deferred: (retryAfterMs) => ({
+				_tag: 'Deferred',
+				deferredAt: new Date().toISOString(),
+				retryAfterMs
+			})
+		}).finally(() => this.#refreshes.delete(key));
 		this.#refreshes.set(key, refresh);
 		return refresh;
 	}
@@ -116,13 +132,32 @@ export class CloudflareUsageCache {
 	}
 }
 
-const cachesByStore = new WeakMap<DashboardCacheStore, CloudflareUsageCache>();
+const uncoordinatedCachesByStore = new WeakMap<DashboardCacheStore, CloudflareUsageCache>();
+const coordinatedCachesByStore = new WeakMap<
+	DashboardCacheStore,
+	WeakMap<RefreshLeaseClient, CloudflareUsageCache>
+>();
 
-/** Return one process-local Cloudflare refresh coordinator for each KV binding. */
-export function cloudflareUsageCacheFor(store: DashboardCacheStore): CloudflareUsageCache {
-	const existing = cachesByStore.get(store);
+/** Return one process-local cache, optionally backed by cross-isolate coordination. */
+export function cloudflareUsageCacheFor(
+	store: DashboardCacheStore,
+	leaseClient?: RefreshLeaseClient
+): CloudflareUsageCache {
+	if (leaseClient === undefined) {
+		const existing = uncoordinatedCachesByStore.get(store);
+		if (existing !== undefined) return existing;
+		const cache = new CloudflareUsageCache(store);
+		uncoordinatedCachesByStore.set(store, cache);
+		return cache;
+	}
+	let cachesByClient = coordinatedCachesByStore.get(store);
+	if (cachesByClient === undefined) {
+		cachesByClient = new WeakMap();
+		coordinatedCachesByStore.set(store, cachesByClient);
+	}
+	const existing = cachesByClient.get(leaseClient);
 	if (existing !== undefined) return existing;
-	const cache = new CloudflareUsageCache(store);
-	cachesByStore.set(store, cache);
+	const cache = new CloudflareUsageCache(store, DEFAULT_FRESHNESS_MS, leaseClient);
+	cachesByClient.set(leaseClient, cache);
 	return cache;
 }

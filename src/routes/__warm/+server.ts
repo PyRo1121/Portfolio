@@ -14,6 +14,7 @@ import { configuredGitHubUsername } from '$lib/server/github-dashboard-page';
 import { configuredOwnerEmail } from '$lib/server/owner-access';
 import { loadOwnerProjectSnapshot } from '$lib/server/owner-project-store';
 import { deleteExpiredTelemetryEvents } from '$lib/server/telemetry-store';
+import { refreshLeaseClientFor } from '$lib/server/refresh-lease-client';
 
 /**
  * Server-only warm-refresh endpoint. A separate scheduled Worker calls this on a
@@ -36,6 +37,7 @@ export const GET: RequestHandler = async ({ platform, request, setHeaders, url }
 	}
 
 	const now = new Date();
+	const refreshLeaseClient = refreshLeaseClientFor(platform.env.REFRESH_COORDINATOR);
 	const username = configuredGitHubUsername(env['GITHUB_USERNAME'], platform.env.GITHUB_USERNAME);
 	const token = platform.env.GITHUB_TOKEN?.trim() || env['GITHUB_TOKEN']?.trim();
 	const checksApp = parseGitHubChecksAppConfig({
@@ -52,7 +54,7 @@ export const GET: RequestHandler = async ({ platform, request, setHeaders, url }
 	const cloudflareToken =
 		platform.env.CLOUDFLARE_API_TOKEN?.trim() || env['CLOUDFLARE_API_TOKEN']?.trim();
 
-	const dashboardCache = dashboardSnapshotCacheFor(platform.env.WEEKNOTE_CACHE);
+	const dashboardCache = dashboardSnapshotCacheFor(platform.env.WEEKNOTE_CACHE, refreshLeaseClient);
 	const cachedDashboard = await dashboardCache.read(username);
 	const dashboardRefresh =
 		token === undefined || token.length === 0
@@ -72,7 +74,7 @@ export const GET: RequestHandler = async ({ platform, request, setHeaders, url }
 					})
 				);
 
-	const usageCache = cloudflareUsageCacheFor(platform.env.WEEKNOTE_CACHE);
+	const usageCache = cloudflareUsageCacheFor(platform.env.WEEKNOTE_CACHE, refreshLeaseClient);
 	const cachedUsage =
 		cloudflareAccountId === undefined ? null : await usageCache.read(cloudflareAccountId);
 	const usageRefresh =
@@ -121,7 +123,10 @@ export const GET: RequestHandler = async ({ platform, request, setHeaders, url }
 					)
 				);
 
-	const deploymentCache = cloudflareDeploymentCacheFor(platform.env.WEEKNOTE_CACHE);
+	const deploymentCache = cloudflareDeploymentCacheFor(
+		platform.env.WEEKNOTE_CACHE,
+		refreshLeaseClient
+	);
 	const cachedDeployments =
 		cloudflareAccountId === undefined || workerNames.length === 0
 			? null

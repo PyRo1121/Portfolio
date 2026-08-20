@@ -68,4 +68,5 @@ export type CloudflareDeploymentRefreshResult =
 			readonly refreshedAt: string;
 	  }
 	| { readonly _tag: 'Current'; readonly checkedAt: string }
+	| { readonly _tag: 'Deferred'; readonly deferredAt: string; readonly retryAfterMs: number }
 	| { readonly _tag: 'Unavailable'; readonly attemptedAt: string; readonly reason: string };

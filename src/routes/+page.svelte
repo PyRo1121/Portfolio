@@ -97,14 +97,22 @@
 		refreshMessage = data.cache.cachedAt === null ? '' : `cached ${data.cache.cachedAt}`;
 		stayAlive.markReloaded();
 		let cancelled = false;
+		let retryId: number | undefined;
 		void activeRefresh.then((result) => {
 			if (cancelled) return;
+			if (result._tag === 'Deferred') {
+				refreshState = 'Refreshing';
+				refreshMessage = 'Another edge isolate is publishing verified evidence.';
+				retryId = window.setTimeout(() => void invalidateAll(), result.retryAfterMs);
+				return;
+			}
 			refreshState = result._tag;
 			if (result._tag === 'Fresh') freshSnapshot = result.snapshot;
 			if (result._tag === 'Unavailable') refreshMessage = result.reason;
 		});
 		return () => {
 			cancelled = true;
+			if (retryId !== undefined) window.clearTimeout(retryId);
 		};
 	});
 

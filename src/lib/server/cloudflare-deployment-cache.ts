@@ -6,6 +6,7 @@ import {
 	type CloudflareDeploymentSnapshot
 } from '$lib/domain/cloudflare-deployments';
 import type { DashboardCacheStore } from './dashboard-snapshot-cache';
+import { runWithRefreshLease, type RefreshLeaseClient } from './refresh-lease-client';
 
 const CACHE_VERSION = 1;
 const DEFAULT_FRESHNESS_MS = 15 * 60_000;
@@ -48,11 +49,17 @@ function errorMessage(cause: unknown): string {
 export class CloudflareDeploymentCache {
 	readonly #store: DashboardCacheStore;
 	readonly #freshnessMs: number;
+	readonly #leaseClient: RefreshLeaseClient | undefined;
 	readonly #refreshes = new Map<string, Promise<CloudflareDeploymentRefreshResult>>();
 
-	constructor(store: DashboardCacheStore, freshnessMs = DEFAULT_FRESHNESS_MS) {
+	constructor(
+		store: DashboardCacheStore,
+		freshnessMs = DEFAULT_FRESHNESS_MS,
+		leaseClient?: RefreshLeaseClient
+	) {
 		this.#store = store;
 		this.#freshnessMs = freshnessMs;
+		this.#leaseClient = leaseClient;
 	}
 
 	async read(
@@ -93,9 +100,16 @@ export class CloudflareDeploymentCache {
 		const key = cacheKey(accountId, names);
 		const active = this.#refreshes.get(key);
 		if (active !== undefined) return active;
-		const refresh = this.#runRefresh(accountId, names, loader).finally(() =>
-			this.#refreshes.delete(key)
-		);
+		const refresh = runWithRefreshLease<CloudflareDeploymentRefreshResult>({
+			client: this.#leaseClient,
+			key: `cloudflare-deployments:${key}`,
+			work: () => this.#runRefresh(accountId, names, loader),
+			deferred: (retryAfterMs) => ({
+				_tag: 'Deferred',
+				deferredAt: new Date().toISOString(),
+				retryAfterMs
+			})
+		}).finally(() => this.#refreshes.delete(key));
 		this.#refreshes.set(key, refresh);
 		return refresh;
 	}
@@ -141,14 +155,31 @@ export class CloudflareDeploymentCache {
 	}
 }
 
-const cachesByStore = new WeakMap<DashboardCacheStore, CloudflareDeploymentCache>();
+const uncoordinatedCachesByStore = new WeakMap<DashboardCacheStore, CloudflareDeploymentCache>();
+const coordinatedCachesByStore = new WeakMap<
+	DashboardCacheStore,
+	WeakMap<RefreshLeaseClient, CloudflareDeploymentCache>
+>();
 
 export function cloudflareDeploymentCacheFor(
-	store: DashboardCacheStore
+	store: DashboardCacheStore,
+	leaseClient?: RefreshLeaseClient
 ): CloudflareDeploymentCache {
-	const existing = cachesByStore.get(store);
+	if (leaseClient === undefined) {
+		const existing = uncoordinatedCachesByStore.get(store);
+		if (existing !== undefined) return existing;
+		const cache = new CloudflareDeploymentCache(store);
+		uncoordinatedCachesByStore.set(store, cache);
+		return cache;
+	}
+	let cachesByClient = coordinatedCachesByStore.get(store);
+	if (cachesByClient === undefined) {
+		cachesByClient = new WeakMap();
+		coordinatedCachesByStore.set(store, cachesByClient);
+	}
+	const existing = cachesByClient.get(leaseClient);
 	if (existing !== undefined) return existing;
-	const cache = new CloudflareDeploymentCache(store);
-	cachesByStore.set(store, cache);
+	const cache = new CloudflareDeploymentCache(store, DEFAULT_FRESHNESS_MS, leaseClient);
+	cachesByClient.set(leaseClient, cache);
 	return cache;
 }

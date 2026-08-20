@@ -47,6 +47,7 @@ import {
 	loadGitHubDashboardPageSlice
 } from '$lib/server/github-dashboard-page';
 import { loadTelemetryEvents } from '$lib/server/telemetry-store';
+import { refreshLeaseClientFor } from '$lib/server/refresh-lease-client';
 import {
 	addOwnerProjectResource,
 	createOwnerProject,
@@ -67,6 +68,7 @@ export const load: PageServerLoad = async ({ platform, request, setHeaders }) =>
 	if (platform === undefined) {
 		throw new Error('Weeknote bindings are unavailable outside the configured Cloudflare runtime.');
 	}
+	const refreshLeaseClient = refreshLeaseClientFor(platform.env.REFRESH_COORDINATOR);
 
 	const expectedOwnerEmail = configuredOwnerEmail(
 		platform.env.CAREER_OWNER_EMAIL?.trim() || env['CAREER_OWNER_EMAIL']?.trim()
@@ -142,7 +144,7 @@ export const load: PageServerLoad = async ({ platform, request, setHeaders }) =>
 		platform.env.CLOUDFLARE_API_TOKEN?.trim() || env['CLOUDFLARE_API_TOKEN']?.trim();
 	const cloudflareAccountId =
 		platform.env.CLOUDFLARE_ACCOUNT_ID?.trim() || env['CLOUDFLARE_ACCOUNT_ID']?.trim();
-	const cloudflareCache = cloudflareUsageCacheFor(platform.env.WEEKNOTE_CACHE);
+	const cloudflareCache = cloudflareUsageCacheFor(platform.env.WEEKNOTE_CACHE, refreshLeaseClient);
 	const cachedCloudflare =
 		cloudflareAccountId === undefined ? null : await cloudflareCache.read(cloudflareAccountId);
 	let cloudflareRefresh: Promise<CloudflareUsageRefreshResult>;
@@ -171,7 +173,10 @@ export const load: PageServerLoad = async ({ platform, request, setHeaders }) =>
 				resource.kind === 'CloudflareWorker' ? [resource.providerId] : []
 			)
 		) ?? [];
-	const deploymentCache = cloudflareDeploymentCacheFor(platform.env.WEEKNOTE_CACHE);
+	const deploymentCache = cloudflareDeploymentCacheFor(
+		platform.env.WEEKNOTE_CACHE,
+		refreshLeaseClient
+	);
 	const cachedDeployments =
 		cloudflareAccountId === undefined || deploymentWorkerNames.length === 0
 			? null

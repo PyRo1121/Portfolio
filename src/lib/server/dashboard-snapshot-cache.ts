@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { Schema } from 'effect';
 import type { DashboardRefreshResult } from '$lib/domain/dashboard-hydration';
+import { runWithRefreshLease, type RefreshLeaseClient } from '$lib/server/refresh-lease-client';
 import type {
 	GitHubDashboardSnapshot,
 	RepositoryCollectionEvidence,
@@ -370,6 +371,7 @@ export type DashboardCacheStore = {
 
 type DashboardSnapshotCacheOptions = {
 	readonly freshnessMs?: number;
+	readonly leaseClient?: RefreshLeaseClient;
 };
 
 function cacheKey(username: string): string {
@@ -384,11 +386,13 @@ function errorMessage(cause: unknown): string {
 export class DashboardSnapshotCache {
 	readonly #store: DashboardCacheStore;
 	readonly #freshnessMs: number;
+	readonly #leaseClient: RefreshLeaseClient | undefined;
 	readonly #refreshes = new Map<string, Promise<DashboardRefreshResult>>();
 
 	constructor(store: DashboardCacheStore, options: DashboardSnapshotCacheOptions = {}) {
 		this.#store = store;
 		this.#freshnessMs = options.freshnessMs ?? DEFAULT_FRESHNESS_MS;
+		this.#leaseClient = options.leaseClient;
 	}
 
 	async read(username: string): Promise<DashboardCacheRecord | null> {
@@ -495,7 +499,16 @@ export class DashboardSnapshotCache {
 		const key = cacheKey(username);
 		const active = this.#refreshes.get(key);
 		if (active !== undefined) return active;
-		const refresh = this.#runRefresh(username, loader).finally(() => this.#refreshes.delete(key));
+		const refresh = runWithRefreshLease<DashboardRefreshResult>({
+			client: this.#leaseClient,
+			key: `github:${key}`,
+			work: () => this.#runRefresh(username, loader),
+			deferred: (retryAfterMs) => ({
+				_tag: 'Deferred',
+				deferredAt: new Date().toISOString(),
+				retryAfterMs
+			})
+		}).finally(() => this.#refreshes.delete(key));
 		this.#refreshes.set(key, refresh);
 		return refresh;
 	}
@@ -529,13 +542,32 @@ export class DashboardSnapshotCache {
 	}
 }
 
-const cachesByStore = new WeakMap<DashboardCacheStore, DashboardSnapshotCache>();
+const uncoordinatedCachesByStore = new WeakMap<DashboardCacheStore, DashboardSnapshotCache>();
+const coordinatedCachesByStore = new WeakMap<
+	DashboardCacheStore,
+	WeakMap<RefreshLeaseClient, DashboardSnapshotCache>
+>();
 
-/** Return one process-local refresh coordinator for each persistent cache binding. */
-export function dashboardSnapshotCacheFor(store: DashboardCacheStore): DashboardSnapshotCache {
-	const existing = cachesByStore.get(store);
+/** Return one process-local cache, optionally backed by cross-isolate coordination. */
+export function dashboardSnapshotCacheFor(
+	store: DashboardCacheStore,
+	leaseClient?: RefreshLeaseClient
+): DashboardSnapshotCache {
+	if (leaseClient === undefined) {
+		const existing = uncoordinatedCachesByStore.get(store);
+		if (existing !== undefined) return existing;
+		const cache = new DashboardSnapshotCache(store);
+		uncoordinatedCachesByStore.set(store, cache);
+		return cache;
+	}
+	let cachesByClient = coordinatedCachesByStore.get(store);
+	if (cachesByClient === undefined) {
+		cachesByClient = new WeakMap();
+		coordinatedCachesByStore.set(store, cachesByClient);
+	}
+	const existing = cachesByClient.get(leaseClient);
 	if (existing !== undefined) return existing;
-	const cache = new DashboardSnapshotCache(store);
-	cachesByStore.set(store, cache);
+	const cache = new DashboardSnapshotCache(store, { leaseClient });
+	cachesByClient.set(leaseClient, cache);
 	return cache;
 }

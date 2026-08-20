@@ -38,7 +38,7 @@ npm run cf:types
 npm run deploy
 ```
 
-The production app runs as the `weeknote` Worker at `https://latham.cloud`. Rotate credentials with `wrangler secret put` — never commit credential values to `wrangler.jsonc`. A `weeknote-warm` scheduled Worker refreshes GitHub and Cloudflare snapshots every 10 minutes.
+The production app runs as the `weeknote` Worker at `https://latham.cloud`. Rotate credentials with `wrangler secret put` — never commit credential values to `wrangler.jsonc`. A `weeknote-warm` scheduled Worker refreshes GitHub and Cloudflare snapshots every 10 minutes. The service-only `weeknote-refresh-coordinator` Worker uses SQLite-backed Durable Object leases to serialize snapshot publication across edge isolates.
 
 ## Data & evidence model
 

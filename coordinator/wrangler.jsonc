@@ -1,0 +1,27 @@
+{
+	"$schema": "../node_modules/wrangler/config-schema.json",
+	"name": "weeknote-refresh-coordinator",
+	"main": "index.ts",
+	"compatibility_date": "2026-08-13",
+	"compatibility_flags": ["nodejs_compat"],
+	"workers_dev": false,
+	"preview_urls": false,
+	"durable_objects": {
+		"bindings": [
+			{
+				"name": "REFRESH_LEASES",
+				"class_name": "RefreshLeaseDurableObject"
+			}
+		]
+	},
+	"migrations": [
+		{
+			"tag": "v1",
+			"new_sqlite_classes": ["RefreshLeaseDurableObject"]
+		}
+	],
+	"observability": {
+		"enabled": true,
+		"head_sampling_rate": 1
+	}
+}

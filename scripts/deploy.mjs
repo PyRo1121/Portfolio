@@ -33,6 +33,17 @@ run('npm', ['run', 'db:migrate:owner:remote']);
 run('npx', [
 	'wrangler',
 	'deploy',
+	'--config',
+	'coordinator/wrangler.jsonc',
+	'--strict',
+	'--message',
+	`git:${sha}`,
+	'--tag',
+	`git-${shortSha}`
+]);
+run('npx', [
+	'wrangler',
+	'deploy',
 	'--strict',
 	'--message',
 	`git:${sha}`,

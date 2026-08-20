@@ -4,6 +4,7 @@ import type { GitHubDashboardSnapshot } from '$lib/domain/github-intelligence';
 import { loadLiveDashboardSnapshot } from '$lib/server/dashboard-loader';
 import { parseGitHubChecksAppConfig } from '$lib/server/github-app-auth';
 import { dashboardSnapshotCacheFor } from '$lib/server/dashboard-snapshot-cache';
+import { refreshLeaseClientFor } from '$lib/server/refresh-lease-client';
 
 const DEFAULT_USERNAME = 'PyRo1121';
 
@@ -54,7 +55,11 @@ export async function loadGitHubDashboardPageSlice(
 			})
 		};
 	}
-	const dashboardSnapshotCache = dashboardSnapshotCacheFor(platform.env.WEEKNOTE_CACHE);
+	const refreshLeaseClient = refreshLeaseClientFor(platform.env.REFRESH_COORDINATOR);
+	const dashboardSnapshotCache = dashboardSnapshotCacheFor(
+		platform.env.WEEKNOTE_CACHE,
+		refreshLeaseClient
+	);
 	const cached = await dashboardSnapshotCache.read(username);
 	const refresh = dashboardSnapshotCache.refresh(username, cached, now, () =>
 		loadLiveDashboardSnapshot({

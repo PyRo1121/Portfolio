@@ -1,7 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { CloudflareUsageSnapshot } from '$lib/domain/cloudflare-usage';
 import { CloudflareUsageCache } from './cloudflare-usage-cache';
 import type { DashboardCacheStore } from './dashboard-snapshot-cache';
+import type { RefreshLeaseClient } from './refresh-lease-client';
 
 function snapshot(availableProducts: number, measuredMetrics: number): CloudflareUsageSnapshot {
 	return {
@@ -25,6 +26,26 @@ function snapshot(availableProducts: number, measuredMetrics: number): Cloudflar
 }
 
 describe('CloudflareUsageCache', () => {
+	it('defers cross-isolate contention without invoking the provider loader', async () => {
+		const store: DashboardCacheStore = {
+			get: async () => null,
+			put: async () => undefined
+		};
+		const leaseClient: RefreshLeaseClient = {
+			acquire: async () => ({ _tag: 'Busy', retryAfterMs: 20_000 }),
+			release: vi.fn()
+		};
+		const loader = vi.fn(async () => snapshot(8, 6));
+		const result = await new CloudflareUsageCache(store, 0, leaseClient).refresh(
+			'account',
+			null,
+			new Date(),
+			loader
+		);
+		expect(result).toMatchObject({ _tag: 'Deferred', retryAfterMs: 5_000 });
+		expect(loader).not.toHaveBeenCalled();
+	});
+
 	it('retains the last-known-good snapshot when a refresh has no readable evidence', async () => {
 		const values = new Map<string, string>();
 		const store: DashboardCacheStore = {
