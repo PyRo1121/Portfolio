@@ -9,6 +9,7 @@ export class DashboardView {
 	#selectedRepository = $state<string | null>(null);
 	#commandOpen = $state(false);
 	#isRefreshing = $state(false);
+	#refreshError = $state<string | null>(null);
 	#shortcuts: Readonly<Partial<Record<string, DashboardWorkspace>>>;
 	#workspaceNodes = new SvelteMap<DashboardWorkspace, HTMLElement>();
 
@@ -40,6 +41,11 @@ export class DashboardView {
 		return this.#isRefreshing;
 	}
 
+	/** Safe refresh failure summary for the current interaction. */
+	get refreshError(): string | null {
+		return this.#refreshError;
+	}
+
 	/** Move to one analytical workspace. */
 	navigate(workspace: DashboardWorkspace): void {
 		this.#activeWorkspace = workspace;
@@ -64,16 +70,21 @@ export class DashboardView {
 		this.#commandOpen = false;
 	}
 
-	/** Run one refresh operation and always restore the interactive state. */
+	/** Run one refresh operation and expose a bounded failure state. */
 	refresh(operation: () => Promise<void>): void {
 		if (this.#isRefreshing) return;
 		this.#isRefreshing = true;
-		Effect.runFork(
+		this.#refreshError = null;
+		void Effect.runPromiseExit(
 			Effect.tryPromise({
 				try: operation,
 				catch: (cause) => cause
-			}).pipe(Effect.ensuring(Effect.sync(() => (this.#isRefreshing = false))))
-		);
+			})
+		).then((exit) => {
+			this.#isRefreshing = false;
+			this.#refreshError =
+				exit._tag === 'Failure' ? 'Refresh failed. The previous evidence remains available.' : null;
+		});
 	}
 
 	/** Attach application-level keyboard shortcuts and workspace node tracking. */

@@ -9,7 +9,7 @@ Live at **[latham.cloud](https://latham.cloud)**.
 - **Today / Week** — exact commit history, additions, deletions, and rhythm, reprojected into your local timezone
 - **Delivery** — merged work, releases, and GitHub Actions verification
 - **Quality** — checks, reverts, and change-mass signals
-- **Projects** — repository inventory (visibility, language, stars, forks, disk usage)
+- **Projects** — public project identities, canonical links, and exact deployment evidence
 - **Commits** — per-repository commit evidence
 - **/owner** — Cloudflare Access-protected career records, Cloudflare usage, visitor telemetry, and mapping edits
 

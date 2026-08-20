@@ -125,7 +125,7 @@
 			<div><span>Added</span><strong>+{formatCompact(changeScope.additions)}</strong></div>
 			<div><span>Removed</span><strong>−{formatCompact(changeScope.deletions)}</strong></div>
 			<div>
-				<span>Files touched</span><strong>{formatInteger(changeScope.changedFiles)}</strong>
+				<span>File changes</span><strong>{formatInteger(changeScope.changedFiles)}</strong>
 			</div>
 			<div><span>{fourthChangeLabel}</span><strong>{fourthChangeValue}</strong></div>
 		</div>
@@ -153,7 +153,7 @@
 		</header>
 		<div
 			class="today-hours"
-			role="list"
+			role="group"
 			aria-label={`Commits by hour in ${projection.timeZone}`}
 			onpointerleave={clearHover}
 			onfocusout={clearHover}

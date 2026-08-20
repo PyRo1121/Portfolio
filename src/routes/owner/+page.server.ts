@@ -36,6 +36,7 @@ import {
 	updateCareerOpportunity
 } from '$lib/server/career-store';
 import { resolveObservedCareerStoryEvidence } from '$lib/server/career-story-evidence';
+import { CareerRecordNotFound, CareerStoreError } from '$lib/server/career-store-error';
 import { createCareerStory, updateCareerStory } from '$lib/server/career-story-store';
 import { loadCloudflareUsageSnapshot } from '$lib/server/cloudflare-api';
 import { cloudflareDeploymentCacheFor } from '$lib/server/cloudflare-deployment-cache';
@@ -50,6 +51,8 @@ import {
 	addOwnerProjectResource,
 	createOwnerProject,
 	loadOwnerProjectSnapshot,
+	OwnerProjectRecordNotFound,
+	OwnerProjectStoreError,
 	removeOwnerProjectResource,
 	updateOwnerProject
 } from '$lib/server/owner-project-store';
@@ -273,6 +276,31 @@ async function actionInput(event: CareerActionEvent): Promise<Record<string, For
 	return Object.fromEntries(await event.request.formData());
 }
 
+type CareerMutationOutcome = 'NotFound' | 'Success' | 'Unavailable';
+type OwnerProjectMutationOutcome = 'NotFound' | 'Success' | 'Unavailable';
+
+async function ownerProjectMutationOutcome(
+	operation: Effect.Effect<void, OwnerProjectRecordNotFound | OwnerProjectStoreError>
+): Promise<OwnerProjectMutationOutcome> {
+	const result = await Effect.runPromise(Effect.either(operation));
+	return Either.isRight(result)
+		? 'Success'
+		: result.left instanceof OwnerProjectRecordNotFound
+			? 'NotFound'
+			: 'Unavailable';
+}
+
+async function careerMutationOutcome(
+	operation: Effect.Effect<void, CareerRecordNotFound | CareerStoreError>
+): Promise<CareerMutationOutcome> {
+	const result = await Effect.runPromise(Effect.either(operation));
+	return Either.isRight(result)
+		? 'Success'
+		: result.left instanceof CareerRecordNotFound
+			? 'NotFound'
+			: 'Unavailable';
+}
+
 export const actions = {
 	createOwnerProject: async (event) => {
 		const access = await actionAccess(event);
@@ -291,12 +319,14 @@ export const actions = {
 		if (access._tag === 'Denied') return fail(403, { ownerProjectMessage: access.reason });
 		const parsed = parseUpdateOwnerProject(await actionInput(event));
 		if (Either.isLeft(parsed)) return fail(400, { ownerProjectMessage: parsed.left.reason });
-		const exit = await Effect.runPromiseExit(
+		const outcome = await ownerProjectMutationOutcome(
 			updateOwnerProject(access.ownerDatabase, access.ownerEmail, parsed.right, new Date())
 		);
-		return exit._tag === 'Success'
+		return outcome === 'Success'
 			? { ownerProjectMessage: 'Project updated.' }
-			: fail(503, { ownerProjectMessage: 'Project could not be updated.' });
+			: outcome === 'NotFound'
+				? fail(404, { ownerProjectMessage: 'Project no longer exists.' })
+				: fail(503, { ownerProjectMessage: 'Project could not be updated.' });
 	},
 	addOwnerProjectResource: async (event) => {
 		const access = await actionAccess(event);
@@ -315,12 +345,14 @@ export const actions = {
 		if (access._tag === 'Denied') return fail(403, { ownerProjectMessage: access.reason });
 		const parsed = parseRemoveOwnerProjectResource(await actionInput(event));
 		if (Either.isLeft(parsed)) return fail(400, { ownerProjectMessage: parsed.left.reason });
-		const exit = await Effect.runPromiseExit(
+		const outcome = await ownerProjectMutationOutcome(
 			removeOwnerProjectResource(access.ownerDatabase, access.ownerEmail, parsed.right)
 		);
-		return exit._tag === 'Success'
+		return outcome === 'Success'
 			? { ownerProjectMessage: 'Resource link removed.' }
-			: fail(503, { ownerProjectMessage: 'Resource link could not be removed.' });
+			: outcome === 'NotFound'
+				? fail(404, { ownerProjectMessage: 'Resource link no longer exists.' })
+				: fail(503, { ownerProjectMessage: 'Resource link could not be removed.' });
 	},
 	createOpportunity: async (event) => {
 		const access = await actionAccess(event);
@@ -339,19 +371,21 @@ export const actions = {
 		if (access._tag === 'Denied') return fail(403, { careerMessage: access.reason });
 		const parsed = parseUpdateOpportunity(await actionInput(event));
 		if (Either.isLeft(parsed)) return fail(400, { careerMessage: parsed.left.reason });
-		const exit = await Effect.runPromiseExit(
+		const outcome = await careerMutationOutcome(
 			updateCareerOpportunity(access.database, access.ownerEmail, parsed.right, new Date())
 		);
-		return exit._tag === 'Success'
+		return outcome === 'Success'
 			? { careerMessage: 'Opportunity updated.' }
-			: fail(503, { careerMessage: 'Opportunity could not be updated.' });
+			: outcome === 'NotFound'
+				? fail(404, { careerMessage: 'Opportunity no longer exists.' })
+				: fail(503, { careerMessage: 'Opportunity could not be updated.' });
 	},
 	transitionOpportunity: async (event) => {
 		const access = await actionAccess(event);
 		if (access._tag === 'Denied') return fail(403, { careerMessage: access.reason });
 		const parsed = parseStageTransition(await actionInput(event));
 		if (Either.isLeft(parsed)) return fail(400, { careerMessage: parsed.left.reason });
-		const exit = await Effect.runPromiseExit(
+		const outcome = await careerMutationOutcome(
 			transitionCareerOpportunity(
 				access.database,
 				access.ownerEmail,
@@ -360,9 +394,11 @@ export const actions = {
 				new Date()
 			)
 		);
-		return exit._tag === 'Success'
+		return outcome === 'Success'
 			? { careerMessage: 'Opportunity stage updated.' }
-			: fail(503, { careerMessage: 'Opportunity stage could not be updated.' });
+			: outcome === 'NotFound'
+				? fail(404, { careerMessage: 'Opportunity no longer exists.' })
+				: fail(503, { careerMessage: 'Opportunity stage could not be updated.' });
 	},
 	createCommitment: async (event) => {
 		const access = await actionAccess(event);
@@ -381,7 +417,7 @@ export const actions = {
 		if (access._tag === 'Denied') return fail(403, { careerMessage: access.reason });
 		const parsed = parseCommitmentStatus(await actionInput(event));
 		if (Either.isLeft(parsed)) return fail(400, { careerMessage: parsed.left.reason });
-		const exit = await Effect.runPromiseExit(
+		const outcome = await careerMutationOutcome(
 			setCareerCommitmentStatus(
 				access.database,
 				access.ownerEmail,
@@ -390,9 +426,11 @@ export const actions = {
 				new Date()
 			)
 		);
-		return exit._tag === 'Success'
+		return outcome === 'Success'
 			? { careerMessage: 'Commitment updated.' }
-			: fail(503, { careerMessage: 'Commitment could not be updated.' });
+			: outcome === 'NotFound'
+				? fail(404, { careerMessage: 'Commitment no longer exists.' })
+				: fail(503, { careerMessage: 'Commitment could not be updated.' });
 	},
 	createStory: async (event) => {
 		const access = await actionAccess(event);
@@ -435,11 +473,13 @@ export const actions = {
 		if (evidenceExit._tag === 'Failure') {
 			return fail(409, { careerMessage: 'Selected GitHub evidence is no longer retained.' });
 		}
-		const exit = await Effect.runPromiseExit(
+		const outcome = await careerMutationOutcome(
 			updateCareerStory(access.database, access.ownerEmail, parsed.right, evidenceExit.value, now)
 		);
-		return exit._tag === 'Success'
+		return outcome === 'Success'
 			? { careerMessage: 'Interview story updated.' }
-			: fail(503, { careerMessage: 'Interview story could not be updated.' });
+			: outcome === 'NotFound'
+				? fail(404, { careerMessage: 'Interview story no longer exists.' })
+				: fail(503, { careerMessage: 'Interview story could not be updated.' });
 	}
 } satisfies Actions;

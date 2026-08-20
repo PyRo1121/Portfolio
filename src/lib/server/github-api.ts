@@ -1,29 +1,24 @@
 import { Effect, Either, Redacted, Schema } from 'effect';
 import { addZonedDays, COLLECTION_TIME_ZONE } from '$lib/domain/dashboard-time';
 import {
-	createDemoSnapshot,
 	createWeeklySnapshot,
 	startOfRollingWeek,
 	type GitHubActivityEvent,
 	type GitHubProfile,
-	type GitHubRepository,
-	type PushMeasurement
+	type GitHubRepository
 } from '$lib/domain/github-stats';
 import {
-	createDemoIntelligence,
 	createGitHubDashboardSnapshot,
 	type GitHubDashboardSnapshot
 } from '$lib/domain/github-intelligence';
 import { fetchWorkflowCoverage } from './github-actions';
 import { fetchGitHubChecksToken, type GitHubChecksAppConfig } from './github-app-auth';
 import { fetchGitHubIntelligence, GitHubGraphQLError } from './github-graphql';
-import { githubRequestHeaders } from './github-http';
+import { githubFetch, githubRequestHeaders } from './github-http';
 import type { GitHubRepositorySliceCache } from './github-repository-slice-cache';
 
-const MAX_PUSH_LOOKUPS = 25;
 const MAX_EVENT_PAGES = 3;
 const EVENTS_PER_PAGE = 100;
-const ZERO_SHA_PATTERN = /^0+$/;
 
 const UserSchema = Schema.Struct({
 	login: Schema.String,
@@ -72,23 +67,6 @@ const ActionPayloadSchema = Schema.Struct({
 	action: Schema.String
 });
 
-const FileChangeSchema = Schema.Struct({
-	additions: Schema.Number,
-	deletions: Schema.Number
-});
-
-const CompareSchema = Schema.Struct({
-	total_commits: Schema.Number,
-	files: Schema.optional(Schema.Array(FileChangeSchema))
-});
-
-const CommitSchema = Schema.Struct({
-	stats: Schema.Struct({
-		additions: Schema.Number,
-		deletions: Schema.Number
-	})
-});
-
 class GitHubRequestError extends Error {
 	readonly _tag = 'GitHubRequestError';
 
@@ -134,7 +112,7 @@ export type GitHubStatsError =
 /** Runtime configuration for the GitHub statistics adapter. */
 export type GitHubStatsConfig = {
 	readonly username: string;
-	readonly token?: Redacted.Redacted<string>;
+	readonly token: Redacted.Redacted<string>;
 	readonly checksApp?: GitHubChecksAppConfig;
 };
 
@@ -145,14 +123,12 @@ type RawRepository = Schema.Schema.Type<typeof RepositorySchema>;
 function requestJson(
 	fetch: Fetch,
 	path: string,
-	token: Redacted.Redacted<string> | undefined
+	token: Redacted.Redacted<string>
 ): Effect.Effect<unknown, GitHubRequestError> {
-	const headers = githubRequestHeaders(
-		token === undefined ? {} : { authorization: `Bearer ${Redacted.value(token)}` }
-	);
+	const headers = githubRequestHeaders({ authorization: `Bearer ${Redacted.value(token)}` });
 
 	return Effect.tryPromise({
-		try: () => fetch(`https://api.github.com${path}`, { headers }),
+		try: () => githubFetch(fetch, path, { headers }),
 		catch: (cause) => new GitHubRequestError(path, null, cause)
 	}).pipe(
 		Effect.flatMap((response) =>
@@ -273,70 +249,6 @@ function toRepository(raw: RawRepository): GitHubRepository {
 	};
 }
 
-function encodeRepositoryPath(fullName: string): string {
-	return fullName
-		.split('/')
-		.map((part) => encodeURIComponent(part))
-		.join('/');
-}
-
-function unavailableMeasurement(
-	event: Extract<GitHubActivityEvent, { readonly _tag: 'Push' }>
-): PushMeasurement {
-	return {
-		repo: event.repo,
-		head: event.head,
-		createdAt: event.createdAt,
-		commits: null,
-		additions: null,
-		deletions: null
-	};
-}
-
-function fetchPushMeasurement(
-	fetch: Fetch,
-	event: Extract<GitHubActivityEvent, { readonly _tag: 'Push' }>,
-	token: Redacted.Redacted<string> | undefined
-): Effect.Effect<PushMeasurement, GitHubStatsError> {
-	const repository = encodeRepositoryPath(event.repo);
-	if (ZERO_SHA_PATTERN.test(event.before)) {
-		const path = `/repos/${repository}/commits/${encodeURIComponent(event.head)}`;
-		return requestJson(fetch, path, token).pipe(
-			Effect.flatMap((body) =>
-				Schema.decodeUnknown(CommitSchema)(body).pipe(
-					Effect.mapError((cause) => new GitHubResponseParseError('commit', cause))
-				)
-			),
-			Effect.map((commit) => ({
-				repo: event.repo,
-				head: event.head,
-				createdAt: event.createdAt,
-				commits: 1,
-				additions: commit.stats.additions,
-				deletions: commit.stats.deletions
-			}))
-		);
-	}
-
-	const comparison = `${encodeURIComponent(event.before)}...${encodeURIComponent(event.head)}`;
-	const path = `/repos/${repository}/compare/${comparison}`;
-	return requestJson(fetch, path, token).pipe(
-		Effect.flatMap((body) =>
-			Schema.decodeUnknown(CompareSchema)(body).pipe(
-				Effect.mapError((cause) => new GitHubResponseParseError('comparison', cause))
-			)
-		),
-		Effect.map((result) => ({
-			repo: event.repo,
-			head: event.head,
-			createdAt: event.createdAt,
-			commits: result.total_commits,
-			additions: (result.files ?? []).reduce((total, file) => total + file.additions, 0),
-			deletions: (result.files ?? []).reduce((total, file) => total + file.deletions, 0)
-		}))
-	);
-}
-
 /** Fetch, parse, and summarize one user's current GitHub week. */
 export function fetchWeeklySnapshot(
 	fetch: Fetch,
@@ -346,8 +258,7 @@ export function fetchWeeklySnapshot(
 ): Effect.Effect<GitHubDashboardSnapshot, GitHubStatsError> {
 	const username = encodeURIComponent(config.username);
 	return Effect.gen(function* () {
-		const userPath = config.token === undefined ? `/users/${username}` : '/user';
-		const userBody = yield* requestJson(fetch, userPath, config.token);
+		const userBody = yield* requestJson(fetch, '/user', config.token);
 		const user = yield* Schema.decodeUnknown(UserSchema)(userBody).pipe(
 			Effect.mapError((cause) => new GitHubResponseParseError('user', cause))
 		);
@@ -355,8 +266,7 @@ export function fetchWeeklySnapshot(
 			yield* Effect.fail(new GitHubIdentityMismatchError(config.username, user.login));
 		}
 
-		const eventPath =
-			config.token === undefined ? `/users/${username}/events/public` : `/users/${username}/events`;
+		const eventPath = `/users/${username}/events`;
 		const rawEvents: RawEvent[] = [];
 		for (let page = 1; page <= MAX_EVENT_PAGES; page += 1) {
 			const eventBody = yield* requestJson(
@@ -372,51 +282,37 @@ export function fetchWeeklySnapshot(
 		}
 		const events = rawEvents.map(parseEvent);
 
-		const repositoryPath =
-			config.token === undefined
-				? `/users/${username}/repos?type=owner&sort=created&direction=desc&per_page=100`
-				: '/user/repos?affiliation=owner&sort=created&direction=desc&per_page=100';
-		const repositoryBody = yield* requestJson(fetch, repositoryPath, config.token);
-		const rawRepositories = yield* Schema.decodeUnknown(Schema.Array(RepositorySchema))(
-			repositoryBody
-		).pipe(Effect.mapError((cause) => new GitHubResponseParseError('repositories', cause)));
+		const rawRepositories: RawRepository[] = [];
+		for (let page = 1; page <= 100; page += 1) {
+			const repositoryBody = yield* requestJson(
+				fetch,
+				`/user/repos?affiliation=owner&sort=created&direction=desc&per_page=100&page=${String(page)}`,
+				config.token
+			);
+			const repositoryPage = yield* Schema.decodeUnknown(Schema.Array(RepositorySchema))(
+				repositoryBody
+			).pipe(Effect.mapError((cause) => new GitHubResponseParseError('repositories', cause)));
+			rawRepositories.push(...repositoryPage);
+			if (repositoryPage.length < 100) break;
+			if (page === 100) {
+				yield* Effect.fail(
+					new GitHubResponseParseError(
+						'repositories',
+						new Error('GitHub repository inventory exceeded the bounded 10,000 repository limit.')
+					)
+				);
+			}
+		}
 		const repositories = rawRepositories.map(toRepository);
 
 		const weekStart = startOfRollingWeek(now);
-		const pushes = events.filter(
-			(event): event is Extract<GitHubActivityEvent, { readonly _tag: 'Push' }> =>
-				event._tag === 'Push' && event.createdAt >= weekStart && event.createdAt <= now
-		);
-		const pushMeasurements: PushMeasurement[] = [];
-		if (config.token === undefined) {
-			for (const [index, push] of pushes.entries()) {
-				if (index >= MAX_PUSH_LOOKUPS) {
-					pushMeasurements.push(unavailableMeasurement(push));
-					continue;
-				}
-				const measurement = yield* fetchPushMeasurement(fetch, push, config.token).pipe(
-					Effect.catchAll(() => Effect.succeed(unavailableMeasurement(push)))
-				);
-				pushMeasurements.push(measurement);
-			}
-		}
-
 		const snapshot = createWeeklySnapshot({
 			now,
 			profile: toProfile(user),
 			repositories,
 			events,
-			pushMeasurements
+			pushMeasurements: []
 		});
-		if (config.token === undefined) {
-			return createDemoIntelligence(
-				createDemoSnapshot(
-					now,
-					config.username,
-					'Add GITHUB_TOKEN to unlock private account intelligence.'
-				)
-			);
-		}
 		const weekEnd = addZonedDays(weekStart, 7, COLLECTION_TIME_ZONE);
 		const intelligence = yield* fetchGitHubIntelligence({
 			fetch,

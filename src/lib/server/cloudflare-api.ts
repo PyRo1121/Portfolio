@@ -81,6 +81,9 @@ const ApiEnvelopeSchema = Schema.Struct({
 	result_info: Schema.optional(
 		Schema.Struct({
 			total_count: Schema.optional(Schema.Number),
+			total_pages: Schema.optional(Schema.Number),
+			per_page: Schema.optional(Schema.Number),
+			page: Schema.optional(Schema.Number),
 			count: Schema.optional(Schema.Number)
 		})
 	)
@@ -172,6 +175,88 @@ function requestApiResult(
 				: Effect.fail(new CloudflareCollectionError(path, null, envelope.errors ?? null))
 		)
 	);
+}
+
+function resultValues(
+	envelope: Schema.Schema.Type<typeof ApiEnvelopeSchema>,
+	resultKey: ProductDefinition['resultKey']
+): ReadonlyArray<unknown> | null {
+	if (resultKey === 'buckets') {
+		const decoded = Schema.decodeUnknownEither(BucketResultSchema)(envelope.result);
+		return Either.isRight(decoded) ? decoded.right.buckets : null;
+	}
+	if (resultKey === 'items') {
+		const decoded = Schema.decodeUnknownEither(ItemsResultSchema)(envelope.result);
+		return Either.isRight(decoded) ? decoded.right.items : null;
+	}
+	const decoded = Schema.decodeUnknownEither(ArrayResultSchema)(envelope.result);
+	return Either.isRight(decoded) ? decoded.right : null;
+}
+
+function resultFromValues(
+	values: ReadonlyArray<unknown>,
+	resultKey: ProductDefinition['resultKey']
+): unknown {
+	return resultKey === 'buckets'
+		? { buckets: values }
+		: resultKey === 'items'
+			? { items: values }
+			: values;
+}
+
+function requestAllApiResults(
+	fetch: Fetch,
+	token: Redacted.Redacted<string>,
+	accountId: string,
+	path: string,
+	resultKey: ProductDefinition['resultKey']
+): Effect.Effect<Schema.Schema.Type<typeof ApiEnvelopeSchema>, CloudflareCollectionError> {
+	return Effect.gen(function* () {
+		const first = yield* requestApiResult(fetch, token, accountId, path);
+		const firstValues = resultValues(first, resultKey);
+		if (firstValues === null) {
+			return yield* Effect.fail(new CloudflareCollectionError(path, null, 'Invalid result shape'));
+		}
+		const values = [...firstValues];
+		const declaredPages =
+			first.result_info?.total_pages ??
+			(first.result_info?.total_count === undefined
+				? null
+				: Math.ceil(first.result_info.total_count / 100));
+		let page = 2;
+		let previousCount = firstValues.length;
+		while (
+			(declaredPages === null ? previousCount === 100 : page <= declaredPages) &&
+			page <= 100
+		) {
+			const separator = path.includes('?') ? '&' : '?';
+			const next = yield* requestApiResult(
+				fetch,
+				token,
+				accountId,
+				`${path}${separator}page=${String(page)}`
+			);
+			const nextValues = resultValues(next, resultKey);
+			if (nextValues === null) {
+				return yield* Effect.fail(
+					new CloudflareCollectionError(path, null, 'Invalid paginated result shape')
+				);
+			}
+			values.push(...nextValues);
+			previousCount = nextValues.length;
+			page += 1;
+		}
+		if (page > 100 && (declaredPages === null ? previousCount === 100 : page <= declaredPages)) {
+			return yield* Effect.fail(
+				new CloudflareCollectionError(path, null, 'Inventory exceeded the 10,000 item bound')
+			);
+		}
+		return {
+			...first,
+			result: resultFromValues(values, resultKey),
+			result_info: { ...first.result_info, count: values.length }
+		};
+	});
 }
 
 function inventoryCount(
@@ -287,7 +372,7 @@ async function collectProduct(
 	definition: ProductDefinition
 ): Promise<ProductCollection> {
 	const exit = await Effect.runPromiseExit(
-		requestApiResult(fetch, token, accountId, definition.path)
+		requestAllApiResults(fetch, token, accountId, definition.path, definition.resultKey)
 	);
 	if (exit._tag === 'Failure') {
 		return {
@@ -341,7 +426,7 @@ async function collectD1Storage(
 ): Promise<CloudflareMetric> {
 	const evidenceUrl = `https://dash.cloudflare.com/${accountId}/d1`;
 	const listExit = await Effect.runPromiseExit(
-		requestApiResult(fetch, token, accountId, '/d1/database')
+		requestAllApiResults(fetch, token, accountId, '/d1/database', null)
 	);
 	if (listExit._tag === 'Failure') {
 		return unavailableMetric(
@@ -629,8 +714,10 @@ export async function loadCloudflareUsageSnapshot(
 	const start = new Date(now.getTime() - 7 * 86_400_000);
 	const startIso = start.toISOString();
 	const endIso = end.toISOString();
-	const startDate = startIso.slice(0, 10);
 	const endDate = endIso.slice(0, 10);
+	const startDate = new Date(Date.parse(`${endDate}T00:00:00.000Z`) - 6 * 86_400_000)
+		.toISOString()
+		.slice(0, 10);
 	const [productCollections, d1Storage, workerMetrics, d1Metrics, kvMetric] = await Promise.all([
 		Promise.all(
 			productDefinitions.map((definition) => collectProduct(fetch, token, accountId, definition))

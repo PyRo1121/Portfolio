@@ -9,7 +9,8 @@ import { loadShareDraftStories } from '$lib/server/career-story-store';
 export const GET: RequestHandler = async ({ platform, setHeaders }) => {
 	setHeaders({
 		'cache-control': 'private, no-store',
-		'x-content-type-options': 'nosniff'
+		'x-content-type-options': 'nosniff',
+		'x-robots-tag': 'noindex, nofollow'
 	});
 	if (platform === undefined) error(503, 'Career export storage is unavailable.');
 	const ownerEmail = configuredOwnerEmail(
@@ -22,6 +23,7 @@ export const GET: RequestHandler = async ({ platform, setHeaders }) => {
 	);
 	if (stories._tag === 'Failure') error(503, 'Career export could not be generated.');
 	const exported = createCareerPortfolioMarkdown(stories.value, new Date());
+	if (exported.storyCount === 0) error(404, 'No share-ready Career stories are available.');
 	return text(exported.body, {
 		headers: {
 			'content-disposition': `attachment; filename="${exported.filename}"`,

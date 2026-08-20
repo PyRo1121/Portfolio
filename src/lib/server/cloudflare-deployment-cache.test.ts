@@ -30,6 +30,52 @@ function snapshot(
 }
 
 describe('CloudflareDeploymentCache', () => {
+	it('refuses to replace complete evidence with a partially unavailable snapshot', async () => {
+		const values = new Map<string, string>();
+		const store: DashboardCacheStore = {
+			get: (key) => Promise.resolve(values.get(key) ?? null),
+			put: (key, value) => {
+				values.set(key, value);
+				return Promise.resolve();
+			}
+		};
+		const cache = new CloudflareDeploymentCache(store, 0);
+		const complete: CloudflareDeploymentSnapshot = {
+			generatedAt: '2026-08-15T09:00:00.000Z',
+			workers: [
+				...snapshot('weeknote', 'Observed').workers,
+				...snapshot('weeknote-warm', 'Observed').workers
+			]
+		};
+		const first = await cache.refresh(
+			'account',
+			['weeknote', 'weeknote-warm'],
+			null,
+			new Date(),
+			() => Promise.resolve(complete)
+		);
+		expect(first._tag).toBe('Fresh');
+		const cached = await cache.read('account', ['weeknote', 'weeknote-warm']);
+		const partial: CloudflareDeploymentSnapshot = {
+			generatedAt: '2026-08-15T09:10:00.000Z',
+			workers: [
+				...snapshot('weeknote', 'Observed').workers,
+				...snapshot('weeknote-warm', 'Unavailable').workers
+			]
+		};
+		const refresh = await cache.refresh(
+			'account',
+			['weeknote', 'weeknote-warm'],
+			cached,
+			new Date(),
+			() => Promise.resolve(partial)
+		);
+		expect(refresh._tag).toBe('Unavailable');
+		expect((await cache.read('account', ['weeknote', 'weeknote-warm']))?.snapshot.generatedAt).toBe(
+			'2026-08-15T09:00:00.000Z'
+		);
+	});
+
 	it('scopes records to the exact Worker set and retains last-known-good evidence', async () => {
 		const values = new Map<string, string>();
 		const store: DashboardCacheStore = {

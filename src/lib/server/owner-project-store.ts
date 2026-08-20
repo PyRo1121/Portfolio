@@ -33,6 +33,19 @@ const ResourceRowSchema = Schema.Struct({
 	created_at: Schema.String
 });
 
+/** Expected missing owner-scoped project registry record. */
+export class OwnerProjectRecordNotFound extends Error {
+	readonly _tag = 'OwnerProjectRecordNotFound';
+
+	constructor(
+		readonly entity: 'project' | 'resource',
+		readonly id: string
+	) {
+		super(`Owner project ${entity} ${id} was not found.`);
+		this.name = 'OwnerProjectRecordNotFound';
+	}
+}
+
 /** Typed owner-project persistence failure. */
 export class OwnerProjectStoreError extends Error {
 	readonly _tag = 'OwnerProjectStoreError';
@@ -202,10 +215,10 @@ export function updateOwnerProject(
 	ownerEmail: string,
 	input: UpdateOwnerProjectInput,
 	now: Date
-): Effect.Effect<void, OwnerProjectStoreError> {
+): Effect.Effect<void, OwnerProjectRecordNotFound | OwnerProjectStoreError> {
 	return Effect.tryPromise({
-		try: async () => {
-			const result = await database
+		try: () =>
+			database
 				.prepare(
 					`UPDATE owner_projects
 					 SET slug = ?, name = ?, description = ?, lifecycle = ?, updated_at = ?
@@ -220,11 +233,15 @@ export function updateOwnerProject(
 					input.id,
 					ownerEmail
 				)
-				.run();
-			if (result.meta.changes !== 1) throw new Error('Owner project was not found.');
-		},
+				.run(),
 		catch: (cause) => new OwnerProjectStoreError('update project', cause)
-	});
+	}).pipe(
+		Effect.flatMap((result) =>
+			result.meta.changes === 1
+				? Effect.void
+				: Effect.fail(new OwnerProjectRecordNotFound('project', input.id))
+		)
+	);
 }
 
 /** Add one owner-confirmed provider association to a project. */
@@ -268,15 +285,19 @@ export function removeOwnerProjectResource(
 	database: D1Database,
 	ownerEmail: string,
 	resourceId: string
-): Effect.Effect<void, OwnerProjectStoreError> {
+): Effect.Effect<void, OwnerProjectRecordNotFound | OwnerProjectStoreError> {
 	return Effect.tryPromise({
-		try: async () => {
-			const result = await database
+		try: () =>
+			database
 				.prepare('DELETE FROM owner_project_resources WHERE id = ? AND owner_email = ?')
 				.bind(resourceId, ownerEmail)
-				.run();
-			if (result.meta.changes !== 1) throw new Error('Owner project resource was not found.');
-		},
+				.run(),
 		catch: (cause) => new OwnerProjectStoreError('remove resource', cause)
-	});
+	}).pipe(
+		Effect.flatMap((result) =>
+			result.meta.changes === 1
+				? Effect.void
+				: Effect.fail(new OwnerProjectRecordNotFound('resource', resourceId))
+		)
+	);
 }

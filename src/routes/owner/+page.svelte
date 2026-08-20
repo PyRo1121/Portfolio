@@ -96,6 +96,7 @@
 		refreshState === 'Refreshing' ? 'connection refreshing' : 'connection'
 	);
 	const status = $derived.by(() => {
+		if (dashboardView.refreshError !== null) return 'Owner · refresh failed';
 		if (refreshState === 'Refreshing') return 'Owner · refreshing';
 		if (refreshState === 'Unavailable') return 'Owner · cached';
 		return 'Owner · current';
@@ -202,7 +203,7 @@
 			onWorkspace={openOwnerWorkspace}
 		/>
 		<div class="actions">
-			<span class={connectionClass} title={refreshMessage}>
+			<span class={connectionClass} title={dashboardView.refreshError ?? refreshMessage}>
 				<i></i><LockSimple size={12} />{status}
 			</span>
 			<button

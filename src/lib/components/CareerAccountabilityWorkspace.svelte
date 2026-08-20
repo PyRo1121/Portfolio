@@ -69,7 +69,7 @@
 
 	<header class="career-overview">
 		<div>
-			<span><Briefcase size={14} weight="fill" /> Public records</span>
+			<span><Briefcase size={14} weight="fill" /> Owner records</span>
 			<h1>Career</h1>
 			<p>Applications, follow-ups, commitments, and interview stories.</p>
 		</div>
@@ -80,7 +80,7 @@
 				<div class={view.overdueFollowUps > 0 ? 'attention' : ''}>
 					<strong>{view.overdueFollowUps}</strong><span>overdue follow-ups</span>
 				</div>
-				<div><strong>{snapshot.summary.storyDrafts}</strong><span>stories ready</span></div>
+				<div><strong>{snapshot.summary.storyDrafts}</strong><span>stories saved</span></div>
 			</section>
 		{:else}
 			<section class="career-locked">
@@ -263,11 +263,18 @@
 			>
 				<header><span>Current commitments</span><small>Build + career</small></header>
 				<form class="commitment-form" method="POST" action="?/createCommitment" use:enhance>
-					<select name="kind" aria-label="Commitment type"
-						><option>Build</option><option>Career</option></select
+					<label
+						>Type<select name="kind"><option>Build</option><option>Career</option></select></label
 					>
-					<input name="text" maxlength="180" placeholder="One concrete finish" required />
-					<input name="dueOn" type="date" aria-label="Commitment due date" />
+					<label
+						>Commitment<input
+							name="text"
+							maxlength="180"
+							placeholder="One concrete finish"
+							required
+						/></label
+					>
+					<label>Due<input name="dueOn" type="date" /></label>
 					<button type="submit"><Plus size={13} /> Add</button>
 				</form>
 				<div class="commitment-list">
@@ -321,10 +328,21 @@
 				<details class="story-create">
 					<summary><BookOpen size={13} /> Draft a story</summary>
 					<form method="POST" action="?/createStory" use:enhance>
-						<input name="title" maxlength="180" placeholder="Story title" required />
-						<textarea name="problem" maxlength="2000" placeholder="Problem" required></textarea>
-						<textarea name="action" maxlength="2000" placeholder="Action" required></textarea>
-						<textarea name="outcome" maxlength="2000" placeholder="Outcome" required></textarea>
+						<label
+							>Title<input name="title" maxlength="180" placeholder="Story title" required /></label
+						>
+						<label
+							>Problem<textarea name="problem" maxlength="2000" placeholder="Problem" required
+							></textarea></label
+						>
+						<label
+							>Action<textarea name="action" maxlength="2000" placeholder="Action" required
+							></textarea></label
+						>
+						<label
+							>Outcome<textarea name="outcome" maxlength="2000" placeholder="Outcome" required
+							></textarea></label
+						>
 						<select name="evidenceUrl" aria-label="Observed GitHub outcome">
 							<option value="">No observed GitHub outcome</option>
 							{#each evidenceOptions as evidence (evidence.url)}

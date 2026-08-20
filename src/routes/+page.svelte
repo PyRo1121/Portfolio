@@ -70,6 +70,7 @@
 		refreshState === 'Refreshing' ? 'connection refreshing' : 'connection'
 	);
 	const status = $derived.by(() => {
+		if (dashboardView.refreshError !== null) return 'Public · refresh failed';
 		if (refreshState === 'Refreshing')
 			return snapshot === null ? 'Warming cache' : 'Public · refreshing';
 		if (refreshState === 'Unavailable')
@@ -199,7 +200,7 @@
 			}}
 		/>
 		<div class="actions">
-			<span class={connectionClass} title={refreshMessage}>
+			<span class={connectionClass} title={dashboardView.refreshError ?? refreshMessage}>
 				<i></i><GlobeSimple size={12} />{status}
 			</span>
 			<a href={resolve('/about')}>About</a>

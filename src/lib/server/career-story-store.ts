@@ -6,7 +6,7 @@ import type {
 	ObservedCareerStoryEvidence,
 	UpdateStoryInput
 } from '$lib/domain/career-accountability';
-import { CareerStoreError } from '$lib/server/career-store-error';
+import { CareerRecordNotFound, CareerStoreError } from '$lib/server/career-store-error';
 
 export const CareerStoryRowSchema = Schema.Struct({
 	id: Schema.String,
@@ -155,9 +155,9 @@ export function updateCareerStory(
 	input: UpdateStoryInput,
 	evidence: ObservedCareerStoryEvidence | null,
 	now: Date
-): Effect.Effect<void, CareerStoreError> {
+): Effect.Effect<void, CareerRecordNotFound | CareerStoreError> {
 	return Effect.tryPromise({
-		try: async () => {
+		try: () => {
 			const statements: Array<D1PreparedStatement> = [
 				database
 					.prepare(
@@ -187,10 +187,16 @@ export function updateCareerStory(
 			if (evidence !== null) {
 				statements.push(evidenceInsertStatement(database, input.id, ownerEmail, evidence));
 			}
-			await database.batch(statements);
+			return database.batch(statements);
 		},
 		catch: (cause) => new CareerStoreError('update story', cause)
-	});
+	}).pipe(
+		Effect.flatMap((results) =>
+			results[0]?.meta.changes === 1
+				? Effect.void
+				: Effect.fail(new CareerRecordNotFound('story', input.id))
+		)
+	);
 }
 
 /** Load only owner-scoped stories explicitly marked for sanitized export. */

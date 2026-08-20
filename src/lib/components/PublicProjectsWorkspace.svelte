@@ -58,7 +58,7 @@
 
 	<header class="projects-overview">
 		<div>
-			<span><FolderOpen size={14} weight="fill" /> Shipping links</span>
+			<span><FolderOpen size={14} weight="fill" /> Linked identities</span>
 			<h1>Projects</h1>
 			<p>GitHub work from this window, plus confirmed Worker and domain links.</p>
 		</div>
@@ -66,16 +66,17 @@
 			<section aria-label="Shipping summary">
 				<div><strong>{shippingProjects.length}</strong><span>projects</span></div>
 				<div>
-					<strong>{selectedShipping?.links.length ?? 0}</strong><span>shipping links</span>
+					<strong>{selectedShipping?.links.length ?? 0}</strong><span>linked identities</span>
 				</div>
 				<div>
-					<strong>{selectedShipping?.deployments.length ?? 0}</strong><span>worker deploys</span>
+					<strong>{selectedShipping?.deployments.length ?? 0}</strong><span>deployment records</span
+					>
 				</div>
 			</section>
 		{:else}
 			<section class="projects-unavailable">
 				<WarningCircle size={20} weight="duotone" />
-				<strong>Shipping links unavailable</strong>
+				<strong>Linked identities unavailable</strong>
 				<span>{shipping.reason}</span>
 			</section>
 		{/if}
@@ -84,7 +85,7 @@
 	{#if shipping._tag === 'Current'}
 		<aside class={mobilePanel === 'projects' ? 'project-list panel-visible' : 'project-list'}>
 			<header>
-				<span>Shipped projects</span><small>Live repositories and confirmed links</small>
+				<span>Linked projects</span><small>Owner-confirmed public identities</small>
 			</header>
 			<div>
 				{#each shippingProjects as project (project.id)}
@@ -95,10 +96,10 @@
 						onclick={() => selectProject(project.id)}
 					>
 						<strong>{project.name}</strong>
-						<small>{project.links.length} shipping links</small>
+						<small>{project.links.length} linked identities</small>
 					</button>
 				{:else}
-					<p>No confirmed shipping links are published.</p>
+					<p>No confirmed public identities are published.</p>
 				{/each}
 			</div>
 		</aside>
@@ -112,7 +113,7 @@
 					</div>
 				</header>
 				<section class="project-resources dossier-panel">
-					<header><span>Shipping links</span><small>GitHub, Worker, and domain</small></header>
+					<header><span>Linked identities</span><small>GitHub, Worker, and domain</small></header>
 					<div>
 						{#each selectedShipping.links as link (`${link.kind}:${link.providerId}`)}
 							<article>
@@ -131,7 +132,7 @@
 								{/if}
 							</article>
 						{:else}
-							<p class="dossier-missing">No public shipping links are attached.</p>
+							<p class="dossier-missing">No public identities are attached.</p>
 						{/each}
 					</div>
 				</section>

@@ -1,8 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { loadCloudflareUsageSnapshot } from './cloudflare-api';
 
-function api(result: unknown): Response {
-	return Response.json({ success: true, errors: [], messages: [], result });
+function api(result: unknown, resultInfo?: Record<string, number>): Response {
+	return Response.json({
+		success: true,
+		errors: [],
+		messages: [],
+		result,
+		...(resultInfo === undefined ? {} : { result_info: resultInfo })
+	});
 }
 
 function graphQlResponse(body: string): Response {
@@ -54,13 +60,52 @@ function inventoryResponse(pathname: string): Response {
 }
 
 describe('loadCloudflareUsageSnapshot', () => {
-	it('isolates product failures while preserving measured analytics', async () => {
+	it('collects every page of named account inventory', async () => {
+		const workerPages: string[] = [];
 		const fetch: typeof globalThis.fetch = async (input, init) => {
 			const url = URL.parse(input instanceof Request ? input.url : input.toString());
 			if (url === null) return new Response(null, { status: 400 });
-			return url.pathname.endsWith('/graphql')
-				? graphQlResponse(typeof init?.body === 'string' ? init.body : '')
-				: inventoryResponse(url.pathname);
+			if (url.pathname.endsWith('/graphql')) {
+				return graphQlResponse(typeof init?.body === 'string' ? init.body : '');
+			}
+			if (url.pathname.endsWith('/workers/scripts')) {
+				const page = url.searchParams.get('page') ?? '1';
+				workerPages.push(page);
+				return page === '1'
+					? api(
+							Array.from({ length: 100 }, (_, index) => ({ id: `worker-${String(index)}` })),
+							{ page: 1, per_page: 100, total_pages: 2, total_count: 101 }
+						)
+					: api([{ id: 'worker-100' }], {
+							page: 2,
+							per_page: 100,
+							total_pages: 2,
+							total_count: 101
+						});
+			}
+			return inventoryResponse(url.pathname);
+		};
+		const snapshot = await loadCloudflareUsageSnapshot(
+			fetch,
+			'account-id',
+			'test-token',
+			new Date('2026-08-14T00:00:00.000Z')
+		);
+		expect(workerPages).toEqual(['1', '2']);
+		expect(snapshot.resources.filter((resource) => resource.kind === 'Worker')).toHaveLength(101);
+	});
+
+	it('isolates product failures while preserving measured analytics', async () => {
+		const graphQlBodies: string[] = [];
+		const fetch: typeof globalThis.fetch = async (input, init) => {
+			const url = URL.parse(input instanceof Request ? input.url : input.toString());
+			if (url === null) return new Response(null, { status: 400 });
+			if (url.pathname.endsWith('/graphql')) {
+				const body = typeof init?.body === 'string' ? init.body : '';
+				graphQlBodies.push(body);
+				return graphQlResponse(body);
+			}
+			return inventoryResponse(url.pathname);
 		};
 
 		const snapshot = await loadCloudflareUsageSnapshot(
@@ -82,6 +127,16 @@ describe('loadCloudflareUsageSnapshot', () => {
 		expect(snapshot.metrics.find((metric) => metric.id === 'workerRequests')?.value).toBe(4200);
 		expect(snapshot.metrics.find((metric) => metric.id === 'd1RowsWritten')?.value).toBe(450);
 		expect(snapshot.metrics.find((metric) => metric.id === 'kvOperations')?.value).toBe(700);
+		const dateBucketVariables = graphQlBodies
+			.map((body) => JSON.parse(body) as { readonly variables?: Record<string, unknown> })
+			.map((body) => body.variables)
+			.filter(
+				(variables) => typeof variables?.['start'] === 'string' && variables['start'].length === 10
+			);
+		expect(dateBucketVariables).toEqual([
+			expect.objectContaining({ start: '2026-08-08', end: '2026-08-14' }),
+			expect.objectContaining({ start: '2026-08-08', end: '2026-08-14' })
+		]);
 		expect(snapshot.resources).toEqual(
 			expect.arrayContaining([
 				expect.objectContaining({ kind: 'Worker', providerId: 'a', name: 'a' }),

@@ -97,7 +97,7 @@ export const aboutSeo: PublicSeoPage = {
 	])
 };
 
-export const publicSitemapPaths = ['/', '/about', '/career/portfolio.md'] as const;
+export const publicSitemapPaths = ['/', '/about'] as const;
 
 function locFor(path: (typeof publicSitemapPaths)[number]): string {
 	return path === '/' ? `${PUBLIC_SITE_ORIGIN}/` : `${PUBLIC_SITE_ORIGIN}${path}`;

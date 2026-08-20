@@ -110,13 +110,13 @@ export class CloudflareDeploymentCache {
 			const snapshot = await loader();
 			if (
 				workerNames.length > 0 &&
-				snapshot.workers.every((worker) => worker.state === 'Unavailable')
+				snapshot.workers.some((worker) => worker.state === 'Unavailable')
 			) {
 				return {
 					_tag: 'Unavailable',
 					attemptedAt,
 					reason:
-						'No linked Worker deployment was readable. Last-known-good deployment evidence remains available.'
+						'At least one linked Worker deployment was unavailable. Complete last-known-good deployment evidence remains available.'
 				};
 			}
 			const refreshedAt = new Date().toISOString();

@@ -12,7 +12,7 @@ import {
 	type UpdateOpportunityInput
 } from '$lib/domain/career-accountability';
 import { CareerStoryRowSchema, careerStoryFromRow } from './career-story-store';
-import { CareerStoreError } from './career-store-error';
+import { CareerRecordNotFound, CareerStoreError } from './career-store-error';
 
 const OpportunityRowSchema = Schema.Struct({
 	id: Schema.String,
@@ -37,8 +37,6 @@ const CommitmentRowSchema = Schema.Struct({
 	created_at: Schema.String,
 	updated_at: Schema.String
 });
-const StageRowSchema = Schema.Struct({ stage: CareerStageSchema });
-
 function opportunityFromRow(
 	row: Schema.Schema.Type<typeof OpportunityRowSchema>
 ): CareerOpportunity {
@@ -185,22 +183,16 @@ export function createCareerOpportunity(
 	});
 }
 
-/** Update one owner-scoped opportunity and record a stage change when one occurred. */
+/** Update one owner-scoped opportunity; the D1 trigger records any actual stage change. */
 export function updateCareerOpportunity(
 	database: D1Database,
 	ownerEmail: string,
 	input: UpdateOpportunityInput,
 	now: Date
-): Effect.Effect<void, CareerStoreError> {
+): Effect.Effect<void, CareerRecordNotFound | CareerStoreError> {
 	return Effect.tryPromise({
-		try: async () => {
-			const raw = await database
-				.prepare('SELECT stage FROM career_opportunities WHERE id = ? AND owner_email = ?')
-				.bind(input.id, ownerEmail)
-				.first();
-			const current = Schema.decodeUnknownSync(StageRowSchema)(raw);
-			const timestamp = now.toISOString();
-			const update = database
+		try: () =>
+			database
 				.prepare(
 					`UPDATE career_opportunities
 					 SET company = ?, role = ?, job_url = ?, stage = ?, next_action = ?,
@@ -217,63 +209,46 @@ export function updateCareerOpportunity(
 					input.contact,
 					input.resumeVersion,
 					input.notes,
-					timestamp,
+					now.toISOString(),
 					input.id,
 					ownerEmail
-				);
-			if (current.stage === input.stage) {
-				await update.run();
-				return;
-			}
-			await database.batch([
-				update,
-				database
-					.prepare(
-						`INSERT INTO career_stage_events
-						 (id, opportunity_id, owner_email, from_stage, to_stage, occurred_at)
-						 VALUES (?, ?, ?, ?, ?, ?)`
-					)
-					.bind(crypto.randomUUID(), input.id, ownerEmail, current.stage, input.stage, timestamp)
-			]);
-		},
+				)
+				.run(),
 		catch: (cause) => new CareerStoreError('update opportunity', cause)
-	});
+	}).pipe(
+		Effect.flatMap((result) =>
+			result.meta.changes === 1
+				? Effect.void
+				: Effect.fail(new CareerRecordNotFound('opportunity', input.id))
+		)
+	);
 }
 
-/** Move one owner-scoped opportunity and record the transition transactionally. */
+/** Move one owner-scoped opportunity; the D1 trigger records the committed transition. */
 export function transitionCareerOpportunity(
 	database: D1Database,
 	ownerEmail: string,
 	id: string,
 	toStage: CareerStage,
 	now: Date
-): Effect.Effect<void, CareerStoreError> {
+): Effect.Effect<void, CareerRecordNotFound | CareerStoreError> {
 	return Effect.tryPromise({
-		try: async () => {
-			const raw = await database
-				.prepare('SELECT stage FROM career_opportunities WHERE id = ? AND owner_email = ?')
-				.bind(id, ownerEmail)
-				.first();
-			const row = Schema.decodeUnknownSync(StageRowSchema)(raw);
-			const timestamp = now.toISOString();
-			await database.batch([
-				database
-					.prepare(
-						`UPDATE career_opportunities SET stage = ?, updated_at = ?
-						 WHERE id = ? AND owner_email = ?`
-					)
-					.bind(toStage, timestamp, id, ownerEmail),
-				database
-					.prepare(
-						`INSERT INTO career_stage_events
-						 (id, opportunity_id, owner_email, from_stage, to_stage, occurred_at)
-						 VALUES (?, ?, ?, ?, ?, ?)`
-					)
-					.bind(crypto.randomUUID(), id, ownerEmail, row.stage, toStage, timestamp)
-			]);
-		},
+		try: () =>
+			database
+				.prepare(
+					`UPDATE career_opportunities SET stage = ?, updated_at = ?
+					 WHERE id = ? AND owner_email = ?`
+				)
+				.bind(toStage, now.toISOString(), id, ownerEmail)
+				.run(),
 		catch: (cause) => new CareerStoreError('transition opportunity', cause)
-	});
+	}).pipe(
+		Effect.flatMap((result) =>
+			result.meta.changes === 1
+				? Effect.void
+				: Effect.fail(new CareerRecordNotFound('opportunity', id))
+		)
+	);
 }
 
 /** Insert one build or career commitment. */
@@ -314,17 +289,22 @@ export function setCareerCommitmentStatus(
 	id: string,
 	status: 'Open' | 'Done',
 	now: Date
-): Effect.Effect<void, CareerStoreError> {
+): Effect.Effect<void, CareerRecordNotFound | CareerStoreError> {
 	return Effect.tryPromise({
-		try: async () => {
-			await database
+		try: () =>
+			database
 				.prepare(
 					`UPDATE career_commitments SET status = ?, updated_at = ?
 					 WHERE id = ? AND owner_email = ?`
 				)
 				.bind(status, now.toISOString(), id, ownerEmail)
-				.run();
-		},
+				.run(),
 		catch: (cause) => new CareerStoreError('update commitment', cause)
-	});
+	}).pipe(
+		Effect.flatMap((result) =>
+			result.meta.changes === 1
+				? Effect.void
+				: Effect.fail(new CareerRecordNotFound('commitment', id))
+		)
+	);
 }

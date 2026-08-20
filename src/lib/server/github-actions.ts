@@ -6,9 +6,7 @@ import type {
 	WorkflowRunInput
 } from '$lib/domain/github-intelligence';
 import { fetchWorkflowAnnotations } from '$lib/server/github-check-annotations';
-import { githubRequestHeaders } from '$lib/server/github-http';
-
-const API_ROOT = 'https://api.github.com';
+import { githubFetch, githubRequestHeaders } from '$lib/server/github-http';
 const PAGE_SIZE = 100;
 const MAX_PAGES = 10;
 const MAX_RECENT_RUNS = 16;
@@ -125,8 +123,9 @@ function fetchRepositoryWindow(
 			if (branch !== null) parameters.set('branch', branch);
 			const response = yield* Effect.tryPromise({
 				try: () =>
-					fetch(
-						`${API_ROOT}/repos/${repositoryPath(repository)}/actions/runs?${parameters.toString()}`,
+					githubFetch(
+						fetch,
+						`/repos/${repositoryPath(repository)}/actions/runs?${parameters.toString()}`,
 						{
 							headers: githubRequestHeaders({
 								authorization: `Bearer ${Redacted.value(token)}`

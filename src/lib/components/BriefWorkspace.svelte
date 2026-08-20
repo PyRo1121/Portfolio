@@ -167,7 +167,7 @@
 				</div>
 				<figcaption>
 					<span><strong>{additionShare}%</strong> additions</span>
-					<span><strong>{formatInteger(changedFiles)}</strong> files touched</span>
+					<span><strong>{formatInteger(changedFiles)}</strong> file changes</span>
 				</figcaption>
 			</figure>
 		</section>
@@ -210,7 +210,7 @@
 						<small>lines changed</small>
 					</div>
 					<div class="workstream-value">
-						<strong>{formatInteger(repository.changedFiles)}</strong><small>files touched</small>
+						<strong>{formatInteger(repository.changedFiles)}</strong><small>file changes</small>
 					</div>
 					<div class="workstream-share">
 						<div class="share-track">
