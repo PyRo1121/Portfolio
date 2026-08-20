@@ -85,7 +85,7 @@ export const load: PageServerLoad = async ({ platform, setHeaders }) => {
 					now
 				)
 		);
-		if (cachedDeployments !== null) platform.ctx.waitUntil(refresh.then(() => undefined));
+		platform.ctx.waitUntil(refresh.then(() => undefined));
 	}
 
 	return {

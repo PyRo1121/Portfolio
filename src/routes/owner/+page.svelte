@@ -106,7 +106,6 @@
 
 	function openOwnerWorkspace(workspace: DashboardWorkspace): void {
 		dashboardView.navigate(workspace);
-		clientTelemetry?.recordWorkspace(workspace);
 	}
 
 	$effect(() => {

@@ -263,6 +263,39 @@ describe('isCloudflareDashboardUrl', () => {
 });
 
 describe('public shipping projection', () => {
+	it('omits owner projects that have no public shipping resources', () => {
+		const privateOnlyProject: OwnerProjectSnapshot['projects'][number] = {
+			id: 'private-project-id',
+			slug: 'private-project',
+			name: 'Private project metadata',
+			description: 'Must never cross the public projection boundary.',
+			lifecycle: 'Active',
+			createdAt: '2026-08-15T00:00:00.000Z',
+			updatedAt: '2026-08-15T00:00:00.000Z',
+			resources: [
+				{
+					id: 'private-d1-id',
+					kind: 'D1Database',
+					environment: 'Production',
+					providerId: 'private-database',
+					displayName: 'private-database',
+					canonicalUrl: 'https://dash.cloudflare.com/example/d1/private',
+					createdAt: '2026-08-15T00:00:00.000Z'
+				}
+			]
+		};
+		const projection = createPublicShippingProjection(
+			{ projects: [...registry.projects, privateOnlyProject] },
+			null,
+			null,
+			{ _tag: 'Current', reason: 'Public shipping links.' }
+		);
+		expect(projection.projects.map((project) => project.id)).toEqual([
+			'd53e32ac-34fc-4c14-a7a4-279d90426f4d'
+		]);
+		expect(JSON.stringify(projection)).not.toContain('Private project metadata');
+	});
+
 	it('keeps confirmed GitHub, Worker, and domain links and omits D1/KV/R2', () => {
 		const snapshot = createDemoIntelligence(
 			createDemoSnapshot(new Date('2026-08-15T00:00:00.000Z'), 'octocat', 'Test fixture.')

@@ -1,4 +1,4 @@
-import type { D1Database, KVNamespace } from '@cloudflare/workers-types';
+import type { D1Database, KVNamespace, RateLimit } from '@cloudflare/workers-types';
 
 // See https://svelte.dev/docs/kit/types#app.d.ts
 // for information about these interfaces
@@ -9,6 +9,8 @@ declare global {
 				CAREER_DB: D1Database;
 				OWNER_DB: D1Database;
 				CAREER_OWNER_EMAIL?: string;
+				CLOUDFLARE_ACCESS_AUD?: string;
+				CLOUDFLARE_ACCESS_TEAM_DOMAIN?: string;
 				CLOUDFLARE_ACCOUNT_ID?: string;
 				CLOUDFLARE_API_TOKEN?: string;
 				GITHUB_CHECKS_APP_ID?: string;
@@ -16,6 +18,7 @@ declare global {
 				GITHUB_CHECKS_INSTALLATION_ID?: string;
 				GITHUB_TOKEN?: string;
 				GITHUB_USERNAME?: string;
+				TELEMETRY_RATE_LIMITER: RateLimit;
 				WARM_SECRET?: string;
 				WEEKNOTE_CACHE: KVNamespace;
 			};

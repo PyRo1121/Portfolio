@@ -13,6 +13,7 @@ import { cloudflareDeploymentCacheFor } from '$lib/server/cloudflare-deployment-
 import { configuredGitHubUsername } from '$lib/server/github-dashboard-page';
 import { configuredOwnerEmail } from '$lib/server/owner-access';
 import { loadOwnerProjectSnapshot } from '$lib/server/owner-project-store';
+import { deleteExpiredTelemetryEvents } from '$lib/server/telemetry-store';
 
 /**
  * Server-only warm-refresh endpoint. A separate scheduled Worker calls this on a
@@ -20,7 +21,7 @@ import { loadOwnerProjectSnapshot } from '$lib/server/owner-project-store';
  * that occurred when a request arrived while the GitHub snapshot was collecting.
  * Guarded by a shared secret so anonymous clients cannot burn GitHub quota.
  */
-export const GET: RequestHandler = async ({ platform, request, setHeaders }) => {
+export const GET: RequestHandler = async ({ platform, request, setHeaders, url }) => {
 	setHeaders({ 'cache-control': 'no-store' });
 
 	const expectedSecret = platform?.env.WARM_SECRET?.trim() || env['WARM_SECRET']?.trim();
@@ -90,6 +91,17 @@ export const GET: RequestHandler = async ({ platform, request, setHeaders }) => 
 	const ownerEmail = configuredOwnerEmail(
 		platform.env.CAREER_OWNER_EMAIL?.trim() || env['CAREER_OWNER_EMAIL']?.trim()
 	);
+	const maintenanceRequested = url.searchParams.get('maintenance') === '1';
+	const retentionExit =
+		ownerEmail === null || maintenanceRequested === false
+			? null
+			: await Effect.runPromiseExit(
+					deleteExpiredTelemetryEvents(
+						platform.env.OWNER_DB,
+						ownerEmail,
+						new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+					)
+				);
 	const ownerExit =
 		ownerEmail === null
 			? null
@@ -139,18 +151,32 @@ export const GET: RequestHandler = async ({ platform, request, setHeaders }) => 
 		usageRefresh,
 		deploymentRefresh
 	]);
+	const ok =
+		dashboard._tag !== 'Unavailable' &&
+		usage._tag !== 'Unavailable' &&
+		deployments._tag !== 'Unavailable' &&
+		(retentionExit === null || retentionExit._tag === 'Success');
 
-	return json({
-		ok: true,
-		checkedAt: now.toISOString(),
-		dashboard: {
-			state: dashboard._tag,
-			reason: dashboard._tag === 'Unavailable' ? dashboard.reason : undefined
+	return json(
+		{
+			ok,
+			checkedAt: now.toISOString(),
+			dashboard: {
+				state: dashboard._tag,
+				reason: dashboard._tag === 'Unavailable' ? dashboard.reason : undefined
+			},
+			usage: { state: usage._tag, reason: usage._tag === 'Unavailable' ? usage.reason : undefined },
+			deployments: {
+				state: deployments._tag,
+				reason: deployments._tag === 'Unavailable' ? deployments.reason : undefined
+			},
+			maintenance:
+				retentionExit === null
+					? { state: 'Skipped' }
+					: retentionExit._tag === 'Success'
+						? { state: 'Fresh', deletedEvents: retentionExit.value }
+						: { state: 'Unavailable', reason: 'Telemetry retention cleanup failed.' }
 		},
-		usage: { state: usage._tag, reason: usage._tag === 'Unavailable' ? usage.reason : undefined },
-		deployments: {
-			state: deployments._tag,
-			reason: deployments._tag === 'Unavailable' ? deployments.reason : undefined
-		}
-	});
+		{ status: ok ? 200 : 503 }
+	);
 };

@@ -69,6 +69,38 @@ const OWNER_RESOURCE_KINDS: ReadonlyArray<OwnerProjectResourceKind> = [
 	'Domain'
 ];
 
+/** Bound D1 query that excludes project metadata without a requested resource kind. */
+export function ownerProjectQuery(
+	ownerEmail: string,
+	resourceKinds: ReadonlyArray<OwnerProjectResourceKind>
+): { readonly sql: string; readonly binds: ReadonlyArray<string> } {
+	const includesEveryKind =
+		resourceKinds.length === OWNER_RESOURCE_KINDS.length &&
+		OWNER_RESOURCE_KINDS.every((kind) => resourceKinds.includes(kind));
+	if (includesEveryKind) {
+		return {
+			sql: `SELECT id, slug, name, description, lifecycle, created_at, updated_at
+			      FROM owner_projects WHERE owner_email = ? ORDER BY updated_at DESC`,
+			binds: [ownerEmail]
+		};
+	}
+	const placeholders = resourceKinds.map(() => '?').join(', ');
+	return {
+		sql: `SELECT project.id, project.slug, project.name, project.description,
+		             project.lifecycle, project.created_at, project.updated_at
+		      FROM owner_projects AS project
+		      WHERE project.owner_email = ?
+		        AND EXISTS (
+		          SELECT 1 FROM owner_project_resources AS resource
+		          WHERE resource.owner_email = project.owner_email
+		            AND resource.project_id = project.id
+		            AND resource.kind IN (${placeholders})
+		        )
+		      ORDER BY project.updated_at DESC`,
+		binds: [ownerEmail, ...resourceKinds]
+	};
+}
+
 /** Bound D1 query that loads owner-project resources for the requested kinds. */
 export function ownerProjectResourceQuery(
 	ownerEmail: string,
@@ -92,14 +124,12 @@ export function loadOwnerProjectSnapshot(
 ): Effect.Effect<OwnerProjectSnapshot, OwnerProjectStoreError> {
 	return Effect.tryPromise({
 		try: async () => {
+			const projectQuery = ownerProjectQuery(ownerEmail, resourceKinds);
 			const resourceQuery = ownerProjectResourceQuery(ownerEmail, resourceKinds);
 			const [projectResult, resourceResult] = await Promise.all([
 				database
-					.prepare(
-						`SELECT id, slug, name, description, lifecycle, created_at, updated_at
-						 FROM owner_projects WHERE owner_email = ? ORDER BY updated_at DESC`
-					)
-					.bind(ownerEmail)
+					.prepare(projectQuery.sql)
+					.bind(...projectQuery.binds)
 					.all(),
 				database
 					.prepare(resourceQuery.sql)

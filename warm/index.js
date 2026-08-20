@@ -14,22 +14,29 @@ export default {
 	 * @param {{ WEEKNOTE: { fetch: typeof fetch }; WARM_SECRET: string }} env
 	 * @param {ExecutionContext} ctx
 	 */
-	async scheduled(_controller, env) {
+	async scheduled(controller, env) {
 		const secret = env.WARM_SECRET;
 		if (!secret) {
-			console.error('weeknote-warm: WARM_SECRET is not configured.');
-			return;
+			throw new Error('weeknote-warm: WARM_SECRET is not configured.');
 		}
-		try {
-			const response = await env.WEEKNOTE.fetch(
-				new Request('https://weeknote.internal/__warm', {
-					headers: { 'x-warm-secret': secret }
-				})
-			);
-			const body = await response.text();
-			console.log('weeknote-warm:', response.status, body.slice(0, 300));
-		} catch (error) {
-			console.error('weeknote-warm: refresh failed', error);
+		const maintenance = controller.cron === '15 0 * * *';
+		const url = maintenance
+			? 'https://weeknote.internal/__warm?maintenance=1'
+			: 'https://weeknote.internal/__warm';
+		const response = await env.WEEKNOTE.fetch(
+			new Request(url, { headers: { 'x-warm-secret': secret } })
+		);
+		const body = await response.text();
+		console.log(
+			JSON.stringify({
+				message: 'weeknote-warm response',
+				cron: controller.cron,
+				status: response.status,
+				body: body.slice(0, 300)
+			})
+		);
+		if (!response.ok) {
+			throw new Error(`weeknote-warm: refresh returned HTTP ${response.status}.`);
 		}
 	}
 };

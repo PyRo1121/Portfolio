@@ -2,7 +2,7 @@
 	"name": "gh-stats",
 	"private": true,
 	"version": "0.0.1",
-	"description": "Private GitHub engineering intelligence dashboard for Cloudflare Workers",
+	"description": "Public engineering evidence dashboard with an Access-protected owner workspace",
 	"license": "UNLICENSED",
 	"type": "module",
 	"packageManager": "npm@12.0.2",
@@ -12,7 +12,7 @@
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build",
-		"deploy": "npm run ci && npm run db:migrate:owner:remote && wrangler deploy --strict",
+		"deploy": "node scripts/deploy.mjs",
 		"deploy:dry-run": "npm run build && wrangler deploy --dry-run --strict",
 		"deploy:warm": "wrangler deploy --config warm/wrangler.jsonc --strict",
 		"db:migrate:local": "wrangler d1 migrations apply CAREER_DB --local && wrangler d1 migrations apply OWNER_DB --local",
@@ -55,6 +55,7 @@
 		"@fontsource-variable/jetbrains-mono": "^5.3.0",
 		"echarts": "6.1.0",
 		"effect": "^3.22.1",
+		"jose": "^6.2.9",
 		"phosphor-svelte": "^3.1.0"
 	},
 	"overrides": {

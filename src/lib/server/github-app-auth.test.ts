@@ -8,7 +8,7 @@ function bytesToPem(bytes: ArrayBuffer): string {
 	const binary = String.fromCharCode(...new Uint8Array(bytes));
 	const encoded = btoa(binary);
 	const lines = encoded.match(/.{1,64}/gu) ?? [];
-	return `-----BEGIN PRIVATE KEY-----\n${lines.join('\n')}\n-----END PRIVATE KEY-----`;
+	return `-----BEGIN PRIVATE KEY-----\n${lines.join('\n')}\n-----END PRIVATE KEY-----`; // gitleaks:allow -- Ephemeral test key generated at runtime.
 }
 
 function base64UrlToBytes(value: string): Uint8Array<ArrayBuffer> {

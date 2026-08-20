@@ -66,8 +66,8 @@ export async function loadGitHubDashboardPageSlice(
 			cacheStore: platform.env.WEEKNOTE_CACHE
 		})
 	);
+	platform.ctx.waitUntil(refresh.then(() => undefined));
 	if (cached !== null) {
-		platform.ctx.waitUntil(refresh.then(() => undefined));
 		return {
 			snapshot: cached.snapshot,
 			cache: { _tag: 'Cached', cachedAt: cached.cachedAt },

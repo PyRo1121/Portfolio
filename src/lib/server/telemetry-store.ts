@@ -1,13 +1,17 @@
 import type { D1Database } from '@cloudflare/workers-types';
 import { Effect, Schema } from 'effect';
-import type { TelemetryEvent, TelemetryPayload } from '$lib/domain/telemetry';
+import {
+	TelemetryEventTypeSchema,
+	type TelemetryEvent,
+	type TelemetryPayload
+} from '$lib/domain/telemetry';
 
 /** Expected D1 telemetry failure boundary. */
 export class TelemetryStoreError extends Error {
 	readonly _tag = 'TelemetryStoreError';
 
 	constructor(
-		readonly operation: 'insert' | 'load',
+		readonly operation: 'delete' | 'insert' | 'load',
 		override readonly cause: unknown
 	) {
 		super(`telemetry ${operation} failed`);
@@ -21,7 +25,7 @@ export type TelemetryEventInput = TelemetryPayload & { readonly country: string 
 const TelemetryRowSchema = Schema.Struct({
 	id: Schema.String,
 	owner_email: Schema.String,
-	event_type: Schema.String,
+	event_type: TelemetryEventTypeSchema,
 	recorded_at: Schema.String,
 	path: Schema.String,
 	workspace: Schema.NullOr(Schema.String),
@@ -45,7 +49,7 @@ export function telemetryEventFromRow(
 	return {
 		id: row.id,
 		ownerEmail: row.owner_email,
-		eventType: row.event_type as TelemetryEvent['eventType'],
+		eventType: row.event_type,
 		recordedAt: row.recorded_at,
 		path: row.path,
 		workspace: row.workspace,
@@ -64,6 +68,71 @@ export function telemetryEventFromRow(
 	};
 }
 
+type TelemetryVariantColumns = {
+	readonly workspace: string | null;
+	readonly referrerHost: string | null;
+	readonly metricName: string | null;
+	readonly metricValue: number | null;
+};
+
+function telemetryVariantColumns(input: TelemetryPayload): TelemetryVariantColumns {
+	switch (input.eventType) {
+		case 'page_view':
+			return {
+				workspace: null,
+				referrerHost: input.referrerHost ?? null,
+				metricName: null,
+				metricValue: null
+			};
+		case 'workspace_view':
+			return {
+				workspace: input.workspace,
+				referrerHost: null,
+				metricName: null,
+				metricValue: null
+			};
+		case 'web_vital':
+		case 'error':
+			return {
+				workspace: null,
+				referrerHost: null,
+				metricName: input.metricName,
+				metricValue: input.metricValue
+			};
+	}
+}
+
+/** Build the owner-scoped deletion used to enforce the telemetry retention window. */
+export function telemetryRetentionQuery(
+	ownerEmail: string,
+	before: Date
+): { readonly sql: string; readonly binds: ReadonlyArray<string> } {
+	return {
+		sql: `DELETE FROM telemetry_events
+		      WHERE owner_email = ? AND recorded_at < ?`,
+		binds: [ownerEmail, before.toISOString()]
+	};
+}
+
+/** Delete telemetry rows older than the configured retention boundary. */
+export function deleteExpiredTelemetryEvents(
+	database: D1Database,
+	ownerEmail: string,
+	before: Date
+): Effect.Effect<number, TelemetryStoreError> {
+	return Effect.tryPromise({
+		try: async () => {
+			const query = telemetryRetentionQuery(ownerEmail, before);
+			const result = await database
+				.prepare(query.sql)
+				.bind(...query.binds)
+				.run();
+			return result.meta.changes;
+		},
+		catch: (cause) => new TelemetryStoreError('delete', cause)
+	});
+}
+
 /** Persist one enriched telemetry event. */
 export function insertTelemetryEvent(
 	database: D1Database,
@@ -73,7 +142,7 @@ export function insertTelemetryEvent(
 ): Effect.Effect<void, TelemetryStoreError> {
 	return Effect.tryPromise({
 		try: async () => {
-			const id = crypto.randomUUID();
+			const columns = telemetryVariantColumns(input);
 			await database
 				.prepare(
 					`INSERT INTO telemetry_events (
@@ -84,13 +153,13 @@ export function insertTelemetryEvent(
 					) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 				)
 				.bind(
-					id,
+					input.eventId,
 					ownerEmail,
 					input.eventType,
 					now.toISOString(),
 					input.path,
-					input.workspace ?? null,
-					input.referrerHost ?? null,
+					columns.workspace,
+					columns.referrerHost,
 					input.country ?? null,
 					input.deviceClass ?? null,
 					input.browserFamily ?? null,
@@ -98,8 +167,8 @@ export function insertTelemetryEvent(
 					input.viewportHeight ?? null,
 					input.timezoneOffsetMinutes ?? null,
 					input.language ?? null,
-					input.metricName ?? null,
-					input.metricValue ?? null,
+					columns.metricName,
+					columns.metricValue,
 					input.sessionHash ?? null,
 					input.visitHash ?? null
 				)

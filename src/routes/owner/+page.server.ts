@@ -21,6 +21,7 @@ import {
 } from '$lib/domain/owner-project';
 import { createTelemetryView } from '$lib/domain/telemetry-view';
 import {
+	configuredOwnerAccess,
 	configuredOwnerEmail,
 	isOwnerMutationPath,
 	rejectDeniedOwnerLoad,
@@ -67,7 +68,17 @@ export const load: PageServerLoad = async ({ platform, request, setHeaders }) =>
 	const expectedOwnerEmail = configuredOwnerEmail(
 		platform.env.CAREER_OWNER_EMAIL?.trim() || env['CAREER_OWNER_EMAIL']?.trim()
 	);
-	const ownerAccess = resolveOwnerAccess(request.headers, expectedOwnerEmail ?? undefined);
+	const ownerAccess = await Effect.runPromise(
+		resolveOwnerAccess(
+			request.headers,
+			expectedOwnerEmail ?? undefined,
+			configuredOwnerAccess(
+				platform.env.CLOUDFLARE_ACCESS_TEAM_DOMAIN?.trim() ||
+					env['CLOUDFLARE_ACCESS_TEAM_DOMAIN']?.trim(),
+				platform.env.CLOUDFLARE_ACCESS_AUD?.trim() || env['CLOUDFLARE_ACCESS_AUD']?.trim()
+			)
+		)
+	);
 	rejectDeniedOwnerLoad(ownerAccess);
 
 	const github = await loadGitHubDashboardPageSlice(platform, now);
@@ -146,7 +157,7 @@ export const load: PageServerLoad = async ({ platform, request, setHeaders }) =>
 		const refresh = cloudflareCache.refresh(cloudflareAccountId, cachedCloudflare, now, () =>
 			loadCloudflareUsageSnapshot(globalThis.fetch, cloudflareAccountId, cloudflareToken, now)
 		);
-		if (cachedCloudflare !== null) platform.ctx.waitUntil(refresh.then(() => undefined));
+		platform.ctx.waitUntil(refresh.then(() => undefined));
 		cloudflareRefresh = refresh;
 	}
 
@@ -194,7 +205,7 @@ export const load: PageServerLoad = async ({ platform, request, setHeaders }) =>
 					now
 				)
 		);
-		if (cachedDeployments !== null) platform.ctx.waitUntil(refresh.then(() => undefined));
+		platform.ctx.waitUntil(refresh.then(() => undefined));
 		cloudflareDeploymentRefresh = refresh;
 	}
 
@@ -222,7 +233,7 @@ export const load: PageServerLoad = async ({ platform, request, setHeaders }) =>
 
 type CareerActionEvent = RequestEvent;
 
-function actionAccess(event: CareerActionEvent) {
+async function actionAccess(event: CareerActionEvent) {
 	if (!isOwnerMutationPath(event.url.pathname)) {
 		return {
 			_tag: 'Denied' as const,
@@ -232,9 +243,16 @@ function actionAccess(event: CareerActionEvent) {
 	if (event.platform === undefined) {
 		return { _tag: 'Denied' as const, reason: 'Career storage is unavailable.' };
 	}
-	const access = resolveOwnerAccess(
-		event.request.headers,
-		event.platform.env.CAREER_OWNER_EMAIL?.trim() || env['CAREER_OWNER_EMAIL']?.trim()
+	const access = await Effect.runPromise(
+		resolveOwnerAccess(
+			event.request.headers,
+			event.platform.env.CAREER_OWNER_EMAIL?.trim() || env['CAREER_OWNER_EMAIL']?.trim(),
+			configuredOwnerAccess(
+				event.platform.env.CLOUDFLARE_ACCESS_TEAM_DOMAIN?.trim() ||
+					env['CLOUDFLARE_ACCESS_TEAM_DOMAIN']?.trim(),
+				event.platform.env.CLOUDFLARE_ACCESS_AUD?.trim() || env['CLOUDFLARE_ACCESS_AUD']?.trim()
+			)
+		)
 	);
 	return access._tag === 'Denied'
 		? access
@@ -257,7 +275,7 @@ async function actionInput(event: CareerActionEvent): Promise<Record<string, For
 
 export const actions = {
 	createOwnerProject: async (event) => {
-		const access = actionAccess(event);
+		const access = await actionAccess(event);
 		if (access._tag === 'Denied') return fail(403, { ownerProjectMessage: access.reason });
 		const parsed = parseCreateOwnerProject(await actionInput(event));
 		if (Either.isLeft(parsed)) return fail(400, { ownerProjectMessage: parsed.left.reason });
@@ -269,7 +287,7 @@ export const actions = {
 			: fail(503, { ownerProjectMessage: 'Project could not be saved.' });
 	},
 	updateOwnerProject: async (event) => {
-		const access = actionAccess(event);
+		const access = await actionAccess(event);
 		if (access._tag === 'Denied') return fail(403, { ownerProjectMessage: access.reason });
 		const parsed = parseUpdateOwnerProject(await actionInput(event));
 		if (Either.isLeft(parsed)) return fail(400, { ownerProjectMessage: parsed.left.reason });
@@ -281,7 +299,7 @@ export const actions = {
 			: fail(503, { ownerProjectMessage: 'Project could not be updated.' });
 	},
 	addOwnerProjectResource: async (event) => {
-		const access = actionAccess(event);
+		const access = await actionAccess(event);
 		if (access._tag === 'Denied') return fail(403, { ownerProjectMessage: access.reason });
 		const parsed = parseAddOwnerProjectResource(await actionInput(event));
 		if (Either.isLeft(parsed)) return fail(400, { ownerProjectMessage: parsed.left.reason });
@@ -293,7 +311,7 @@ export const actions = {
 			: fail(503, { ownerProjectMessage: 'Resource could not be linked.' });
 	},
 	removeOwnerProjectResource: async (event) => {
-		const access = actionAccess(event);
+		const access = await actionAccess(event);
 		if (access._tag === 'Denied') return fail(403, { ownerProjectMessage: access.reason });
 		const parsed = parseRemoveOwnerProjectResource(await actionInput(event));
 		if (Either.isLeft(parsed)) return fail(400, { ownerProjectMessage: parsed.left.reason });
@@ -305,7 +323,7 @@ export const actions = {
 			: fail(503, { ownerProjectMessage: 'Resource link could not be removed.' });
 	},
 	createOpportunity: async (event) => {
-		const access = actionAccess(event);
+		const access = await actionAccess(event);
 		if (access._tag === 'Denied') return fail(403, { careerMessage: access.reason });
 		const parsed = parseCreateOpportunity(await actionInput(event));
 		if (Either.isLeft(parsed)) return fail(400, { careerMessage: parsed.left.reason });
@@ -317,7 +335,7 @@ export const actions = {
 			: fail(503, { careerMessage: 'Opportunity could not be saved.' });
 	},
 	updateOpportunity: async (event) => {
-		const access = actionAccess(event);
+		const access = await actionAccess(event);
 		if (access._tag === 'Denied') return fail(403, { careerMessage: access.reason });
 		const parsed = parseUpdateOpportunity(await actionInput(event));
 		if (Either.isLeft(parsed)) return fail(400, { careerMessage: parsed.left.reason });
@@ -329,7 +347,7 @@ export const actions = {
 			: fail(503, { careerMessage: 'Opportunity could not be updated.' });
 	},
 	transitionOpportunity: async (event) => {
-		const access = actionAccess(event);
+		const access = await actionAccess(event);
 		if (access._tag === 'Denied') return fail(403, { careerMessage: access.reason });
 		const parsed = parseStageTransition(await actionInput(event));
 		if (Either.isLeft(parsed)) return fail(400, { careerMessage: parsed.left.reason });
@@ -347,7 +365,7 @@ export const actions = {
 			: fail(503, { careerMessage: 'Opportunity stage could not be updated.' });
 	},
 	createCommitment: async (event) => {
-		const access = actionAccess(event);
+		const access = await actionAccess(event);
 		if (access._tag === 'Denied') return fail(403, { careerMessage: access.reason });
 		const parsed = parseCreateCommitment(await actionInput(event));
 		if (Either.isLeft(parsed)) return fail(400, { careerMessage: parsed.left.reason });
@@ -359,7 +377,7 @@ export const actions = {
 			: fail(503, { careerMessage: 'Commitment could not be saved.' });
 	},
 	setCommitmentStatus: async (event) => {
-		const access = actionAccess(event);
+		const access = await actionAccess(event);
 		if (access._tag === 'Denied') return fail(403, { careerMessage: access.reason });
 		const parsed = parseCommitmentStatus(await actionInput(event));
 		if (Either.isLeft(parsed)) return fail(400, { careerMessage: parsed.left.reason });
@@ -377,7 +395,7 @@ export const actions = {
 			: fail(503, { careerMessage: 'Commitment could not be updated.' });
 	},
 	createStory: async (event) => {
-		const access = actionAccess(event);
+		const access = await actionAccess(event);
 		if (access._tag === 'Denied') return fail(403, { careerMessage: access.reason });
 		const parsed = parseCreateStory(await actionInput(event));
 		if (Either.isLeft(parsed)) return fail(400, { careerMessage: parsed.left.reason });
@@ -401,7 +419,7 @@ export const actions = {
 			: fail(503, { careerMessage: 'Interview story could not be saved.' });
 	},
 	updateStory: async (event) => {
-		const access = actionAccess(event);
+		const access = await actionAccess(event);
 		if (access._tag === 'Denied') return fail(403, { careerMessage: access.reason });
 		const parsed = parseUpdateStory(await actionInput(event));
 		if (Either.isLeft(parsed)) return fail(400, { careerMessage: parsed.left.reason });

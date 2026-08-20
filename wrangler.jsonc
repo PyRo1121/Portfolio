@@ -22,6 +22,13 @@
 			"id": "70db94b6340347d0b6a1f7ce236b7cff"
 		}
 	],
+	"ratelimits": [
+		{
+			"name": "TELEMETRY_RATE_LIMITER",
+			"namespace_id": "1001",
+			"simple": { "limit": 30, "period": 60 }
+		}
+	],
 	"d1_databases": [
 		{
 			"binding": "CAREER_DB",
@@ -38,6 +45,8 @@
 	],
 	"vars": {
 		"CAREER_OWNER_EMAIL": "olen@latham.cloud",
+		"CLOUDFLARE_ACCESS_AUD": "c32126a3154adb2f3fb7f31980999ac2b41c4893664f0d07e16d9b97e6aa4e17", // gitleaks:allow -- Public Access audience, not a credential.
+		"CLOUDFLARE_ACCESS_TEAM_DOMAIN": "https://olatham.cloudflareaccess.com",
 		"CLOUDFLARE_ACCOUNT_ID": "f1e95b3e1b502cf366dfc81a863695fa",
 		"GITHUB_CHECKS_APP_ID": "4598962",
 		"GITHUB_CHECKS_INSTALLATION_ID": "153820305",

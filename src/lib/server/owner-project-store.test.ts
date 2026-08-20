@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { PUBLIC_SHIPPING_RESOURCE_KINDS } from '$lib/domain/owner-project';
-import { ownerProjectResourceFromRow, ownerProjectResourceQuery } from './owner-project-store';
+import {
+	ownerProjectResourceFromRow,
+	ownerProjectResourceQuery,
+	ownerProjectQuery
+} from './owner-project-store';
 
 describe('owner project D1 row mapping', () => {
 	it('preserves the exact provider identity and evidence link', () => {
@@ -29,7 +33,19 @@ describe('owner project D1 row mapping', () => {
 	});
 });
 
-describe('ownerProjectResourceQuery', () => {
+describe('owner project queries', () => {
+	it('limits public project metadata to projects with a shipping resource', () => {
+		const query = ownerProjectQuery('olen@latham.cloud', PUBLIC_SHIPPING_RESOURCE_KINDS);
+		expect(query.sql).toContain('EXISTS');
+		expect(query.sql).toContain('resource.kind IN (?, ?, ?)');
+		expect(query.binds).toEqual([
+			'olen@latham.cloud',
+			'GitHubRepository',
+			'CloudflareWorker',
+			'Domain'
+		]);
+	});
+
 	it('limits public shipping reads to GitHub, Worker, and domain kinds', () => {
 		const query = ownerProjectResourceQuery('olen@latham.cloud', PUBLIC_SHIPPING_RESOURCE_KINDS);
 		expect(query.sql).toContain('kind IN (?, ?, ?)');

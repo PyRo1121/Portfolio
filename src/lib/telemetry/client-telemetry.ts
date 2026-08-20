@@ -1,4 +1,4 @@
-import type { TelemetryDeviceClass } from '$lib/domain/telemetry';
+import { shouldCollectTelemetryPath, type TelemetryDeviceClass } from '$lib/domain/telemetry';
 
 type VitalMetric = 'lcp' | 'fcp' | 'ttfb' | 'inp' | 'cls';
 type TelemetryValue = string | number | undefined;
@@ -180,9 +180,12 @@ export class ClientTelemetry {
 		extra: Record<string, TelemetryValue>
 	): void {
 		if (!import.meta.env.PROD) return;
+		const path = String(extra['path'] ?? this.#currentPath ?? '/');
+		if (!shouldCollectTelemetryPath(path)) return;
 		const payload = {
+			eventId: crypto.randomUUID(),
 			eventType,
-			path: String(extra['path'] ?? this.#currentPath ?? '/'),
+			path,
 			sessionHash: this.#sessionHash,
 			...omitUndefined(extra)
 		};

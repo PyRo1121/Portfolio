@@ -1,9 +1,9 @@
 import { env } from '$env/dynamic/private';
 import { json } from '@sveltejs/kit';
-import { Effect, Either, Schema } from 'effect';
+import { Effect, Either } from 'effect';
 import type { RequestHandler } from './$types';
-import { TelemetryPayloadSchema } from '$lib/domain/telemetry';
 import { configuredOwnerEmail } from '$lib/server/owner-access';
+import { parseTelemetryRequest } from '$lib/server/telemetry-request';
 import { insertTelemetryEvent } from '$lib/server/telemetry-store';
 
 /**
@@ -13,10 +13,16 @@ import { insertTelemetryEvent } from '$lib/server/telemetry-store';
  * addresses are never stored.
  */
 export const POST: RequestHandler = async ({ platform, request, setHeaders }) => {
-	setHeaders({ 'cache-control': 'no-store' });
+	setHeaders({ 'cache-control': 'no-store', vary: 'Origin' });
 
 	if (platform === undefined) {
 		return json({ ok: false, reason: 'Cloudflare bindings are unavailable.' }, { status: 503 });
+	}
+	const rateLimitKey = request.headers.get('cf-connecting-ip')?.trim() || 'unknown-client';
+	const rateLimit = await platform.env.TELEMETRY_RATE_LIMITER.limit({ key: rateLimitKey });
+	if (!rateLimit.success) {
+		setHeaders({ 'retry-after': '60' });
+		return json({ ok: false, reason: 'Telemetry rate limit exceeded.' }, { status: 429 });
 	}
 	const ownerEmail = configuredOwnerEmail(
 		platform.env.CAREER_OWNER_EMAIL?.trim() || env['CAREER_OWNER_EMAIL']?.trim()
@@ -25,15 +31,17 @@ export const POST: RequestHandler = async ({ platform, request, setHeaders }) =>
 		return json({ ok: false, reason: 'Owner telemetry scope is not configured.' }, { status: 503 });
 	}
 
-	let raw: unknown;
-	try {
-		raw = await request.json();
-	} catch {
-		return json({ ok: false, reason: 'Invalid JSON body.' }, { status: 400 });
-	}
-	const parsed = Schema.decodeUnknownEither(TelemetryPayloadSchema)(raw);
+	const parsed = await Effect.runPromise(Effect.either(parseTelemetryRequest(request)));
 	if (Either.isLeft(parsed)) {
-		return json({ ok: false, reason: 'Invalid telemetry payload.' }, { status: 400 });
+		const status =
+			parsed.left.reason === 'InvalidOrigin'
+				? 403
+				: parsed.left.reason === 'InvalidContentType'
+					? 415
+					: parsed.left.reason === 'OversizedBody'
+						? 413
+						: 400;
+		return json({ ok: false, reason: 'Telemetry request rejected.' }, { status });
 	}
 
 	const country = request.headers.get('cf-ipcountry')?.trim()?.toLocaleUpperCase() ?? null;

@@ -269,45 +269,47 @@ function mappedShippingProjects(
 	snapshot: GitHubDashboardSnapshot | null,
 	deployments: CloudflareDeploymentSnapshot | null
 ): ReadonlyArray<PublicProjectShipping> {
-	return registry.projects.map((project) => {
-		const repositoryLink = project.resources.find(
-			(resource) => resource.kind === 'GitHubRepository'
-		);
-		const repository =
-			repositoryLink === undefined || snapshot === null
-				? null
-				: (snapshot.intelligence.repositories.find(
-						(item) => item.fullName === repositoryLink.providerId
-					) ?? null);
-		return {
-			id: project.id,
-			name: project.name,
-			description: project.description,
-			links: project.resources.flatMap((resource) =>
-				isPublicShippingKind(resource.kind)
-					? [
-							{
-								kind: resource.kind,
-								providerId: resource.providerId,
-								displayName: resource.displayName,
-								href: publicHref(resource.canonicalUrl)
-							}
-						]
-					: []
-			),
-			deployments: project.resources
-				.filter((resource) => resource.kind === 'CloudflareWorker')
-				.map((resource) => {
-					const joined = deploymentView(resource, repository, snapshot, deployments);
-					return {
-						workerName: resource.providerId,
-						state: joined.state,
-						detail: joined.detail,
-						commitSha: joined.commitSha
-					};
-				})
-		};
-	});
+	return registry.projects
+		.filter((project) => project.resources.some((resource) => isPublicShippingKind(resource.kind)))
+		.map((project) => {
+			const repositoryLink = project.resources.find(
+				(resource) => resource.kind === 'GitHubRepository'
+			);
+			const repository =
+				repositoryLink === undefined || snapshot === null
+					? null
+					: (snapshot.intelligence.repositories.find(
+							(item) => item.fullName === repositoryLink.providerId
+						) ?? null);
+			return {
+				id: project.id,
+				name: project.name,
+				description: project.description,
+				links: project.resources.flatMap((resource) =>
+					isPublicShippingKind(resource.kind)
+						? [
+								{
+									kind: resource.kind,
+									providerId: resource.providerId,
+									displayName: resource.displayName,
+									href: publicHref(resource.canonicalUrl)
+								}
+							]
+						: []
+				),
+				deployments: project.resources
+					.filter((resource) => resource.kind === 'CloudflareWorker')
+					.map((resource) => {
+						const joined = deploymentView(resource, repository, snapshot, deployments);
+						return {
+							workerName: resource.providerId,
+							state: joined.state,
+							detail: joined.detail,
+							commitSha: joined.commitSha
+						};
+					})
+			};
+		});
 }
 
 function observedGitHubShippingProjects(

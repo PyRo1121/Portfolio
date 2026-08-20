@@ -1,5 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { telemetryEventFromRow } from './telemetry-store';
+import { telemetryRetentionQuery, telemetryEventFromRow } from './telemetry-store';
+
+describe('telemetry retention', () => {
+	it('deletes only owner-scoped rows older than the reporting window', () => {
+		const query = telemetryRetentionQuery(
+			'olen@latham.cloud',
+			new Date('2026-07-18T00:00:00.000Z')
+		);
+		expect(query.sql).toContain('DELETE FROM telemetry_events');
+		expect(query.sql).toContain('owner_email = ? AND recorded_at < ?');
+		expect(query.binds).toEqual(['olen@latham.cloud', '2026-07-18T00:00:00.000Z']);
+	});
+});
 
 describe('telemetry D1 row mapping', () => {
 	it('preserves the full beacon evidence with nulls intact', () => {

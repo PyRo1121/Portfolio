@@ -17,23 +17,85 @@ export const TelemetryDeviceClassSchema = Schema.Union(
 );
 export type TelemetryDeviceClass = Schema.Schema.Type<typeof TelemetryDeviceClassSchema>;
 
-/** Structured payload sent by the dashboard client beacon. */
-export const TelemetryPayloadSchema = Schema.Struct({
-	eventType: TelemetryEventTypeSchema,
-	path: Schema.Trim.pipe(Schema.maxLength(512)),
-	workspace: Schema.optional(Schema.Trim.pipe(Schema.maxLength(32))),
-	referrerHost: Schema.optional(Schema.Trim.pipe(Schema.maxLength(256))),
+/** Browser metric names accepted from the public telemetry client. */
+export const TelemetryVitalMetricSchema = Schema.Union(
+	Schema.Literal('lcp'),
+	Schema.Literal('fcp'),
+	Schema.Literal('ttfb'),
+	Schema.Literal('inp'),
+	Schema.Literal('cls')
+);
+export type TelemetryVitalMetric = Schema.Schema.Type<typeof TelemetryVitalMetricSchema>;
+
+/** Exclude Access-protected owner pages from public visitor analytics. */
+export function shouldCollectTelemetryPath(path: string): boolean {
+	return path !== '/owner' && path.startsWith('/owner/') === false;
+}
+
+const NonEmptyTrimmedString = Schema.Trim.pipe(Schema.minLength(1));
+const TelemetryPathSchema = NonEmptyTrimmedString.pipe(
+	Schema.startsWith('/'),
+	Schema.maxLength(512)
+);
+const HexHashSchema = Schema.String.pipe(Schema.pattern(/^[0-9a-f]{32}$/u));
+const BrowserEvidenceFields = {
 	deviceClass: Schema.optional(TelemetryDeviceClassSchema),
-	browserFamily: Schema.optional(Schema.Trim.pipe(Schema.maxLength(64))),
-	viewportWidth: Schema.optional(Schema.Number),
-	viewportHeight: Schema.optional(Schema.Number),
-	timezoneOffsetMinutes: Schema.optional(Schema.Number),
-	language: Schema.optional(Schema.Trim.pipe(Schema.maxLength(16))),
-	metricName: Schema.optional(Schema.Trim.pipe(Schema.maxLength(32))),
-	metricValue: Schema.optional(Schema.Number),
-	sessionHash: Schema.optional(Schema.Trim.pipe(Schema.maxLength(64))),
-	visitHash: Schema.optional(Schema.Trim.pipe(Schema.maxLength(64)))
-});
+	browserFamily: Schema.optional(NonEmptyTrimmedString.pipe(Schema.maxLength(64))),
+	viewportWidth: Schema.optional(Schema.Number.pipe(Schema.int(), Schema.between(1, 10_000))),
+	viewportHeight: Schema.optional(Schema.Number.pipe(Schema.int(), Schema.between(1, 10_000))),
+	timezoneOffsetMinutes: Schema.optional(
+		Schema.Number.pipe(Schema.int(), Schema.between(-840, 840))
+	),
+	language: Schema.optional(NonEmptyTrimmedString.pipe(Schema.maxLength(32)))
+};
+const BaseEventFields = {
+	eventId: Schema.UUID,
+	path: TelemetryPathSchema,
+	sessionHash: HexHashSchema,
+	visitHash: Schema.optional(HexHashSchema),
+	...BrowserEvidenceFields
+};
+const TimingVitalMetricSchema = Schema.Union(
+	Schema.Literal('lcp'),
+	Schema.Literal('fcp'),
+	Schema.Literal('ttfb'),
+	Schema.Literal('inp')
+);
+
+/** Structured, event-specific payload sent by the dashboard client beacon. */
+export const TelemetryPayloadSchema = Schema.Union(
+	Schema.Struct({
+		...BaseEventFields,
+		eventType: Schema.Literal('page_view'),
+		referrerHost: Schema.optional(NonEmptyTrimmedString.pipe(Schema.maxLength(256)))
+	}),
+	Schema.Struct({
+		...BaseEventFields,
+		eventType: Schema.Literal('workspace_view'),
+		workspace: NonEmptyTrimmedString.pipe(Schema.maxLength(32))
+	}),
+	Schema.Struct({
+		...BaseEventFields,
+		eventType: Schema.Literal('web_vital'),
+		metricName: TimingVitalMetricSchema,
+		metricValue: Schema.Number.pipe(Schema.between(0, 120_000))
+	}),
+	Schema.Struct({
+		...BaseEventFields,
+		eventType: Schema.Literal('web_vital'),
+		metricName: Schema.Literal('cls'),
+		metricValue: Schema.Number.pipe(Schema.between(0, 10))
+	}),
+	Schema.Struct({
+		...BaseEventFields,
+		eventType: Schema.Literal('error'),
+		metricName: Schema.Union(
+			Schema.Literal('runtime_error'),
+			Schema.Literal('unhandled_rejection')
+		),
+		metricValue: Schema.Literal(1)
+	})
+);
 export type TelemetryPayload = Schema.Schema.Type<typeof TelemetryPayloadSchema>;
 
 /** One persisted telemetry row after server enrichment. */
