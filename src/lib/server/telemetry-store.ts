@@ -99,6 +99,10 @@ function telemetryVariantColumns(input: TelemetryPayload): TelemetryVariantColum
 				metricName: input.metricName,
 				metricValue: input.metricValue
 			};
+		default: {
+			const exhaustive: never = input;
+			return exhaustive;
+		}
 	}
 }
 
@@ -178,12 +182,18 @@ export function insertTelemetryEvent(
 	});
 }
 
+/** Bounded event window plus an explicit completeness marker. */
+export type TelemetryEventWindow = {
+	readonly events: ReadonlyArray<TelemetryEvent>;
+	readonly truncated: boolean;
+};
+
 /** Load telemetry events recorded after a cutoff, newest first. */
 export function loadTelemetryEvents(
 	database: D1Database,
 	ownerEmail: string,
 	since: Date
-): Effect.Effect<ReadonlyArray<TelemetryEvent>, TelemetryStoreError> {
+): Effect.Effect<TelemetryEventWindow, TelemetryStoreError> {
 	return Effect.tryPromise({
 		try: async () => {
 			const result = await database
@@ -195,12 +205,15 @@ export function loadTelemetryEvents(
 					 FROM telemetry_events
 					 WHERE owner_email = ? AND recorded_at >= ?
 					 ORDER BY recorded_at DESC
-					 LIMIT 5000`
+					 LIMIT 5001`
 				)
 				.bind(ownerEmail, since.toISOString())
 				.all();
 			const rows = Schema.decodeUnknownSync(Schema.Array(TelemetryRowSchema))(result.results);
-			return rows.map(telemetryEventFromRow);
+			return {
+				events: rows.slice(0, 5000).map(telemetryEventFromRow),
+				truncated: rows.length > 5000
+			};
 		},
 		catch: (cause) => new TelemetryStoreError('load', cause)
 	});

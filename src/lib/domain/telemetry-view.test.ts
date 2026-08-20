@@ -96,6 +96,11 @@ describe('createTelemetryView', () => {
 		expect(view.hours[2]).toMatchObject({ label: '03:00', count: 1, share: 0.5 });
 	});
 
+	it('marks bounded event windows as truncated instead of presenting complete totals', () => {
+		const view = createTelemetryView([], new Date(), true);
+		expect(view.truncated).toBe(true);
+	});
+
 	it('returns empty aggregates for no events', () => {
 		const view = createTelemetryView([], new Date());
 		expect(view.pageViews).toBe(0);

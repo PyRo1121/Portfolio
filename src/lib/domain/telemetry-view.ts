@@ -38,6 +38,7 @@ export type TelemetryView = {
 	readonly referrers: ReadonlyArray<TelemetryBar>;
 	readonly hours: ReadonlyArray<TelemetryBar>;
 	readonly totalEvents: number;
+	readonly truncated: boolean;
 	readonly lastRecordedAt: string | null;
 	readonly vitals: TelemetryVitals;
 	readonly recent: ReadonlyArray<TelemetryEvent>;
@@ -57,7 +58,8 @@ const WORKSPACE_LABELS: Readonly<Record<string, string>> = {
 
 export function createTelemetryView(
 	events: ReadonlyArray<TelemetryEvent>,
-	now: Date
+	now: Date,
+	truncated = false
 ): TelemetryView {
 	const recent = events.slice(0, 12);
 	const pageViewEvents = events.filter((event) => event.eventType === 'page_view');
@@ -142,6 +144,7 @@ export function createTelemetryView(
 		referrers: top(referrers, 8),
 		hours: hoursWithShare.slice(0, 12),
 		totalEvents: events.length,
+		truncated,
 		lastRecordedAt: events[0]?.recordedAt ?? null,
 		vitals,
 		recent

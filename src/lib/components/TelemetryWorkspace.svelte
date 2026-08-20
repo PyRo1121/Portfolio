@@ -58,7 +58,11 @@
 				<div><strong>{view.pageViews}</strong><span>page views</span></div>
 				<div><strong>{view.uniqueSessions}</strong><span>sessions</span></div>
 				<div><strong>{view.workspaceViews}</strong><span>workspace views</span></div>
-				<div><strong>{view.totalEvents}</strong><span>events stored</span></div>
+				<div>
+					<strong>{view.totalEvents}</strong><span
+						>{view.truncated ? 'events sampled' : 'events stored'}</span
+					>
+				</div>
 				<div>
 					<strong
 						>{view.lastRecordedAt === null
@@ -252,6 +256,10 @@
 					<div>
 						<dt>Retention</dt>
 						<dd>30 days · {view.totalEvents} events</dd>
+					</div>
+					<div>
+						<dt>Completeness</dt>
+						<dd>{view.truncated ? 'Newest 5,000 events; totals truncated' : 'Complete window'}</dd>
 					</div>
 					<div>
 						<dt>Edge enrichment</dt>

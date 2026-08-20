@@ -132,7 +132,8 @@ export const load: PageServerLoad = async ({ platform, request, setHeaders }) =>
 		)
 	);
 	if (telemetryExit._tag === 'Success') {
-		telemetry = createTelemetryView(telemetryExit.value, now);
+		const telemetryWindow = telemetryExit.value;
+		telemetry = createTelemetryView(telemetryWindow.events, now, telemetryWindow.truncated);
 	} else {
 		console.warn('Visitor telemetry load failed:', telemetryExit.cause);
 	}
