@@ -47,6 +47,7 @@ a {
 	display: grid;
 	width: 100vw;
 	height: 100dvh;
+	grid-template-columns: minmax(0, 1fr);
 	grid-template-rows: 58px minmax(0, 1fr);
 	overflow: hidden;
 	background:
@@ -78,6 +79,7 @@ a {
 }
 .topbar {
 	display: grid;
+	min-width: 0;
 	grid-template-columns: 1fr auto 1fr;
 	align-items: stretch;
 	padding-inline: clamp(0.75rem, 2vw, 2rem);
@@ -130,6 +132,7 @@ a {
 }
 .brand-group {
 	display: flex;
+	min-width: 0;
 	align-items: center;
 	gap: 0.55rem;
 }
@@ -292,6 +295,7 @@ a {
 	animation: spin 0.8s linear infinite;
 }
 .stage {
+	min-width: 0;
 	min-height: 0;
 	padding: clamp(0.7rem, 1.5vw, 1.4rem) clamp(0.75rem, 2vw, 2rem);
 	overflow: hidden;
@@ -2327,8 +2331,14 @@ a {
 		grid-template-rows: 54px minmax(0, 1fr) 52px;
 	}
 	.topbar {
-		grid-template-columns: 1fr auto;
+		grid-template-columns: minmax(0, 1fr) auto;
 		padding-inline: 0.7rem 0;
+	}
+	.topbar > *,
+	.brand,
+	.brand__identity,
+	.actions {
+		min-width: 0;
 	}
 	.workspace-rail {
 		position: fixed;
@@ -2337,12 +2347,18 @@ a {
 		bottom: 0.35rem;
 		left: 0.6rem;
 		height: 45px;
+		overflow-x: auto;
+		overflow-y: hidden;
 		border: 1px solid var(--strong);
 		background: rgba(17, 20, 22, 0.97);
+		scrollbar-width: none;
+	}
+	.workspace-rail::-webkit-scrollbar {
+		display: none;
 	}
 	.workspace-link {
-		min-width: 0;
-		flex: 1;
+		min-width: 3rem;
+		flex: 1 0 3rem;
 		grid-template-columns: auto minmax(0, 1fr);
 		padding: 0 0.5rem;
 	}
@@ -2354,6 +2370,14 @@ a {
 	}
 	.stage {
 		padding: 0.55rem;
+		overflow-x: hidden;
+		overflow-y: auto;
+		overscroll-behavior-y: contain;
+	}
+	.stage > section,
+	.stage > section.active {
+		height: auto;
+		min-height: 100%;
 	}
 	.workspace-pages {
 		display: flex;
@@ -2389,8 +2413,10 @@ a {
 	.week-screen,
 	.delivery-screen,
 	.craft-screen {
+		height: auto;
+		min-height: 100%;
 		grid-template-columns: minmax(0, 1fr);
-		grid-template-rows: auto minmax(12.5rem, 0.62fr) minmax(0, 1fr);
+		grid-template-rows: auto auto minmax(18rem, 1fr);
 	}
 	.today-summary,
 	.week-summary,
@@ -2398,7 +2424,7 @@ a {
 	.quality-summary {
 		grid-row: 2;
 		grid-column: 1;
-		min-height: 0;
+		min-height: 20.5rem;
 		padding: 0.85rem;
 	}
 	.today-screen > section:not(.today-summary),
@@ -2471,8 +2497,27 @@ a {
 	}
 }
 @media (max-width: 640px) {
+	.brand {
+		gap: 0.45rem;
+	}
+	.brand__portrait {
+		width: 1.85rem;
+		height: 1.85rem;
+	}
+	.brand__identity small,
+	.social-links,
 	.actions kbd {
 		display: none;
+	}
+	.actions a {
+		padding-inline: 0.5rem;
+	}
+	.actions button {
+		padding-inline: 0.55rem;
+	}
+	.workspace-pages button {
+		padding-inline: 0.35rem;
+		font-size: 0.48rem;
 	}
 	.brand__identity strong {
 		font-size: 0.72rem;
@@ -2496,7 +2541,13 @@ a {
 	.week-screen,
 	.delivery-screen,
 	.craft-screen {
-		grid-template-rows: auto minmax(12rem, 0.58fr) minmax(0, 1fr);
+		grid-template-rows: auto auto minmax(17rem, 1fr);
+	}
+	.today-summary,
+	.week-summary,
+	.delivery-summary,
+	.quality-summary {
+		min-height: 20rem;
 	}
 	.week-summary header p,
 	.quality-summary footer {

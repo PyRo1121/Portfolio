@@ -13,7 +13,7 @@
 		{ id: 'review', label: 'Commit size' },
 		{ id: 'mix', label: 'Commit types' },
 		{ id: 'discipline', label: 'Prefixes' },
-		{ id: 'limits', label: 'Missing data' }
+		{ id: 'limits', label: 'Limits' }
 	];
 	const craft = $derived(createCraftIntelligence(snapshot));
 	const completedChecks = $derived(craft.observed.successfulChecks + craft.observed.failedChecks);
