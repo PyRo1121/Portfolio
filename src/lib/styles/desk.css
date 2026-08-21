@@ -270,9 +270,15 @@ a {
 	text-decoration: none;
 	font: 500 0.56rem/1 var(--mono);
 }
-.actions button:hover {
+.actions button:hover,
+.actions a:hover {
 	background: var(--high);
 	color: var(--ink);
+}
+.actions .contact-action {
+	background: var(--accent-soft);
+	color: var(--accent);
+	font-weight: 650;
 }
 .actions kbd {
 	font: 450 0.52rem/1 var(--mono);
@@ -771,6 +777,66 @@ a {
 	color: var(--muted);
 	font-size: 0.82rem;
 	line-height: 1.42;
+}
+.today-contact {
+	display: grid;
+	gap: 0.55rem;
+	margin-bottom: 1rem;
+	padding: 0.72rem 0.8rem;
+	border: 1px solid var(--strong);
+	background: rgb(216 165 74 / 7%);
+}
+.today-contact > div > span {
+	font: 650 0.58rem/1 var(--mono);
+	color: var(--accent);
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+}
+.today-contact p {
+	margin: 0.25rem 0 0;
+	color: var(--ink);
+	font-size: 0.74rem;
+	line-height: 1.35;
+}
+.today-contact nav {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.4rem;
+}
+.today-contact nav a {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.35rem;
+	padding: 0.42rem 0.55rem;
+	border: 1px solid var(--line);
+	color: var(--ink);
+	font: 620 0.58rem/1 var(--mono);
+	text-decoration: none;
+}
+.today-contact nav a:first-child {
+	border-color: var(--accent);
+	background: var(--accent);
+	color: var(--bg);
+}
+.today-contact nav a:hover,
+.today-contact nav a:focus-visible {
+	border-color: var(--accent);
+}
+.today-contact__email {
+	width: max-content;
+	color: var(--muted);
+	font: 500 0.56rem/1 var(--mono);
+	text-decoration: none;
+}
+
+.today-contact__resume {
+	margin: 0;
+	color: var(--muted);
+	font: 500 0.56rem/1.35 var(--mono);
+}
+.today-contact__email:hover,
+.today-contact__email:focus-visible {
+	color: var(--accent);
 }
 .today-summary-grid {
 	display: grid;

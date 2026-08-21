@@ -28,6 +28,7 @@
 	import {
 		homeSeo,
 		jsonLdScriptTag,
+		PUBLIC_CONTACT_MAILTO,
 		PUBLIC_GITHUB_URL,
 		PUBLIC_IDENTITY_LINE,
 		PUBLIC_LINKEDIN_URL,
@@ -183,7 +184,9 @@
 						target="_blank"
 						rel="external noreferrer"
 						aria-label="Olen Latham on LinkedIn"
-						title="LinkedIn"><LinkedinLogo size={15} weight="fill" /></a
+						title="LinkedIn"
+						onclick={() => clientTelemetry?.recordContact('linkedin_social')}
+						><LinkedinLogo size={15} weight="fill" /></a
 					>
 					<a
 						href={PUBLIC_X_URL}
@@ -192,7 +195,12 @@
 						aria-label="Olen Latham on X"
 						title="X"><XLogo size={15} weight="fill" /></a
 					>
-					<a href="mailto:olen@latham.cloud" aria-label="Email Olen Latham" title="Email"
+					<a
+						href={PUBLIC_CONTACT_MAILTO}
+						rel="external"
+						aria-label="Email Olen Latham"
+						title="Email"
+						onclick={() => clientTelemetry?.recordContact('email_social')}
 						><EnvelopeSimple size={15} weight="fill" /></a
 					>
 				</nav>
@@ -212,7 +220,12 @@
 				<i></i><GlobeSimple size={12} />{status}
 			</span>
 			<a href={resolve('/about')}>About</a>
-			<a href={resolve('/owner')} data-sveltekit-reload aria-label="Owner home">Owner</a>
+			<a
+				class="contact-action"
+				href={PUBLIC_CONTACT_MAILTO}
+				rel="external"
+				onclick={() => clientTelemetry?.recordContact('email_header')}>Contact</a
+			>
 			<button
 				type="button"
 				onclick={() => dashboardView.toggleCommand()}
@@ -256,7 +269,11 @@
 				tabindex="-1"
 				{@attach dashboardView.workspaceAttachment('today')}
 			>
-				<TodayWorkspace {snapshot} projection={viewerProjection} />
+				<TodayWorkspace
+					{snapshot}
+					projection={viewerProjection}
+					onContact={(action) => clientTelemetry?.recordContact(action)}
+				/>
 			</section>
 		{:else if viewerProjection !== null && dashboardView.activeWorkspace === 'brief'}
 			<section

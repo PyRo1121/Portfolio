@@ -30,6 +30,10 @@ const TelemetryTotalsRowSchema = Schema.Struct({
 	unique_sessions: Schema.Number,
 	page_view_sessions: Schema.Number,
 	performance_sessions: Schema.Number,
+	contact_actions: Schema.Number,
+	contact_sessions: Schema.Number,
+	email_clicks: Schema.Number,
+	linkedin_clicks: Schema.Number,
 	error_count: Schema.Number,
 	last_recorded_at: Schema.NullOr(Schema.String)
 });
@@ -65,6 +69,10 @@ export function telemetryTotalsFromRow(
 		uniqueSessions: row.unique_sessions,
 		pageViewSessions: row.page_view_sessions,
 		performanceSessions: row.performance_sessions,
+		contactActions: row.contact_actions,
+		contactSessions: row.contact_sessions,
+		emailClicks: row.email_clicks,
+		linkedinClicks: row.linkedin_clicks,
 		errorCount: row.error_count,
 		lastRecordedAt: row.last_recorded_at
 	};
@@ -125,6 +133,13 @@ function telemetryVariantColumns(input: TelemetryPayload): TelemetryVariantColum
 				referrerHost: null,
 				metricName: input.metricName,
 				metricValue: input.metricValue
+			};
+		case 'contact_action':
+			return {
+				workspace: null,
+				referrerHost: null,
+				metricName: input.action,
+				metricValue: 1
 			};
 		default: {
 			const exhaustive: never = input;
@@ -234,6 +249,10 @@ export function loadTelemetryEvents(
 						COUNT(DISTINCT session_hash) AS unique_sessions,
 						COUNT(DISTINCT CASE WHEN event_type = 'page_view' THEN session_hash END) AS page_view_sessions,
 						COUNT(DISTINCT CASE WHEN event_type = 'web_vital' THEN session_hash END) AS performance_sessions,
+						COALESCE(SUM(CASE WHEN event_type = 'contact_action' THEN 1 ELSE 0 END), 0) AS contact_actions,
+						COUNT(DISTINCT CASE WHEN event_type = 'contact_action' THEN session_hash END) AS contact_sessions,
+						COALESCE(SUM(CASE WHEN event_type = 'contact_action' AND metric_name LIKE 'email_%' THEN 1 ELSE 0 END), 0) AS email_clicks,
+						COALESCE(SUM(CASE WHEN event_type = 'contact_action' AND metric_name LIKE 'linkedin_%' THEN 1 ELSE 0 END), 0) AS linkedin_clicks,
 						COALESCE(SUM(CASE WHEN event_type = 'error' THEN 1 ELSE 0 END), 0) AS error_count,
 						MAX(recorded_at) AS last_recorded_at
 					 FROM telemetry_events

@@ -87,8 +87,11 @@ describe('POST /api/telemetry', () => {
 		expect(fixture.run).not.toHaveBeenCalled();
 	});
 
-	it('persists one valid enriched beacon and returns 201', async () => {
-		const fixture = routeFixture();
+	it.each([
+		['page view', validPayload],
+		['contact action', { ...validPayload, eventType: 'contact_action', action: 'email_header' }]
+	] as const)('persists one valid enriched %s beacon and returns 201', async (_label, payload) => {
+		const fixture = routeFixture({ body: JSON.stringify(payload) });
 		const response = await POST(fixture.event);
 		expect(response.status).toBe(201);
 		expect(fixture.run).toHaveBeenCalledOnce();

@@ -3,10 +3,17 @@
 	import {
 		aboutSeo,
 		jsonLdScriptTag,
+		PUBLIC_AVAILABILITY_LINE,
+		PUBLIC_CONTACT_EMAIL,
+		PUBLIC_CONTACT_MAILTO,
 		PUBLIC_GITHUB_URL,
 		PUBLIC_LINKEDIN_URL,
+		PUBLIC_RESUME_LINE,
 		PUBLIC_X_URL
 	} from '$lib/domain/public-seo';
+	import { getClientTelemetry } from '$lib/telemetry/client-telemetry';
+
+	const clientTelemetry = getClientTelemetry();
 </script>
 
 <svelte:head>
@@ -61,16 +68,34 @@
 	<section aria-labelledby="work-together">
 		<h2 id="work-together">Work together</h2>
 		<p>
-			If you are hiring for a software or full-stack role, maintaining an open-source project, or
-			have useful feedback on the work here, I would be glad to hear from you.
+			{PUBLIC_AVAILABILITY_LINE}
+			{PUBLIC_RESUME_LINE} If you are hiring, maintaining an open-source project, or have useful feedback
+			on this work, I would be glad to hear from you.
 		</p>
 		<div class="links">
-			<a href="mailto:olen@latham.cloud">Email me</a>
+			<a
+				href={PUBLIC_CONTACT_MAILTO}
+				rel="external"
+				onclick={() => clientTelemetry?.recordContact('email_about')}>Email me</a
+			>
 			<a href={PUBLIC_GITHUB_URL} target="_blank" rel="external noreferrer">GitHub</a>
-			<a href={PUBLIC_LINKEDIN_URL} target="_blank" rel="external noreferrer">LinkedIn</a>
+			<a
+				href={PUBLIC_LINKEDIN_URL}
+				target="_blank"
+				rel="external noreferrer"
+				onclick={() => clientTelemetry?.recordContact('linkedin_about')}>LinkedIn</a
+			>
 			<a href={PUBLIC_X_URL} target="_blank" rel="external noreferrer">X</a>
 			<a href={resolve('/')}>Weeknote dashboard</a>
 		</div>
+		<p class="contact-address">
+			Direct:
+			<a
+				href={PUBLIC_CONTACT_MAILTO}
+				rel="external"
+				onclick={() => clientTelemetry?.recordContact('email_about')}>{PUBLIC_CONTACT_EMAIL}</a
+			>
+		</p>
 	</section>
 </main>
 
@@ -141,5 +166,12 @@
 		gap: 1rem 1.5rem;
 		margin-top: 1.5rem;
 		font-weight: 650;
+	}
+	.contact-address {
+		margin-top: 1.5rem;
+		font: 500 0.9rem/1.4 monospace;
+	}
+	.contact-address a {
+		color: #d8a54a;
 	}
 </style>

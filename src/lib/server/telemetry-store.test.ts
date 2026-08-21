@@ -27,6 +27,10 @@ describe('telemetry D1 row mapping', () => {
 				unique_sessions: 800,
 				page_view_sessions: 750,
 				performance_sessions: 600,
+				contact_actions: 14,
+				contact_sessions: 9,
+				email_clicks: 10,
+				linkedin_clicks: 4,
 				error_count: 12,
 				last_recorded_at: '2026-08-17T05:00:00.000Z'
 			})
@@ -37,6 +41,10 @@ describe('telemetry D1 row mapping', () => {
 			uniqueSessions: 800,
 			pageViewSessions: 750,
 			performanceSessions: 600,
+			contactActions: 14,
+			contactSessions: 9,
+			emailClicks: 10,
+			linkedinClicks: 4,
 			errorCount: 12,
 			lastRecordedAt: '2026-08-17T05:00:00.000Z'
 		});
@@ -84,6 +92,31 @@ describe('telemetry D1 row mapping', () => {
 			sessionHash: 's1',
 			visitHash: 'v1'
 		});
+	});
+
+	it('maps a contact action without identity or message content', () => {
+		expect(
+			telemetryEventFromRow({
+				id: 'tele-contact',
+				owner_email: 'olen@latham.cloud',
+				event_type: 'contact_action',
+				recorded_at: '2026-08-17T04:00:00.000Z',
+				path: '/',
+				workspace: null,
+				referrer_host: null,
+				country: 'US',
+				device_class: 'mobile',
+				browser_family: 'safari',
+				viewport_width: 390,
+				viewport_height: 844,
+				timezone_offset_minutes: 240,
+				language: 'en',
+				metric_name: 'email_summary',
+				metric_value: 1,
+				session_hash: 's1',
+				visit_hash: null
+			})
+		).toMatchObject({ eventType: 'contact_action', metricName: 'email_summary', metricValue: 1 });
 	});
 
 	it('maps a web_vital beacon metric', () => {

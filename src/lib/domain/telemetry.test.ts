@@ -31,11 +31,16 @@ describe('TelemetryPayloadSchema', () => {
 		expect(
 			decodes({ ...common, eventType: 'error', metricName: 'runtime_error', metricValue: 1 })
 		).toBe(true);
+		expect(decodes({ ...common, eventType: 'contact_action', action: 'email_summary' })).toBe(true);
 	});
 
 	it('rejects missing event-specific evidence and invalid paths', () => {
 		expect(decodes({ ...common, eventType: 'workspace_view' })).toBe(false);
 		expect(decodes({ ...common, eventType: 'web_vital', metricName: 'lcp' })).toBe(false);
+		expect(decodes({ ...common, eventType: 'contact_action' })).toBe(false);
+		expect(decodes({ ...common, eventType: 'contact_action', action: 'schedule_interview' })).toBe(
+			false
+		);
 		expect(decodes({ ...common, eventType: 'page_view', path: '' })).toBe(false);
 		expect(decodes({ ...common, eventType: 'page_view', path: 'https://example.com/' })).toBe(
 			false

@@ -34,6 +34,10 @@ function totals(overrides: Partial<TelemetryTotals> = {}): TelemetryTotals {
 		uniqueSessions: 0,
 		pageViewSessions: 0,
 		performanceSessions: 0,
+		contactActions: 0,
+		contactSessions: 0,
+		emailClicks: 0,
+		linkedinClicks: 0,
 		errorCount: 0,
 		lastRecordedAt: null,
 		...overrides
@@ -146,6 +150,10 @@ describe('createTelemetryView', () => {
 				uniqueSessions: 800,
 				pageViewSessions: 750,
 				performanceSessions: 600,
+				contactActions: 40,
+				contactSessions: 24,
+				emailClicks: 30,
+				linkedinClicks: 10,
 				errorCount: 12,
 				lastRecordedAt: '2026-08-17T05:00:00.000Z'
 			},
@@ -161,6 +169,27 @@ describe('createTelemetryView', () => {
 		expect(view.recent).toHaveLength(1);
 	});
 
+	it('uses exact contact-action totals to report the recruiter funnel', () => {
+		const view = createTelemetryView(
+			[],
+			totals({
+				totalEvents: 107,
+				pageViews: 100,
+				uniqueSessions: 80,
+				pageViewSessions: 75,
+				contactActions: 7,
+				contactSessions: 4,
+				emailClicks: 5,
+				linkedinClicks: 2
+			})
+		);
+		expect(view.contactActions).toBe(7);
+		expect(view.contactSessions).toBe(4);
+		expect(view.emailClicks).toBe(5);
+		expect(view.linkedinClicks).toBe(2);
+		expect(view.contactActionRatePercent).toBe(5.3);
+	});
+
 	it('returns empty aggregates for no events', () => {
 		const view = createTelemetryView([], totals());
 		expect(view.pageViews).toBe(0);
@@ -168,6 +197,9 @@ describe('createTelemetryView', () => {
 		expect(view.performanceSessions).toBe(0);
 		expect(view.performanceCoveragePercent).toBeNull();
 		expect(view.errorCount).toBe(0);
+		expect(view.contactActions).toBe(0);
+		expect(view.contactSessions).toBe(0);
+		expect(view.contactActionRatePercent).toBeNull();
 		expect(view.uniqueSessions).toBe(0);
 		expect(view.paths).toEqual([]);
 		expect(view.vitals.lcpMs).toBeNull();

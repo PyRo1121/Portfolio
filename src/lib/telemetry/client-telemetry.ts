@@ -1,5 +1,10 @@
 import { onCLS, onFCP, onINP, onLCP, onTTFB } from 'web-vitals';
-import { shouldCollectTelemetryPath, type TelemetryDeviceClass } from '$lib/domain/telemetry';
+import {
+	shouldCollectTelemetryPath,
+	type ContactAction,
+	type TelemetryDeviceClass,
+	type TelemetryEventType
+} from '$lib/domain/telemetry';
 
 type VitalMetric = 'lcp' | 'fcp' | 'ttfb' | 'inp' | 'cls';
 type TelemetryValue = string | number | undefined;
@@ -69,6 +74,20 @@ export class ClientTelemetry {
 		});
 	}
 
+	/** Record one explicit recruiter contact action without contact or message content. */
+	recordContact(action: ContactAction): void {
+		this.#send('contact_action', {
+			path: this.#currentPath ?? window.location.pathname,
+			action,
+			deviceClass: this.#deviceClass,
+			browserFamily: this.#browserFamily,
+			viewportWidth: this.#viewportWidth,
+			viewportHeight: this.#viewportHeight,
+			timezoneOffsetMinutes: this.#timezoneOffsetMinutes,
+			language: this.#language
+		});
+	}
+
 	#observeWebVitals(): void {
 		onCLS((metric) => this.#recordVital('cls', metric.value));
 		onFCP((metric) => this.#recordVital('fcp', metric.value));
@@ -107,10 +126,7 @@ export class ClientTelemetry {
 		});
 	}
 
-	#send(
-		eventType: 'page_view' | 'workspace_view' | 'web_vital' | 'error',
-		extra: Record<string, TelemetryValue>
-	): void {
+	#send(eventType: TelemetryEventType, extra: Record<string, TelemetryValue>): void {
 		if (!import.meta.env.PROD) return;
 		const path = String(extra['path'] ?? this.#currentPath ?? '/');
 		if (!shouldCollectTelemetryPath(path)) return;

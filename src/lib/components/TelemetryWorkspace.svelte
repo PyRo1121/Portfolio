@@ -45,6 +45,9 @@
 	function eventLabel(event: TelemetryEvent): string {
 		if (event.eventType === 'web_vital') return `${event.metricName} ${event.metricValue}`;
 		if (event.eventType === 'workspace_view') return event.workspace ?? 'workspace';
+		if (event.eventType === 'contact_action') {
+			return (event.metricName ?? 'contact action').replaceAll('_', ' ');
+		}
 		if (event.eventType === 'error') return event.metricName ?? 'runtime error';
 		return 'page view';
 	}
@@ -55,14 +58,14 @@
 		<div>
 			<span><ChartBar size={14} weight="fill" /> Visitor telemetry</span>
 			<h1>Visitors</h1>
-			<p>Cookieless page, workspace, and Core Web Vitals evidence.</p>
+			<p>Cookieless page, workspace, contact-action, and Core Web Vitals evidence.</p>
 		</div>
 		{#if view !== null}
 			<section aria-label="Visitor summary">
 				<div><strong>{view.pageViews}</strong><span>page views</span></div>
 				<div><strong>{view.uniqueSessions}</strong><span>sessions</span></div>
 				<div><strong>{view.workspaceViews}</strong><span>workspace views</span></div>
-				<div><strong>{view.totalEvents}</strong><span>events stored</span></div>
+				<div><strong>{view.contactActions}</strong><span>contact actions</span></div>
 				<div>
 					<strong
 						>{view.lastRecordedAt === null
@@ -220,6 +223,26 @@
 						<span class="bar-count">{item.count}</span>
 					</div>
 				{:else}<p class="empty">No hour evidence yet.</p>{/each}
+			</section>
+
+			<section class="telemetry-panel telemetry-contact" aria-labelledby="telemetry-contact">
+				<header>
+					<span id="telemetry-contact">Recruiter actions</span><small>Complete 30-day window</small>
+				</header>
+				<div class="boundary-metrics">
+					<div><span>Email clicks</span><strong>{view.emailClicks}</strong></div>
+					<div><span>LinkedIn clicks</span><strong>{view.linkedinClicks}</strong></div>
+					<div><span>Contact sessions</span><strong>{view.contactSessions}</strong></div>
+					<div>
+						<span>Session action rate</span>
+						<strong
+							>{view.contactActionRatePercent === null
+								? 'Awaiting traffic'
+								: `${view.contactActionRatePercent}%`}</strong
+						>
+					</div>
+				</div>
+				<p>Clicks are observed actions; they do not prove that a message was sent.</p>
 			</section>
 
 			<section class="telemetry-panel telemetry-recent" aria-labelledby="telemetry-recent">
@@ -530,7 +553,8 @@
 	.boundary-metrics strong {
 		font: 700 1.1rem/1 var(--mono);
 	}
-	.telemetry-cloudflare p {
+	.telemetry-cloudflare p,
+	.telemetry-contact p {
 		margin: 0.7rem 0 0;
 		color: var(--muted);
 		font-size: 0.68rem;

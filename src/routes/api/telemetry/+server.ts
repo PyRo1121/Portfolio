@@ -8,8 +8,8 @@ import { insertTelemetryEvent } from '$lib/server/telemetry-store';
 
 /**
  * Public telemetry beacon. The dashboard client sends page views, workspace
- * navigation, and Core Web Vitals here; the server enriches with the Cloudflare
- * country and persists an owner-scoped row. No cookies are used and raw IP
+ * navigation, explicit contact actions, and Core Web Vitals here; the server
+ * enriches with the Cloudflare country and persists an owner-scoped row. No cookies are used and raw IP
  * addresses are never stored.
  */
 export const POST: RequestHandler = async ({ platform, request, setHeaders }) => {

@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest';
 import {
 	aboutSeo,
 	homeSeo,
+	PUBLIC_AVAILABILITY_LINE,
+	PUBLIC_CONTACT_EMAIL,
+	PUBLIC_CONTACT_MAILTO,
 	PUBLIC_IDENTITY_LINE,
+	PUBLIC_RESUME_LINE,
 	PUBLIC_SEO_SKILLS,
 	publicSitemapPaths,
 	renderPublicSitemapXml
@@ -27,6 +31,17 @@ describe('public SEO copy', () => {
 
 	it('keeps the top-bar identity line on software work', () => {
 		expect(PUBLIC_IDENTITY_LINE).toBe('Software developer · TypeScript · Svelte · Cloudflare');
+	});
+
+	it('publishes one direct recruiter contact path and exact availability statement', () => {
+		expect(PUBLIC_CONTACT_EMAIL).toBe('olen@latham.cloud');
+		expect(PUBLIC_CONTACT_MAILTO).toBe(
+			'mailto:olen@latham.cloud?subject=Opportunity%20for%20Olen%20Latham'
+		);
+		expect(PUBLIC_AVAILABILITY_LINE).toBe(
+			'Open to IT support, cloud operations, and junior systems opportunities.'
+		);
+		expect(PUBLIC_RESUME_LINE).toBe('Résumé available on request.');
 	});
 
 	it('keeps the public sitemap on crawlable URLs only', () => {

@@ -5,7 +5,8 @@ export const TelemetryEventTypeSchema = Schema.Union(
 	Schema.Literal('page_view'),
 	Schema.Literal('workspace_view'),
 	Schema.Literal('web_vital'),
-	Schema.Literal('error')
+	Schema.Literal('error'),
+	Schema.Literal('contact_action')
 );
 export type TelemetryEventType = Schema.Schema.Type<typeof TelemetryEventTypeSchema>;
 
@@ -26,6 +27,18 @@ export const TelemetryVitalMetricSchema = Schema.Union(
 	Schema.Literal('cls')
 );
 export type TelemetryVitalMetric = Schema.Schema.Type<typeof TelemetryVitalMetricSchema>;
+
+/** Exact public contact action recorded without message or identity data. */
+export const ContactActionSchema = Schema.Union(
+	Schema.Literal('email_header'),
+	Schema.Literal('email_social'),
+	Schema.Literal('email_summary'),
+	Schema.Literal('email_about'),
+	Schema.Literal('linkedin_social'),
+	Schema.Literal('linkedin_summary'),
+	Schema.Literal('linkedin_about')
+);
+export type ContactAction = Schema.Schema.Type<typeof ContactActionSchema>;
 
 /** Exclude Access-protected owner pages from public visitor analytics. */
 export function shouldCollectTelemetryPath(path: string): boolean {
@@ -94,6 +107,11 @@ export const TelemetryPayloadSchema = Schema.Union(
 			Schema.Literal('unhandled_rejection')
 		),
 		metricValue: Schema.Literal(1)
+	}),
+	Schema.Struct({
+		...BaseEventFields,
+		eventType: Schema.Literal('contact_action'),
+		action: ContactActionSchema
 	})
 );
 export type TelemetryPayload = Schema.Schema.Type<typeof TelemetryPayloadSchema>;

@@ -1,8 +1,21 @@
 <script lang="ts">
-	import { ArrowDownRight, ArrowUpRight } from 'phosphor-svelte';
+	import {
+		ArrowDownRight,
+		ArrowUpRight,
+		EnvelopeSimpleIcon as EnvelopeSimple,
+		LinkedinLogoIcon as LinkedinLogo
+	} from 'phosphor-svelte';
+	import type { ContactAction } from '$lib/domain/telemetry';
 	import type { GitHubDashboardSnapshot } from '$lib/domain/github-intelligence';
 	import { createTodayChangeScope, createTodayIntelligence } from '$lib/domain/dashboard-today';
 	import type { ViewerActivityProjection } from '$lib/domain/dashboard-viewer-time';
+	import {
+		PUBLIC_AVAILABILITY_LINE,
+		PUBLIC_CONTACT_EMAIL,
+		PUBLIC_CONTACT_MAILTO,
+		PUBLIC_LINKEDIN_URL,
+		PUBLIC_RESUME_LINE
+	} from '$lib/domain/public-seo';
 	import {
 		formatCompact,
 		formatInteger,
@@ -14,9 +27,10 @@
 	type Props = {
 		readonly snapshot: GitHubDashboardSnapshot;
 		readonly projection: ViewerActivityProjection;
+		readonly onContact: (action: ContactAction) => void;
 	};
 	type TodayMobilePanel = 'change' | 'rhythm' | 'work' | 'commits';
-	let { snapshot, projection }: Props = $props();
+	let { snapshot, projection, onContact }: Props = $props();
 	const mobilePanels: ReadonlyArray<{ readonly id: TodayMobilePanel; readonly label: string }> = [
 		{ id: 'change', label: 'Changes' },
 		{ id: 'rhythm', label: 'Hours' },
@@ -110,6 +124,31 @@
 			<span>{today.labelText}</span>
 			<p>{today.message}</p>
 		</div>
+		<aside class="today-contact" aria-label="Contact Olen Latham">
+			<div>
+				<span>Open to opportunities</span>
+				<p>{PUBLIC_AVAILABILITY_LINE}</p>
+			</div>
+			<nav aria-label="Recruiter contact actions">
+				<a href={PUBLIC_CONTACT_MAILTO} rel="external" onclick={() => onContact('email_summary')}
+					><EnvelopeSimple size={15} weight="fill" /> Email Olen</a
+				>
+				<a
+					href={PUBLIC_LINKEDIN_URL}
+					target="_blank"
+					rel="external noreferrer"
+					onclick={() => onContact('linkedin_summary')}
+					><LinkedinLogo size={15} weight="fill" /> LinkedIn</a
+				>
+			</nav>
+			<a
+				class="today-contact__email"
+				href={PUBLIC_CONTACT_MAILTO}
+				rel="external"
+				onclick={() => onContact('email_summary')}>{PUBLIC_CONTACT_EMAIL}</a
+			>
+			<p class="today-contact__resume">{PUBLIC_RESUME_LINE}</p>
+		</aside>
 		<div class="today-summary-grid">
 			<div><span>Week share</span><strong>{today.weekShare}%</strong></div>
 			<div><span>vs daily pace</span><strong>{formatSigned(today.paceDelta)}</strong></div>

@@ -29,6 +29,10 @@ export type TelemetryTotals = {
 	readonly uniqueSessions: number;
 	readonly pageViewSessions: number;
 	readonly performanceSessions: number;
+	readonly contactActions: number;
+	readonly contactSessions: number;
+	readonly emailClicks: number;
+	readonly linkedinClicks: number;
 	readonly errorCount: number;
 	readonly lastRecordedAt: string | null;
 };
@@ -41,6 +45,11 @@ export type TelemetryView = {
 	readonly pageViewSessions: number;
 	readonly performanceSessions: number;
 	readonly performanceCoveragePercent: number | null;
+	readonly contactActions: number;
+	readonly contactSessions: number;
+	readonly emailClicks: number;
+	readonly linkedinClicks: number;
+	readonly contactActionRatePercent: number | null;
 	readonly errorCount: number;
 	readonly paths: ReadonlyArray<TelemetryBar>;
 	readonly workspaces: ReadonlyArray<TelemetryBar>;
@@ -78,6 +87,10 @@ export function createTelemetryView(
 		totals.pageViewSessions === 0
 			? null
 			: Math.min(100, Math.round((totals.performanceSessions / totals.pageViewSessions) * 100));
+	const contactActionRatePercent =
+		totals.pageViewSessions === 0
+			? null
+			: Math.min(100, Math.round((totals.contactSessions / totals.pageViewSessions) * 1_000) / 10);
 
 	const paths = rank(
 		events,
@@ -133,6 +146,11 @@ export function createTelemetryView(
 		pageViewSessions: totals.pageViewSessions,
 		performanceSessions: totals.performanceSessions,
 		performanceCoveragePercent,
+		contactActions: totals.contactActions,
+		contactSessions: totals.contactSessions,
+		emailClicks: totals.emailClicks,
+		linkedinClicks: totals.linkedinClicks,
+		contactActionRatePercent,
 		errorCount: totals.errorCount,
 		paths: top(paths, 8),
 		workspaces: top(workspaces, 8),

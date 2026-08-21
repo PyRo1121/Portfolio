@@ -7,6 +7,18 @@ export const PUBLIC_GITHUB_URL = 'https://github.com/PyRo1121';
 export const PUBLIC_X_URL = 'https://x.com/PyRo1121';
 export const PUBLIC_LINKEDIN_URL = 'https://www.linkedin.com/in/olen-latham-9b647654/';
 
+/** Public address for direct recruiter and collaborator contact. */
+export const PUBLIC_CONTACT_EMAIL = 'olen@latham.cloud';
+
+/** Prefilled direct-email action used by public conversion surfaces. */
+export const PUBLIC_CONTACT_MAILTO =
+	'mailto:olen@latham.cloud?subject=Opportunity%20for%20Olen%20Latham';
+
+/** Truthful role categories currently invited by the public portfolio. */
+export const PUBLIC_AVAILABILITY_LINE =
+	'Open to IT support, cloud operations, and junior systems opportunities.';
+export const PUBLIC_RESUME_LINE = 'Résumé available on request.';
+
 const PUBLIC_IMAGE = `${PUBLIC_SITE_ORIGIN}/og-image.svg`;
 
 export const PUBLIC_SEO_SKILLS = [
