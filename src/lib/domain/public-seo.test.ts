@@ -8,6 +8,7 @@ import {
 	PUBLIC_IDENTITY_LINE,
 	PUBLIC_RESUME_LINE,
 	PUBLIC_SEO_SKILLS,
+	PUBLIC_SOCIAL_IMAGE_URL,
 	publicSitemapPaths,
 	renderPublicSitemapXml
 } from './public-seo';
@@ -31,6 +32,11 @@ describe('public SEO copy', () => {
 
 	it('keeps the top-bar identity line on software work', () => {
 		expect(PUBLIC_IDENTITY_LINE).toBe('Software developer · TypeScript · Svelte · Cloudflare');
+	});
+
+	it('uses a raster social card for link-preview compatibility', () => {
+		expect(PUBLIC_SOCIAL_IMAGE_URL).toBe('https://latham.cloud/og-image.png');
+		expect(homeSeo.jsonLd).toContain(PUBLIC_SOCIAL_IMAGE_URL);
 	});
 
 	it('positions the About page around Olen’s real career transition and projects', () => {

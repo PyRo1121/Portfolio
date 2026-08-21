@@ -1,12 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
-  <title id="title">Olen Latham — Software developer</title>
-  <desc id="desc">Public engineering activity and delivery evidence.</desc>
+  <title id="title">Olen Latham — software, systems, and cloud work</title>
+  <desc id="desc">Customer-service problem solver building developer tools and cloud applications.</desc>
   <rect width="1200" height="630" fill="#0b0d0e"/>
   <path d="M0 92h1200M0 538h1200M80 0v630M1120 0v630" stroke="#242a2b" stroke-width="2"/>
   <circle cx="1030" cy="124" r="72" fill="#d8a54a" opacity=".12"/>
   <circle cx="1030" cy="124" r="31" fill="#d8a54a" opacity=".8"/>
   <text x="80" y="118" fill="#d8a54a" font-family="Arial, sans-serif" font-size="22" font-weight="700" letter-spacing="5">LATHAM.CLOUD / WEEKNOTE</text>
   <text x="80" y="290" fill="#f0f0eb" font-family="Arial, sans-serif" font-size="76" font-weight="700">Olen Latham</text>
-  <text x="84" y="356" fill="#979b96" font-family="Arial, sans-serif" font-size="32">Software developer building toward full-stack work</text>
-  <text x="84" y="472" fill="#d8a54a" font-family="monospace" font-size="22">GITHUB ACTIVITY · DELIVERY EVIDENCE · CLOUDFLARE WORKERS</text>
+  <text x="84" y="356" fill="#b2b6b1" font-family="Arial, sans-serif" font-size="32">Customer-service problem solver</text>
+  <text x="84" y="472" fill="#d8a54a" font-family="monospace" font-size="22">SOFTWARE · SYSTEMS · CLOUD OPERATIONS</text>
 </svg>

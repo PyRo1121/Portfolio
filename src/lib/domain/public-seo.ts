@@ -21,7 +21,8 @@ export const PUBLIC_AVAILABILITY_LINE =
 	'Open to IT support, cloud operations, and junior systems opportunities.';
 export const PUBLIC_RESUME_LINE = 'Résumé available on request.';
 
-const PUBLIC_IMAGE = `${PUBLIC_SITE_ORIGIN}/og-image.svg`;
+/** Raster social card used by Open Graph, Twitter, and structured profile data. */
+export const PUBLIC_SOCIAL_IMAGE_URL = `${PUBLIC_SITE_ORIGIN}/og-image.png`;
 
 export const PUBLIC_SEO_SKILLS = [
 	'TypeScript',
@@ -47,7 +48,7 @@ function personNode(): Record<string, unknown> {
 		'@id': PUBLIC_PERSON_ID,
 		name: 'Olen Latham',
 		url: `${PUBLIC_SITE_ORIGIN}/`,
-		image: PUBLIC_IMAGE,
+		image: PUBLIC_SOCIAL_IMAGE_URL,
 		jobTitle: 'Software developer',
 		email: 'mailto:olen@latham.cloud',
 		knowsAbout: [...PUBLIC_SEO_SKILLS],

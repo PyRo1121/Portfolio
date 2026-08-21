@@ -2,7 +2,7 @@
 	import { resolve } from '$app/paths';
 	import { ArrowUpRightIcon as ArrowUpRight } from 'phosphor-svelte';
 	import type { PublicCaseStudy } from '$lib/domain/public-case-study';
-	import { PUBLIC_SITE_ORIGIN } from '$lib/domain/public-seo';
+	import { PUBLIC_SITE_ORIGIN, PUBLIC_SOCIAL_IMAGE_URL } from '$lib/domain/public-seo';
 
 	type Props = {
 		readonly study: PublicCaseStudy;
@@ -24,11 +24,16 @@
 	<meta property="og:title" content={pageTitle} />
 	<meta property="og:description" content={study.summary} />
 	<meta property="og:url" content={canonical} />
-	<meta property="og:image" content={`${PUBLIC_SITE_ORIGIN}/og-image.svg`} />
+	<meta property="og:image" content={PUBLIC_SOCIAL_IMAGE_URL} />
+	<meta property="og:image:type" content="image/png" />
+	<meta property="og:image:width" content="1200" />
+	<meta property="og:image:height" content="630" />
+	<meta property="og:image:alt" content="Olen Latham — software, systems, and cloud work" />
 	<meta name="twitter:card" content="summary_large_image" />
 	<meta name="twitter:title" content={pageTitle} />
 	<meta name="twitter:description" content={study.summary} />
-	<meta name="twitter:image" content={`${PUBLIC_SITE_ORIGIN}/og-image.svg`} />
+	<meta name="twitter:image" content={PUBLIC_SOCIAL_IMAGE_URL} />
+	<meta name="twitter:image:alt" content="Olen Latham — software, systems, and cloud work" />
 </svelte:head>
 
 <main class="case-study">
@@ -95,8 +100,11 @@
 	</section>
 
 	<footer>
-		<p>Want the person behind the project?</p>
-		<a href={resolve('/about')}>Read about Olen <ArrowUpRight size={15} weight="bold" /></a>
+		<div>
+			<p>Looking for someone who brings customer-service follow-through to technical work?</p>
+			<strong>I’m open to IT support, cloud operations, junior systems, and software roles.</strong>
+		</div>
+		<a href={resolve('/about#contact')}>Contact Olen <ArrowUpRight size={15} weight="bold" /></a>
 	</footer>
 </main>
 
@@ -306,9 +314,16 @@
 		border-top: 1px solid rgb(231 232 225 / 16%);
 	}
 	footer p {
-		margin: 0;
+		margin: 0 0 0.45rem;
 		color: #808580;
 		font-size: 0.8rem;
+	}
+	footer strong {
+		display: block;
+		max-width: 42rem;
+		font-size: clamp(1rem, 1.7vw, 1.25rem);
+		line-height: 1.35;
+		text-wrap: balance;
 	}
 	footer a {
 		display: inline-flex;

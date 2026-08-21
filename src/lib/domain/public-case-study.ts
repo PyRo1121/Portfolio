@@ -50,7 +50,7 @@ export const PUBLIC_CASE_STUDIES = [
 			},
 			{
 				label: 'Current release',
-				href: 'https://github.com/PyRo1121/omg/releases/tag/v0.1.214',
+				href: 'https://github.com/PyRo1121/omg/releases/latest',
 				note: 'Tagged release and published platform artifacts.'
 			},
 			{

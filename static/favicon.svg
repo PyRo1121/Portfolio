@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="Olen Latham">
+  <rect width="64" height="64" rx="12" fill="#0b0d0e"/>
+  <path d="M10 10h44v44H10z" fill="none" stroke="#2a3031" stroke-width="2"/>
+  <circle cx="47" cy="17" r="5" fill="#d8a54a"/>
+  <text x="13" y="43" fill="#f0f0eb" font-family="Arial, sans-serif" font-size="25" font-weight="700">OL</text>
+</svg>

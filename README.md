@@ -1,23 +1,57 @@
-# Portfolio
+# Weeknote
 
-Personal engineering portfolio and GitHub activity dashboard, built with Svelte 5. It turns weekly GitHub engineering activity, delivered outcomes, Cloudflare account evidence, and career accountability into a keyboard-navigable, viewport-contained workbench.
+Weeknote is Olen Latham’s public engineering portfolio and evidence dashboard. It connects GitHub activity to delivery records, deployments, Cloudflare infrastructure, and explicit data limits instead of reducing the work to a contribution count or synthetic score.
 
 Live at **[latham.cloud](https://latham.cloud)**.
 
-## Views
+## Public portfolio
 
-- **Today / Week** — exact commit history, additions, deletions, and rhythm, reprojected into your local timezone
-- **Delivery** — merged work, releases, and GitHub Actions verification
-- **Quality** — checks, reverts, and change-mass signals
-- **Projects** — public project identities, canonical links, and exact deployment evidence
-- **Commits** — per-repository commit evidence
-- **/owner** — Cloudflare Access-protected career records, Cloudflare usage, visitor telemetry, and mapping edits
+- **[Dashboard](https://latham.cloud)** — current GitHub activity, delivery outcomes, workflow runs, repositories, and verified project mappings.
+- **[About Olen](https://latham.cloud/about)** — the customer-service-to-technology story, current role interests, and direct contact paths.
+- **[OMG case study](https://latham.cloud/work/omg)** — the motivation, boundaries, and public evidence behind a Rust package and runtime management CLI.
+- **[Weeknote case study](https://latham.cloud/work/weeknote)** — why this dashboard exists and how its evidence model was designed.
 
-## Tech stack
+The public dashboard includes:
 
-Svelte 5 · SvelteKit · Cloudflare Workers · D1 · KV · GitHub GraphQL · Playwright
+- **Today / Week** — commits, additions, deletions, and activity rhythm presented in the viewer’s local timezone.
+- **Delivery** — authored and maintainer outcomes, automated updates, releases, and GitHub Actions workflow runs with distinct attribution.
+- **Quality** — workflow-run outcomes, reverts, annotations, and change-mass signals without converting them into a quality score.
+- **Projects** — public project identities, canonical links, and deployment evidence linked only through exact provider identifiers.
+- **Commits** — per-repository commit evidence, including private repositories through server-only credentials.
 
-## Run it locally
+## Evidence boundaries
+
+Weeknote uses literal states such as **Observed**, **Measured**, **Provisioned**, **No record**, and **Unavailable**. Missing provider evidence is not silently converted to zero, and a partial refresh cannot replace the last complete cached snapshot.
+
+Important distinctions are preserved in collection and presentation:
+
+- Automated pull requests do not count as maintainer work or headline delivery outcomes.
+- A local merge is not presented as a pull request without a canonical GitHub record.
+- A Worker deployment can truthfully have no Workers Build record.
+- Browser sessions and Cloudflare edge visitors remain separate measurements.
+- Public project data is allowlisted independently from owner-only records.
+
+## Owner and privacy boundary
+
+`/owner` is protected by Cloudflare Access with cryptographic JWT verification. It contains career records, Cloudflare usage, project mappings, visitor telemetry, and recruiter-action totals that are not part of the public payload.
+
+Public telemetry is cookieless and bounded. It records navigation, browser performance, normalized errors, and explicit contact-link actions without storing raw IP addresses, contact message content, or visitor identity. A contact click is reported only as an observed action—not proof that a message was sent.
+
+## Architecture
+
+Svelte 5 · SvelteKit · TypeScript · Effect · Cloudflare Workers · Durable Objects · D1 · KV · GitHub GraphQL and REST APIs · ECharts · Vitest
+
+The application uses:
+
+- Effect Schema at untrusted API, persistence, form, and telemetry boundaries.
+- Incremental per-repository collection with independently cached slices.
+- A scheduled warming Worker and a service-only Durable Object coordinator.
+- Separate failure boundaries for GitHub, Cloudflare, deployments, career records, project registry, telemetry, and refresh coordination.
+- Exact Git SHA deployment metadata and a release gate that checks the tree, CI, and D1 migrations before deployment.
+
+Architecture decisions are recorded in [`docs/adr`](docs/adr).
+
+## Run locally
 
 ```bash
 cp .env.example .env
@@ -26,27 +60,31 @@ npm run db:migrate:local
 npm run dev
 ```
 
-Set `GITHUB_USERNAME` in `.env`. Keep GitHub credentials outside the repository tree or in a credential manager:
+Set `GITHUB_USERNAME` in `.env`. Keep credentials outside the repository tree or in a credential manager. The local credential-file convention is:
 
-- `~/.config/weeknote/github-token` — mode-`0600` fine-grained PAT (private engineering evidence)
-- `~/.config/weeknote/github-checks-app.pem` — mode-`0600` PKCS#8 key for a private GitHub App (Checks: read, Metadata: read)
+- `~/.config/weeknote/github-token` — mode `0600` fine-grained PAT.
+- `~/.config/weeknote/github-checks-app.pem` — mode `0600` PKCS#8 key for the Checks GitHub App.
 
-## Deploy to Cloudflare
+## Verification
+
+Use targeted checks while developing:
 
 ```bash
-npm run cf:types
+npm test -- path/to/focused.test.ts
+npm run check
+npm run lint
+```
+
+The complete repository gate is:
+
+```bash
+npm run ci
+```
+
+## Deployment
+
+```bash
 npm run deploy
 ```
 
-The production app runs as the `weeknote` Worker at `https://latham.cloud`. Rotate credentials with `wrangler secret put` — never commit credential values to `wrangler.jsonc`. A `weeknote-warm` scheduled Worker refreshes GitHub and Cloudflare snapshots every 10 minutes. The service-only `weeknote-refresh-coordinator` Worker uses SQLite-backed Durable Object leases to serialize snapshot publication across edge isolates.
-
-## Data & evidence model
-
-- One canonical rolling seven-day UTC collection window, compared against the preceding seven UTC days.
-- Commit and churn totals come from commits reachable from each owned repository's current default branch.
-- Verification totals include only default-branch push/dispatch runs; checks use a least-privilege GitHub App.
-- Cloudflare inventory is labeled **Provisioned**/**Measured** only after successful API reads; gaps remain **Unavailable**, never zero.
-- Career records live in a dedicated D1 database, scoped to the owner email, owner-only on `/owner`, with dated evidence transitions.
-- Private responses use `Cache-Control: private, no-store`; private data is never placed in a shared HTTP cache.
-
-See `docs/` for the full accountability review, export, and evidence roadmap.
+The deployment script requires a clean tree, runs CI, verifies both D1 migration sets, and deploys the coordinator, main application, and warming Worker with exact Git metadata.

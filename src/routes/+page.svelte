@@ -32,6 +32,7 @@
 		PUBLIC_GITHUB_URL,
 		PUBLIC_IDENTITY_LINE,
 		PUBLIC_LINKEDIN_URL,
+		PUBLIC_SOCIAL_IMAGE_URL,
 		PUBLIC_X_URL
 	} from '$lib/domain/public-seo';
 	import { getClientTelemetry } from '$lib/telemetry/client-telemetry';
@@ -134,13 +135,17 @@
 	<meta property="og:title" content={homeSeo.title} />
 	<meta property="og:description" content={homeSeo.description} />
 	<meta property="og:url" content={homeSeo.canonical} />
-	<meta property="og:image" content="https://latham.cloud/og-image.svg" />
+	<meta property="og:image" content={PUBLIC_SOCIAL_IMAGE_URL} />
+	<meta property="og:image:type" content="image/png" />
+	<meta property="og:image:width" content="1200" />
+	<meta property="og:image:height" content="630" />
+	<meta property="og:image:alt" content="Olen Latham — software, systems, and cloud work" />
 	<meta name="twitter:card" content="summary_large_image" />
 	<meta name="theme-color" content="#0b0d0e" />
-	<link rel="icon" href="/og-image.svg" type="image/svg+xml" />
 	<meta name="twitter:title" content={homeSeo.title} />
 	<meta name="twitter:description" content={homeSeo.description} />
-	<meta name="twitter:image" content="https://latham.cloud/og-image.svg" />
+	<meta name="twitter:image" content={PUBLIC_SOCIAL_IMAGE_URL} />
+	<meta name="twitter:image:alt" content="Olen Latham — software, systems, and cloud work" />
 	<!-- JSON-LD is serialized from local constants, not untrusted input. -->
 	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 	{@html jsonLdScriptTag(homeSeo.jsonLd)}

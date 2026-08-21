@@ -14,6 +14,13 @@ describe('public recruiter case studies', () => {
 		]);
 	});
 
+	it('keeps release evidence on a stable canonical URL', () => {
+		const omg = PUBLIC_CASE_STUDIES.find((study) => study.slug === 'omg');
+		expect(omg?.evidence).toContainEqual(
+			expect.objectContaining({ href: 'https://github.com/PyRo1121/omg/releases/latest' })
+		);
+	});
+
 	it('uses specific problem, work, difficulty, result, and evidence sections', () => {
 		for (const study of PUBLIC_CASE_STUDIES) {
 			expect(study.problem.length).toBeGreaterThan(40);
