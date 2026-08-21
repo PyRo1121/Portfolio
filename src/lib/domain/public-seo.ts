@@ -1,3 +1,5 @@
+import { publicCaseStudyPaths } from './public-case-study';
+
 /** Canonical public origin. Crawlable pages stay on this host. */
 export const PUBLIC_SITE_ORIGIN = 'https://latham.cloud';
 
@@ -109,7 +111,7 @@ export const aboutSeo: PublicSeoPage = {
 	])
 };
 
-export const publicSitemapPaths = ['/', '/about'] as const;
+export const publicSitemapPaths = ['/', '/about', ...publicCaseStudyPaths] as const;
 
 function locFor(path: (typeof publicSitemapPaths)[number]): string {
 	return path === '/' ? `${PUBLIC_SITE_ORIGIN}/` : `${PUBLIC_SITE_ORIGIN}${path}`;

@@ -50,10 +50,12 @@ describe('public SEO copy', () => {
 	});
 
 	it('keeps the public sitemap on crawlable URLs only', () => {
-		expect(publicSitemapPaths).toEqual(['/', '/about']);
+		expect(publicSitemapPaths).toEqual(['/', '/about', '/work/omg', '/work/weeknote']);
 		const xml = renderPublicSitemapXml();
 		expect(xml).toContain('<loc>https://latham.cloud/</loc>');
 		expect(xml).toContain('<loc>https://latham.cloud/about</loc>');
+		expect(xml).toContain('<loc>https://latham.cloud/work/omg</loc>');
+		expect(xml).toContain('<loc>https://latham.cloud/work/weeknote</loc>');
 		expect(xml).not.toContain('/career/portfolio.md');
 		expect(xml).not.toContain('/owner');
 		expect(xml).not.toContain('/__warm');

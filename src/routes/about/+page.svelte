@@ -19,7 +19,6 @@
 	import { getClientTelemetry } from '$lib/telemetry/client-telemetry';
 
 	const clientTelemetry = getClientTelemetry();
-	const omgUrl = 'https://github.com/PyRo1121/omg';
 	const profilePhotoUrl = 'https://github.com/PyRo1121.png?size=640';
 </script>
 
@@ -112,8 +111,8 @@
 					performance work, release automation, and the less glamorous job of documenting what
 					actually works.
 				</p>
-				<a href={omgUrl} target="_blank" rel="external noreferrer">
-					View OMG on GitHub <ArrowUpRight size={15} weight="bold" />
+				<a href={resolve('/work/omg')}>
+					Read the OMG case study <ArrowUpRight size={15} weight="bold" />
 				</a>
 			</article>
 
@@ -127,8 +126,8 @@
 					It now connects GitHub activity, checks, deployments, Cloudflare infrastructure, and
 					visitor data while keeping private work and owner-only records behind clear boundaries.
 				</p>
-				<a href={resolve('/')}>
-					Open the live Weeknote <ArrowUpRight size={15} weight="bold" />
+				<a href={resolve('/work/weeknote')}>
+					Read the Weeknote case study <ArrowUpRight size={15} weight="bold" />
 				</a>
 			</article>
 		</div>
