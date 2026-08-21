@@ -14,9 +14,9 @@ export type CraftCategorySignal = {
 export type CraftIntelligence = {
 	readonly observed: {
 		readonly workflowPassRate: number | null;
-		readonly successfulChecks: number;
-		readonly failedChecks: number;
-		readonly cancelledChecks: number;
+		readonly successfulWorkflowRuns: number;
+		readonly failedWorkflowRuns: number;
+		readonly cancelledWorkflowRuns: number;
 		readonly reverts: number;
 		readonly averageFilesPerCommit: number;
 		readonly medianFilesPerCommit: number;
@@ -97,9 +97,9 @@ export function createCraftIntelligence(snapshot: GitHubDashboardSnapshot): Craf
 	return {
 		observed: {
 			workflowPassRate: workflow.workflowPassRate,
-			successfulChecks: workflow.workflows.current.successful,
-			failedChecks: workflow.workflows.current.failed,
-			cancelledChecks: workflow.workflows.current.cancelled,
+			successfulWorkflowRuns: workflow.workflows.current.successful,
+			failedWorkflowRuns: workflow.workflows.current.failed,
+			cancelledWorkflowRuns: workflow.workflows.current.cancelled,
 			reverts,
 			averageFilesPerCommit:
 				commits.length === 0

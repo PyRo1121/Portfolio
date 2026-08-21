@@ -78,17 +78,18 @@ describe('createGitHubDashboardSnapshot', () => {
 				items: []
 			},
 			delivery: {
-				mergedPullRequests: 1,
+				mergedPullRequests: 2,
 				authoredMergedPullRequests: 1,
 				maintainerMergedPullRequests: 0,
-				automatedMergedPullRequests: 0,
+				automatedMergedPullRequests: 1,
 				mergedPullRequestsTruncated: false,
 				closedIssues: 0,
 				authoredClosedIssues: 0,
 				ownerClosedIssues: 0,
 				pullRequestClosedIssues: 0,
 				closedIssuesTruncated: false,
-				previousMergedPullRequests: 0,
+				// The prior merge was automated, so it must not raise the outcome comparison.
+				previousHumanMergedPullRequests: 0,
 				previousClosedIssues: 0,
 				outcomes: [
 					{
@@ -101,6 +102,17 @@ describe('createGitHubDashboardSnapshot', () => {
 						isPrivate: true,
 						mergeCommitSha: 'abc1234567890',
 						responsibility: 'Authored'
+					},
+					{
+						kind: 'PullRequest',
+						title: 'Update dependencies',
+						number: 2,
+						repository: 'octocat/private-work',
+						url: 'https://github.com/octocat/private-work/pull/2',
+						occurredAt: now.toISOString(),
+						isPrivate: true,
+						mergeCommitSha: 'def1234567890',
+						responsibility: 'Automated'
 					}
 				],
 				releases: [],
@@ -164,10 +176,16 @@ describe('createGitHubDashboardSnapshot', () => {
 			outcomes: 1,
 			workflowPassRate: 50,
 			outcomeDelta: 1,
+			mergedPullRequests: 2,
+			automatedMergedPullRequests: 1,
 			pullRequestMerges: [
 				{
 					url: 'https://github.com/octocat/private-work/pull/1',
 					mergeCommitSha: 'abc1234567890'
+				},
+				{
+					url: 'https://github.com/octocat/private-work/pull/2',
+					mergeCommitSha: 'def1234567890'
 				}
 			]
 		});

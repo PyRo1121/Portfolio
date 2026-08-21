@@ -849,6 +849,9 @@ function collectDeliveryPullRequests(
 	const authoredMergedPullRequests = outcomes.filter(
 		(outcome) => outcome.responsibility === 'Authored'
 	).length;
+	const maintainerMergedPullRequests = outcomes.filter(
+		(outcome) => outcome.responsibility === 'Maintainer'
+	).length;
 	const automatedMergedPullRequests = outcomes.filter(
 		(outcome) => outcome.responsibility === 'Automated'
 	).length;
@@ -856,7 +859,7 @@ function collectDeliveryPullRequests(
 		outcomes,
 		mergedPullRequests: outcomes.length,
 		authoredMergedPullRequests,
-		maintainerMergedPullRequests: outcomes.length - authoredMergedPullRequests,
+		maintainerMergedPullRequests,
 		automatedMergedPullRequests,
 		truncated: authored.issueCount > 100 || maintained.issueCount > 100
 	};
@@ -1121,7 +1124,9 @@ export function fetchGitHubIntelligence(
 				ownerClosedIssues: currentIssues.ownerClosedIssues,
 				pullRequestClosedIssues: currentIssues.pullRequestClosedIssues,
 				closedIssuesTruncated: currentIssues.truncated,
-				previousMergedPullRequests: previousPullRequests.mergedPullRequests,
+				previousHumanMergedPullRequests:
+					previousPullRequests.authoredMergedPullRequests +
+					previousPullRequests.maintainerMergedPullRequests,
 				previousClosedIssues: previousIssues.closedIssues,
 				outcomes: deliveryOutcomes,
 				releases,

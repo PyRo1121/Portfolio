@@ -9,16 +9,18 @@
 	let { snapshot }: Props = $props();
 	let mobilePanel = $state<CraftMobilePanel>('review');
 	const mobilePanels: ReadonlyArray<{ readonly id: CraftMobilePanel; readonly label: string }> = [
-		{ id: 'verify', label: 'Checks' },
+		{ id: 'verify', label: 'Runs' },
 		{ id: 'review', label: 'Commit size' },
 		{ id: 'mix', label: 'Commit types' },
 		{ id: 'discipline', label: 'Prefixes' },
 		{ id: 'limits', label: 'Limits' }
 	];
 	const craft = $derived(createCraftIntelligence(snapshot));
-	const completedChecks = $derived(craft.observed.successfulChecks + craft.observed.failedChecks);
-	const passedCheckShare = $derived(
-		completedChecks === 0 ? 0 : craft.observed.successfulChecks / completedChecks
+	const completedWorkflowRuns = $derived(
+		craft.observed.successfulWorkflowRuns + craft.observed.failedWorkflowRuns
+	);
+	const passedRunShare = $derived(
+		completedWorkflowRuns === 0 ? 0 : craft.observed.successfulWorkflowRuns / completedWorkflowRuns
 	);
 </script>
 
@@ -45,20 +47,24 @@
 		/>
 		<header><span>Rolling 7 days</span><small>GitHub evidence</small></header>
 		<div class="quality-summary__value">
-			<strong>{formatInteger(craft.observed.failedChecks)}</strong><span>failed checks</span>
+			<strong>{formatInteger(craft.observed.failedWorkflowRuns)}</strong><span
+				>failed workflow runs</span
+			>
 		</div>
 		<article>
 			<strong
-				>{craft.observed.failedChecks > 0 ? 'Checks need attention' : 'No failed checks'}</strong
+				>{craft.observed.failedWorkflowRuns > 0
+					? 'Workflow runs need attention'
+					: 'No failed workflow runs'}</strong
 			>
 			<p>
-				{formatInteger(craft.observed.successfulChecks)} passed; {formatInteger(
-					craft.observed.cancelledChecks
+				{formatInteger(craft.observed.successfulWorkflowRuns)} passed; {formatInteger(
+					craft.observed.cancelledWorkflowRuns
 				)} cancelled. {formatInteger(craft.observed.oversizedCommits)} commits exceeded the size threshold.
 			</p>
 		</article>
 		<footer>
-			<span>Not a code-quality grade</span><strong>Observed and message-inferred data</strong>
+			<span>Not a code-quality grade</span><strong>Observed runs and message-inferred data</strong>
 		</footer>
 	</section>
 
@@ -66,7 +72,7 @@
 		class={mobilePanel === 'verify' ? 'craft-verification panel-visible' : 'craft-verification'}
 	>
 		<header>
-			<span>Workflow checks</span><small>GitHub Actions · default branches</small>
+			<span>Workflow runs</span><small>GitHub Actions · default branches</small>
 		</header>
 		<div class="craft-verification-body">
 			<div class="craft-pass-rate">
@@ -74,33 +80,35 @@
 					>{craft.observed.workflowPassRate === null
 						? '—'
 						: `${craft.observed.workflowPassRate}%`}</strong
-				><span>completed checks passing</span>
+				><span>completed runs passing</span>
 			</div>
 			<div class="quality-verification-detail">
 				<div
 					class="quality-verification-track"
-					aria-label={`${craft.observed.successfulChecks} passed and ${craft.observed.failedChecks} failed checks`}
+					aria-label={`${craft.observed.successfulWorkflowRuns} passed and ${craft.observed.failedWorkflowRuns} failed workflow runs`}
 				>
-					<i style={`transform:scaleX(${passedCheckShare})`}></i>
+					<i style={`transform:scaleX(${passedRunShare})`}></i>
 				</div>
 				<p>
-					{formatInteger(craft.observed.successfulChecks)} of {formatInteger(completedChecks)}
-					completed user-triggered checks passed. Cancelled runs are excluded from the rate.
+					{formatInteger(craft.observed.successfulWorkflowRuns)} of {formatInteger(
+						completedWorkflowRuns
+					)} completed user-triggered workflow runs passed. Cancelled runs are excluded from the rate.
 				</p>
 			</div>
 		</div>
 		<div class="craft-checks">
 			<div>
-				<CheckCircle size={16} /><strong>{formatInteger(craft.observed.successfulChecks)}</strong
+				<CheckCircle size={16} /><strong
+					>{formatInteger(craft.observed.successfulWorkflowRuns)}</strong
 				><span>passed</span>
 			</div>
 			<div>
-				<XCircle size={16} /><strong>{formatInteger(craft.observed.failedChecks)}</strong><span
-					>failed</span
-				>
+				<XCircle size={16} /><strong>{formatInteger(craft.observed.failedWorkflowRuns)}</strong
+				><span>failed</span>
 			</div>
 			<div>
-				<WarningCircle size={16} /><strong>{formatInteger(craft.observed.cancelledChecks)}</strong
+				<WarningCircle size={16} /><strong
+					>{formatInteger(craft.observed.cancelledWorkflowRuns)}</strong
 				><span>cancelled</span>
 			</div>
 		</div>

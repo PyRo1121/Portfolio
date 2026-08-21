@@ -20,7 +20,7 @@ describe('createWorkspaceSignals', () => {
 		expect(signals.activity.value).toBe(String(snapshot.intelligence.commits.length));
 	});
 
-	it('headlines Quality with pass rate in a neutral tone instead of failed-check count', () => {
+	it('headlines Quality with pass rate in a neutral tone instead of failed-run count', () => {
 		const projection = createViewerActivityProjection(snapshot, 'America/New_York');
 		const signals = createWorkspaceSignals(snapshot, projection);
 		expect(snapshot.intelligence.delivery.workflows.current.failed).toBeGreaterThan(0);
@@ -31,7 +31,7 @@ describe('createWorkspaceSignals', () => {
 		});
 	});
 
-	it('uses a quiet checks count when pass rate is unavailable', () => {
+	it('uses a quiet workflow-run count when pass rate is unavailable', () => {
 		const withoutChecks: typeof snapshot = {
 			...snapshot,
 			intelligence: {
@@ -53,7 +53,7 @@ describe('createWorkspaceSignals', () => {
 		const projection = createViewerActivityProjection(withoutChecks, 'America/New_York');
 		expect(createWorkspaceSignals(withoutChecks, projection).craft).toEqual({
 			value: '0',
-			label: 'checks',
+			label: 'runs',
 			tone: 'neutral'
 		});
 	});

@@ -47,7 +47,7 @@ const publicList: ReadonlyArray<WorkspaceDefinition> = [
 		id: 'delivery',
 		index: 3,
 		label: 'Delivery',
-		description: 'Pull requests, issues, releases, and checks',
+		description: 'Pull requests, issues, releases, and workflow runs',
 		shortcut: '3'
 	},
 	{

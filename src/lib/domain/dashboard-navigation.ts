@@ -19,7 +19,7 @@ export function createWorkspaceSignals(
 ): PublicWorkspaceSignals {
 	const today = createTodayIntelligence(snapshot, projection);
 	const craft = createCraftIntelligence(snapshot);
-	const failedChecks = craft.observed.failedChecks;
+	const failedRuns = craft.observed.failedWorkflowRuns;
 	const passRate = craft.observed.workflowPassRate;
 	return {
 		today: { value: String(today.commits), label: 'today', tone: 'neutral' },
@@ -27,13 +27,13 @@ export function createWorkspaceSignals(
 		delivery: {
 			value: String(snapshot.intelligence.delivery.outcomes),
 			label: 'outcomes',
-			tone: failedChecks > 0 ? 'attention' : 'neutral'
+			tone: failedRuns > 0 ? 'attention' : 'neutral'
 		},
 		craft:
 			passRate === null
 				? {
-						value: String(craft.observed.successfulChecks + failedChecks),
-						label: 'checks',
+						value: String(craft.observed.successfulWorkflowRuns + failedRuns),
+						label: 'runs',
 						tone: 'neutral'
 					}
 				: { value: `${passRate}%`, label: 'passing', tone: 'neutral' },

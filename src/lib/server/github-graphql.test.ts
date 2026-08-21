@@ -342,10 +342,10 @@ describe('incremental GitHub GraphQL intelligence', () => {
 		expect(intelligence.delivery).toMatchObject({
 			mergedPullRequests: 2,
 			authoredMergedPullRequests: 1,
-			maintainerMergedPullRequests: 1,
+			maintainerMergedPullRequests: 0,
 			automatedMergedPullRequests: 1,
 			mergedPullRequestsTruncated: false,
-			previousMergedPullRequests: 1
+			previousHumanMergedPullRequests: 0
 		});
 		expect(intelligence.delivery.outcomes).toMatchObject([
 			{

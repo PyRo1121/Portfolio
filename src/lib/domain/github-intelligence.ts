@@ -299,7 +299,7 @@ export type GitHubIntelligenceInput = {
 		readonly ownerClosedIssues: number;
 		readonly pullRequestClosedIssues: number;
 		readonly closedIssuesTruncated: boolean;
-		readonly previousMergedPullRequests: number;
+		readonly previousHumanMergedPullRequests: number;
 		readonly previousClosedIssues: number;
 		readonly outcomes: ReadonlyArray<DeliveryOutcomeInput>;
 		readonly releases: ReadonlyArray<ReleaseInput>;
@@ -701,9 +701,11 @@ function artifactStatus(run: WorkflowRunInput): DeliveryArtifact['status'] {
 function buildDelivery(input: GitHubIntelligenceInput['delivery']): DeliveryIntelligence {
 	const releases = input.releases.filter((release) => !release.isPrerelease).length;
 	const prereleaseBuilds = input.releases.filter((release) => release.isPrerelease).length;
-	const outcomes = input.mergedPullRequests + input.closedIssues + releases + prereleaseBuilds;
+	const humanMergedPullRequests =
+		input.authoredMergedPullRequests + input.maintainerMergedPullRequests;
+	const outcomes = humanMergedPullRequests + input.closedIssues + releases + prereleaseBuilds;
 	const previousOutcomes =
-		input.previousMergedPullRequests + input.previousClosedIssues + input.previousReleaseCount;
+		input.previousHumanMergedPullRequests + input.previousClosedIssues + input.previousReleaseCount;
 	const completedRuns = input.workflows.current.successful + input.workflows.current.failed;
 	const workflowPassRate =
 		completedRuns === 0
@@ -1036,7 +1038,7 @@ export function createDemoIntelligence(base: WeeklySnapshot): GitHubDashboardSna
 			ownerClosedIssues: 0,
 			pullRequestClosedIssues: 0,
 			closedIssuesTruncated: false,
-			previousMergedPullRequests: 1,
+			previousHumanMergedPullRequests: 1,
 			previousClosedIssues: 1,
 			outcomes: [
 				{

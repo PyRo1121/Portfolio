@@ -17,7 +17,7 @@
 	import { formatGitHubArtifactTitle } from '$lib/presentation/github-artifact-title';
 
 	type Props = { readonly snapshot: GitHubDashboardSnapshot };
-	type DeliveryMobilePanel = 'outcomes' | 'checks' | 'trail' | 'repos';
+	type DeliveryMobilePanel = 'outcomes' | 'runs' | 'trail' | 'repos';
 	let { snapshot }: Props = $props();
 	let mobilePanel = $state<DeliveryMobilePanel>('outcomes');
 	const mobilePanels: ReadonlyArray<{
@@ -25,7 +25,7 @@
 		readonly label: string;
 	}> = [
 		{ id: 'outcomes', label: 'Outcomes' },
-		{ id: 'checks', label: 'Checks' },
+		{ id: 'runs', label: 'Runs' },
 		{ id: 'trail', label: 'GitHub links' },
 		{ id: 'repos', label: 'By repository' }
 	];
@@ -37,9 +37,7 @@
 	const verificationTotal = $derived(workflow.successful + workflow.failed);
 	const annotationCoverage = $derived(workflowAnnotationCoverage(snapshot));
 	const latestAnnotation = $derived(annotationCoverage.evidence[0] ?? null);
-	const outcomeNoun = $derived(
-		delivery.outcomes === 1 ? 'completed outcome' : 'completed outcomes'
-	);
+	const outcomeNoun = $derived(delivery.outcomes === 1 ? 'counted outcome' : 'counted outcomes');
 	const outcomeComparison = $derived(
 		delivery.outcomeDelta === 0
 			? `Same number as the prior seven days (${delivery.previousOutcomes}).`
@@ -84,7 +82,8 @@
 			referrerpolicy="no-referrer"
 		/>
 		<header>
-			<span>{snapshot.period.label}</span><small>Merged work, releases, and checks</small>
+			<span>{snapshot.period.label}</span><small>Attributed work, releases, and workflow runs</small
+			>
 		</header>
 		<div class="delivery-summary__value">
 			<strong>{formatInteger(delivery.outcomes)}</strong><span>{outcomeNoun}</span>
@@ -98,8 +97,8 @@
 			</p>
 		</div>
 		<div class="delivery-summary__facts">
-			<div><span>Passed checks</span><strong>{formatInteger(workflow.successful)}</strong></div>
-			<div><span>Failed checks</span><strong>{formatInteger(workflow.failed)}</strong></div>
+			<div><span>Successful runs</span><strong>{formatInteger(workflow.successful)}</strong></div>
+			<div><span>Failed runs</span><strong>{formatInteger(workflow.failed)}</strong></div>
 			<div>
 				<span>Repositories with workflow data</span><strong
 					>{delivery.workflows.coveredRepositories}/{delivery.workflows.totalRepositories}</strong
@@ -110,7 +109,9 @@
 
 	<section class={mobilePanel === 'outcomes' ? 'outcome-panel panel-visible' : 'outcome-panel'}>
 		<header>
-			<span>Completed outcomes</span><small>Authored work and maintainer decisions</small>
+			<span>Completed outcomes</span><small
+				>Automated updates remain visible but do not raise the headline</small
+			>
 		</header>
 		<div class="outcome-metrics">
 			<div>
@@ -162,7 +163,7 @@
 	</section>
 
 	<section
-		class={mobilePanel === 'checks' ? 'verification-panel panel-visible' : 'verification-panel'}
+		class={mobilePanel === 'runs' ? 'verification-panel panel-visible' : 'verification-panel'}
 	>
 		<header>
 			<span>Verification</span><small
@@ -172,7 +173,7 @@
 		</header>
 		<div class="verification-headline">
 			<strong>{delivery.workflowPassRate === null ? '—' : `${delivery.workflowPassRate}%`}</strong>
-			<span>pass rate across completed user-triggered checks</span>
+			<span>pass rate across completed user-triggered workflow runs</span>
 		</div>
 		<div
 			class="verification-track"
@@ -251,7 +252,7 @@
 			? 'repository-verification panel-visible'
 			: 'repository-verification'}
 	>
-		<header><span>Checks by repository</span><small>GitHub Actions run totals</small></header>
+		<header><span>Runs by repository</span><small>GitHub Actions run totals</small></header>
 		<div>
 			{#each workflow.repositories.slice(0, 6) as repository (repository.repository)}
 				<article>
