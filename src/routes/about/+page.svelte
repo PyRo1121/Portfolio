@@ -14,13 +14,13 @@
 		PUBLIC_CONTACT_MAILTO,
 		PUBLIC_GITHUB_URL,
 		PUBLIC_LINKEDIN_URL,
-		PUBLIC_RESUME_LINE,
-		PUBLIC_X_URL
+		PUBLIC_RESUME_LINE
 	} from '$lib/domain/public-seo';
 	import { getClientTelemetry } from '$lib/telemetry/client-telemetry';
 
 	const clientTelemetry = getClientTelemetry();
-	const tools = ['TypeScript', 'Svelte 5', 'SvelteKit', 'Cloudflare Workers', 'Effect', 'GitHub'];
+	const omgUrl = 'https://github.com/PyRo1121/omg';
+	const profilePhotoUrl = 'https://github.com/PyRo1121.png?size=640';
 </script>
 
 <svelte:head>
@@ -47,34 +47,29 @@
 
 <main class="about-page">
 	<nav class="topline" aria-label="Page navigation">
-		<a class="back-link" href={resolve('/')}><span aria-hidden="true">←</span> Weeknote</a>
-		<span class="page-index">Profile / 01</span>
+		<a href={resolve('/')}><span aria-hidden="true">←</span> Weeknote</a>
+		<span>About Olen</span>
 	</nav>
 
-	<header class="hero">
-		<div class="hero-copy">
-			<p class="eyebrow">Olen Latham · Software developer</p>
-			<h1>I build software you can inspect.</h1>
-			<p class="lead">
-				TypeScript and Svelte apps on Cloudflare, with delivery evidence in the open.
-			</p>
-		</div>
-
-		<aside class="availability" aria-label="Availability and contact">
-			<div class="availability__status">
-				<span>Open to opportunities</span>
-				<i aria-hidden="true"></i>
+	<header class="intro">
+		<div class="intro-copy">
+			<p class="hello">Hi, I’m Olen.</p>
+			<h1>I like fixing problems that waste people’s time.</h1>
+			<div class="introduction">
+				<p>
+					I work in customer service at Bank of America, where the job starts with listening:
+					understand what went wrong, make a confusing situation clearer, and help someone reach the
+					next step.
+				</p>
 			</div>
-			<p>{PUBLIC_AVAILABILITY_LINE}</p>
-			<div class="contact-actions">
+			<div class="contact-row">
 				<a
-					class="contact-actions__primary"
+					class="primary-contact"
 					href={PUBLIC_CONTACT_MAILTO}
 					rel="external"
 					onclick={() => clientTelemetry?.recordContact('email_about')}
 				>
-					<EnvelopeSimple size={16} weight="fill" />
-					Email Olen
+					<EnvelopeSimple size={17} weight="fill" /> Email Olen
 				</a>
 				<a
 					href={PUBLIC_LINKEDIN_URL}
@@ -82,79 +77,88 @@
 					rel="external noreferrer"
 					onclick={() => clientTelemetry?.recordContact('linkedin_about')}
 				>
-					<LinkedinLogo size={16} weight="fill" />
-					LinkedIn
+					<LinkedinLogo size={17} weight="fill" /> LinkedIn
 				</a>
 			</div>
-			<div class="contact-meta">
-				<a
-					href={PUBLIC_CONTACT_MAILTO}
-					rel="external"
-					onclick={() => clientTelemetry?.recordContact('email_about')}>{PUBLIC_CONTACT_EMAIL}</a
-				>
-				<span>{PUBLIC_RESUME_LINE}</span>
-			</div>
-		</aside>
+			<p class="contact-note">{PUBLIC_CONTACT_EMAIL} · {PUBLIC_RESUME_LINE}</p>
+			<p class="next-step">
+				Outside work, I build developer tools and cloud applications. I’m working toward a role
+				where I can bring the same patience and troubleshooting instinct to software, systems, and
+				infrastructure.
+			</p>
+		</div>
+
+		<figure>
+			<img src={profilePhotoUrl} alt="Olen Latham" width="640" height="640" />
+			<figcaption>Developer tools, cloud systems, and the work behind them.</figcaption>
+		</figure>
 	</header>
 
-	<div class="narrative-grid">
-		<section class="build" aria-labelledby="what-i-build">
-			<div class="section-heading">
-				<span>01</span>
-				<h2 id="what-i-build">What I build</h2>
-			</div>
-			<div class="section-copy">
+	<section class="projects" aria-labelledby="projects-heading">
+		<header>
+			<h2 id="projects-heading">What I’m building, and why.</h2>
+		</header>
+
+		<div class="project-grid">
+			<article>
+				<h3>Too many package managers</h3>
 				<p>
-					Weeknote is a live SvelteKit application on Cloudflare Workers. It presents GitHub
-					activity, delivery evidence, and confirmed project links without turning commit volume
-					into a quality score.
+					OMG started with a problem I kept running into: system packages and language runtimes all
+					came with different commands, configuration, and update paths. I wanted one tool I could
+					reach for instead of remembering seven.
 				</p>
 				<p>
-					The same approach runs through my public work: typed domain logic, explicit failure
-					states, and focused interfaces built around evidence people can verify.
+					Building it in Rust has pushed me into package resolution, platform differences,
+					performance work, release automation, and the less glamorous job of documenting what
+					actually works.
 				</p>
-				<a class="evidence-link" href={resolve('/')}>
-					Open the live dashboard <ArrowUpRight size={15} weight="bold" />
+				<a href={omgUrl} target="_blank" rel="external noreferrer">
+					View OMG on GitHub <ArrowUpRight size={15} weight="bold" />
 				</a>
-			</div>
-		</section>
+			</article>
 
-		<section class="practice" aria-labelledby="how-i-work">
-			<div class="section-heading">
-				<span>02</span>
-				<h2 id="how-i-work">How I work</h2>
-			</div>
-			<div class="practice-list">
-				<article>
-					<h3>Typed boundaries</h3>
-					<p>Parse external data before it reaches domain logic or interface state.</p>
-				</article>
-				<article>
-					<h3>Visible delivery</h3>
-					<p>Connect changes to pull requests, checks, deployments, and exact records.</p>
-				</article>
-				<article>
-					<h3>Small interfaces</h3>
-					<p>Keep the important path direct, readable, and resilient when providers fail.</p>
-				</article>
-			</div>
-		</section>
-	</div>
-
-	<footer class="foundation">
-		<div>
-			<span class="foundation__label">Current toolchain</span>
-			<ul aria-label="Current development tools">
-				{#each tools as tool (tool)}
-					<li>{tool}</li>
-				{/each}
-			</ul>
+			<article>
+				<h3>A contribution graph with context</h3>
+				<p>
+					GitHub can show that I was busy. It does not explain what shipped, what failed, or where
+					the evidence stops. I built Weeknote because I wanted a more honest record of the work.
+				</p>
+				<p>
+					It now connects GitHub activity, checks, deployments, Cloudflare infrastructure, and
+					visitor data while keeping private work and owner-only records behind clear boundaries.
+				</p>
+				<a href={resolve('/')}>
+					Open the live Weeknote <ArrowUpRight size={15} weight="bold" />
+				</a>
+			</article>
 		</div>
-		<nav class="external-links" aria-label="External profiles">
+	</section>
+
+	<section class="career-shift" aria-labelledby="career-heading">
+		<div>
+			<h2 id="career-heading">What I can bring to a team</h2>
+		</div>
+		<div class="career-copy">
+			<p>
+				I know that side projects are not the same as years in an engineering role, and I’m not
+				trying to pretend otherwise. What I do bring is experience talking with people when the
+				problem is unclear, staying with difficult issues, documenting what happened, and learning
+				unfamiliar systems until I can make progress.
+			</p>
+			<p>
+				{PUBLIC_AVAILABILITY_LINE} I’m especially interested in teams where reliability, clear communication,
+				and steady follow-through matter as much as knowing the right tool on day one.
+			</p>
+		</div>
+	</section>
+
+	<footer>
+		<p>If you want to see how I work, start with the code and the live dashboard.</p>
+		<nav aria-label="Work links">
 			<a href={PUBLIC_GITHUB_URL} target="_blank" rel="external noreferrer">
 				<GithubLogo size={16} weight="fill" /> GitHub
 			</a>
-			<a href={PUBLIC_X_URL} target="_blank" rel="external noreferrer">X</a>
+			<a href={resolve('/')}>Weeknote <ArrowUpRight size={14} weight="bold" /></a>
 		</nav>
 	</footer>
 </main>
@@ -169,134 +173,106 @@
 		font-family: 'Geist Variable', sans-serif;
 		overflow: auto;
 	}
-	:global(body) {
-		background-image:
-			linear-gradient(rgb(231 232 225 / 2.5%) 1px, transparent 1px),
-			linear-gradient(90deg, rgb(231 232 225 / 2.5%) 1px, transparent 1px);
-		background-size: 4rem 4rem;
-	}
 	:global(*) {
 		box-sizing: border-box;
 	}
 	.about-page {
-		width: min(100% - 3rem, 86rem);
+		width: min(100% - 3rem, 74rem);
 		min-height: 100dvh;
 		margin: 0 auto;
-		padding: 1.35rem 0 3rem;
+		padding: 1.25rem 0 3rem;
 	}
 	.topline {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
 		min-height: 3rem;
-		border-bottom: 1px solid rgb(231 232 225 / 15%);
+		border-bottom: 1px solid rgb(231 232 225 / 16%);
+		color: #808580;
 		font:
-			600 0.68rem/1 'JetBrains Mono Variable',
+			600 0.65rem/1 'JetBrains Mono Variable',
 			monospace;
 		letter-spacing: 0.06em;
 		text-transform: uppercase;
 	}
-	.back-link,
-	.external-links a,
-	.contact-meta a {
+	.topline a,
+	.project-grid a,
+	footer a {
 		color: inherit;
 		text-decoration: none;
 	}
-	.back-link {
+	.topline a {
 		display: inline-flex;
-		align-items: center;
 		gap: 0.55rem;
+		color: #f0f0eb;
 	}
-	.back-link span {
+	.topline a span {
 		color: #d8a54a;
 	}
-	.page-index {
-		color: #777c78;
-	}
-	.hero {
+	.intro {
 		display: grid;
-		grid-template-columns: minmax(0, 1.55fr) minmax(17rem, 0.45fr);
-		gap: clamp(3rem, 8vw, 8rem);
-		align-items: end;
-		padding: clamp(4rem, 9vw, 8rem) 0 clamp(4rem, 7vw, 6.5rem);
-	}
-	.hero-copy {
-		min-width: 0;
-	}
-	.eyebrow,
-	.section-heading > span,
-	.foundation__label,
-	.availability__status,
-	.contact-meta {
-		font-family: 'JetBrains Mono Variable', monospace;
-	}
-	.eyebrow {
-		margin: 0 0 1.5rem;
-		color: #d8a54a;
-		font-size: 0.68rem;
-		font-weight: 650;
-		letter-spacing: 0.1em;
-		text-transform: uppercase;
-	}
-	h1 {
-		max-width: 12ch;
-		margin: 0;
-		font-size: clamp(4rem, 7.2vw, 7.4rem);
-		font-weight: 680;
-		line-height: 0.88;
-		letter-spacing: -0.07em;
-		text-wrap: balance;
-	}
-	.lead {
-		max-width: 38ch;
-		margin: 2rem 0 0;
-		color: #aeb2ad;
-		font-size: clamp(1.05rem, 1.7vw, 1.35rem);
-		line-height: 1.5;
-		text-wrap: pretty;
-	}
-	.availability {
-		padding: 1.25rem;
-		border-top: 1px solid #d8a54a;
-		border-bottom: 1px solid rgb(231 232 225 / 18%);
-		background: rgb(216 165 74 / 5%);
-	}
-	.availability__status {
-		display: flex;
+		grid-template-columns: minmax(0, 1.35fr) minmax(16rem, 0.65fr);
+		gap: clamp(3rem, 8vw, 7rem);
 		align-items: center;
-		justify-content: space-between;
-		gap: 1rem;
+		padding: clamp(4rem, 9vw, 7.5rem) 0;
+	}
+	.hello {
+		margin: 0 0 1rem;
 		color: #d8a54a;
-		font-size: 0.65rem;
-		font-weight: 650;
+		font:
+			650 0.7rem/1.2 'JetBrains Mono Variable',
+			monospace;
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
 	}
-	.availability__status i {
-		width: 0.45rem;
-		height: 0.45rem;
-		background: #9fc89f;
-		box-shadow: 0 0 0 3px rgb(159 200 159 / 12%);
+	h1 {
+		max-width: 11ch;
+		margin: 0;
+		font-size: clamp(3.6rem, 6.5vw, 6.25rem);
+		font-weight: 680;
+		line-height: 0.92;
+		letter-spacing: -0.065em;
+		text-wrap: balance;
 	}
-	.availability > p {
-		margin: 1.25rem 0 1.5rem;
-		font-size: 1rem;
-		line-height: 1.45;
+	.introduction {
+		max-width: 41rem;
+		margin-top: 2.25rem;
 	}
-	.contact-actions {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 0.45rem;
+	.introduction p,
+	.next-step,
+	.project-grid p,
+	.career-copy p {
+		color: #b2b6b1;
+		line-height: 1.65;
+		text-wrap: pretty;
 	}
-	.contact-actions a {
+	.introduction p,
+	.next-step {
+		font-size: 1.04rem;
+	}
+	.introduction p {
+		margin: 0;
+	}
+	.next-step {
+		max-width: 41rem;
+		margin: 1.5rem 0 0;
+	}
+	.contact-row {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		margin-top: 1.75rem;
+	}
+	.contact-row a {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
 		gap: 0.45rem;
-		min-height: 2.65rem;
-		border: 1px solid rgb(231 232 225 / 18%);
+		min-height: 2.75rem;
+		padding: 0 1rem;
+		border: 1px solid rgb(231 232 225 / 20%);
 		color: #f0f0eb;
-		font-size: 0.78rem;
+		font-size: 0.8rem;
 		font-weight: 650;
 		text-decoration: none;
 		transition:
@@ -304,136 +280,125 @@
 			border-color 180ms ease,
 			transform 180ms ease;
 	}
-	.contact-actions__primary {
-		border-color: #d8a54a !important;
-		background: #d8a54a;
-		color: #0b0d0e !important;
-	}
-	.contact-actions a:hover,
-	.contact-actions a:focus-visible {
+	.contact-row .primary-contact {
 		border-color: #d8a54a;
-		background: rgb(216 165 74 / 10%);
+		background: #d8a54a;
+		color: #0b0d0e;
 	}
-	.contact-actions__primary:hover,
-	.contact-actions__primary:focus-visible {
-		background: #e2b762 !important;
+	.contact-row a:hover,
+	.contact-row a:focus-visible {
+		border-color: #d8a54a;
+		background: rgb(216 165 74 / 9%);
 	}
-	.contact-actions a:active {
+	.contact-row .primary-contact:hover,
+	.contact-row .primary-contact:focus-visible {
+		background: #e2b762;
+	}
+	.contact-row a:active {
 		transform: translateY(1px);
 	}
-	.contact-meta {
-		display: grid;
-		gap: 0.45rem;
-		margin-top: 1rem;
+	.contact-note {
+		margin: 0.8rem 0 0;
 		color: #777c78;
-		font-size: 0.58rem;
-		line-height: 1.4;
+		font:
+			500 0.6rem/1.5 'JetBrains Mono Variable',
+			monospace;
 	}
-	.contact-meta a {
-		width: max-content;
-		color: #aeb2ad;
+	figure {
+		margin: 0;
 	}
-	.narrative-grid {
-		display: grid;
-		grid-template-columns: minmax(0, 1.25fr) minmax(20rem, 0.75fr);
-		border-top: 1px solid rgb(231 232 225 / 18%);
-		border-bottom: 1px solid rgb(231 232 225 / 18%);
-	}
-	.narrative-grid section {
-		padding: clamp(2.5rem, 5vw, 4.5rem);
-	}
-	.build {
-		display: grid;
-		grid-template-columns: minmax(9rem, 0.45fr) minmax(0, 1fr);
-		gap: clamp(2rem, 5vw, 5rem);
-		border-right: 1px solid rgb(231 232 225 / 18%);
-	}
-	.section-heading > span {
+	figure img {
 		display: block;
-		margin-bottom: 1rem;
-		color: #d8a54a;
-		font-size: 0.62rem;
+		width: 100%;
+		aspect-ratio: 1;
+		border-top: 2px solid #d8a54a;
+		filter: saturate(0.82) contrast(1.04);
+		object-fit: cover;
+	}
+	figcaption {
+		max-width: 25rem;
+		padding-top: 0.8rem;
+		color: #777c78;
+		font:
+			500 0.6rem/1.45 'JetBrains Mono Variable',
+			monospace;
+	}
+	.projects {
+		padding: clamp(3.5rem, 7vw, 6rem) 0;
+		border-top: 1px solid rgb(231 232 225 / 16%);
+		border-bottom: 1px solid rgb(231 232 225 / 16%);
 	}
 	h2 {
+		max-width: 14ch;
 		margin: 0;
-		font-size: clamp(1.8rem, 3vw, 3rem);
-		line-height: 0.95;
+		font-size: clamp(2.2rem, 4vw, 4rem);
+		line-height: 0.98;
 		letter-spacing: -0.05em;
+		text-wrap: balance;
 	}
-	.section-copy p,
-	.practice-list p {
-		color: #aeb2ad;
-		line-height: 1.65;
-		text-wrap: pretty;
+	.project-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: clamp(2rem, 6vw, 6rem);
+		margin-top: clamp(3rem, 6vw, 5rem);
 	}
-	.section-copy p {
-		max-width: 45rem;
+	.project-grid article {
+		padding-top: 1.5rem;
+		border-top: 1px solid rgb(231 232 225 / 18%);
+	}
+	.project-grid h3 {
 		margin: 0 0 1.25rem;
-		font-size: 1rem;
+		font-size: clamp(1.35rem, 2vw, 1.8rem);
+		letter-spacing: -0.03em;
 	}
-	.evidence-link {
+	.project-grid p {
+		margin: 0 0 1rem;
+		font-size: 0.96rem;
+	}
+	.project-grid a,
+	footer a {
 		display: inline-flex;
 		align-items: center;
-		gap: 0.45rem;
-		margin-top: 1rem;
+		gap: 0.4rem;
 		color: #d8a54a;
-		font-size: 0.82rem;
+		font-size: 0.8rem;
 		font-weight: 650;
-		text-decoration: none;
 	}
-	.practice-list {
-		margin-top: 2.5rem;
+	.project-grid a {
+		margin-top: 1rem;
 	}
-	.practice-list article {
+	.career-shift {
 		display: grid;
-		grid-template-columns: minmax(7.5rem, 0.6fr) 1fr;
-		gap: 1rem;
-		padding: 1.25rem 0;
-		border-top: 1px solid rgb(231 232 225 / 13%);
+		grid-template-columns: minmax(14rem, 0.65fr) minmax(0, 1.35fr);
+		gap: clamp(3rem, 9vw, 8rem);
+		padding: clamp(4rem, 8vw, 7rem) 0;
 	}
-	.practice-list h3,
-	.practice-list p {
-		margin: 0;
-		font-size: 0.82rem;
+	.career-shift h2 {
+		max-width: 10ch;
 	}
-	.practice-list h3 {
-		font-weight: 650;
+	.career-copy {
+		max-width: 43rem;
 	}
-	.foundation {
+	.career-copy p {
+		margin: 0 0 1.25rem;
+		font-size: clamp(1.05rem, 1.7vw, 1.25rem);
+	}
+	footer {
 		display: flex;
-		align-items: flex-end;
+		align-items: center;
 		justify-content: space-between;
 		gap: 2rem;
 		padding: 2rem 0 0;
+		border-top: 1px solid rgb(231 232 225 / 16%);
 	}
-	.foundation__label {
-		display: block;
-		margin-bottom: 0.9rem;
-		color: #777c78;
-		font-size: 0.6rem;
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
-	}
-	.foundation ul {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.45rem 1rem;
+	footer p {
 		margin: 0;
-		padding: 0;
-		list-style: none;
-		color: #aeb2ad;
+		color: #777c78;
 		font-size: 0.78rem;
 	}
-	.external-links {
+	footer nav {
 		display: flex;
 		gap: 1.25rem;
-		font-size: 0.75rem;
-		font-weight: 650;
-	}
-	.external-links a {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.35rem;
 	}
 	a:hover {
 		color: #d8a54a;
@@ -442,76 +407,66 @@
 		outline: 2px solid #d8a54a;
 		outline-offset: 4px;
 	}
-	@media (max-width: 820px) {
+	@media (max-width: 760px) {
 		.about-page {
-			width: min(100% - 2rem, 44rem);
+			width: min(100% - 2rem, 40rem);
 			padding-top: 0.75rem;
 		}
-		.hero {
+		.intro {
+			grid-template-columns: 1fr;
+			gap: 3rem;
+			padding: 3.25rem 0 3.75rem;
+		}
+		h1 {
+			font-size: clamp(3rem, 14vw, 4.5rem);
+		}
+		.introduction {
+			margin-top: 1.75rem;
+		}
+		figure {
+			width: min(100%, 21rem);
+		}
+		.career-shift {
+			grid-template-columns: 1fr;
+		}
+		.project-grid {
 			grid-template-columns: 1fr;
 			gap: 2.75rem;
-			padding: 3.5rem 0 3rem;
 		}
-		h1 {
-			max-width: 10ch;
-			font-size: clamp(3.35rem, 15vw, 5rem);
-			line-height: 0.9;
+		.career-shift {
+			gap: 2.25rem;
 		}
-		.lead {
-			margin-top: 1.5rem;
-		}
-		.narrative-grid {
-			grid-template-columns: 1fr;
-		}
-		.narrative-grid section {
-			padding: 2.5rem 0;
-		}
-		.build {
-			grid-template-columns: 1fr;
-			gap: 2rem;
-			border-right: 0;
-			border-bottom: 1px solid rgb(231 232 225 / 18%);
-		}
-		.practice-list {
-			margin-top: 2rem;
-		}
-		.foundation {
-			align-items: flex-start;
-			padding: 1.5rem 0 0;
-		}
-	}
-	@media (max-width: 480px) {
-		.page-index {
-			display: none;
-		}
-		.hero {
-			gap: 2rem;
-			padding-top: 2rem;
-		}
-		.eyebrow {
-			margin-bottom: 1rem;
-			font-size: 0.6rem;
-		}
-		h1 {
-			font-size: clamp(2.75rem, 15vw, 3.7rem);
-		}
-		.availability {
-			padding: 1rem;
-		}
-		.availability > p {
-			margin: 0.9rem 0 1rem;
-		}
-		.practice-list article {
-			grid-template-columns: 1fr;
-			gap: 0.5rem;
-		}
-		.foundation {
+		footer {
 			align-items: flex-start;
 			flex-direction: column;
 		}
 	}
+	@media (max-width: 400px) {
+		.topline > span {
+			display: none;
+		}
+		.intro {
+			padding-top: 2.5rem;
+		}
+		h1 {
+			font-size: clamp(2.75rem, 14vw, 3.4rem);
+		}
+		.introduction p {
+			font-size: 0.98rem;
+		}
+		.contact-row {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+		}
+		.contact-row a {
+			padding: 0 0.55rem;
+		}
+		.contact-note {
+			max-width: 30ch;
+		}
+	}
 	@media (prefers-reduced-motion: reduce) {
-		.contact-actions a {
+		.contact-row a {
 			transition: none;
 		}
 	}

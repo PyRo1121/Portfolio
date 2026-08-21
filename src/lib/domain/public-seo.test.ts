@@ -33,6 +33,11 @@ describe('public SEO copy', () => {
 		expect(PUBLIC_IDENTITY_LINE).toBe('Software developer · TypeScript · Svelte · Cloudflare');
 	});
 
+	it('positions the About page around Olen’s real career transition and projects', () => {
+		expect(aboutSeo.title).toContain('From customer support to software and cloud systems');
+		expect(aboutSeo.description).toContain('OMG and Weeknote');
+	});
+
 	it('publishes one direct recruiter contact path and exact availability statement', () => {
 		expect(PUBLIC_CONTACT_EMAIL).toBe('olen@latham.cloud');
 		expect(PUBLIC_CONTACT_MAILTO).toBe(

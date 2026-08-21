@@ -91,9 +91,9 @@ export const homeSeo: PublicSeoPage = {
 };
 
 export const aboutSeo: PublicSeoPage = {
-	title: 'About Olen Latham — Software developer in TypeScript, Svelte, and Cloudflare',
+	title: 'About Olen Latham — From customer support to software and cloud systems',
 	description:
-		'Olen Latham builds software with TypeScript, Svelte 5, and Cloudflare Workers. Weeknote is the public engineering log and portfolio.',
+		'Olen Latham works in customer service and builds developer tools with Rust, TypeScript, Svelte, and Cloudflare. Read the story behind OMG and Weeknote.',
 	canonical: `${PUBLIC_SITE_ORIGIN}/about`,
 	jsonLd: serializeJsonLd([
 		{
