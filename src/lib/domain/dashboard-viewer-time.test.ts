@@ -21,7 +21,8 @@ describe('createViewerActivityProjection', () => {
 
 	it('places one instant into each viewer local date', () => {
 		const commit = snapshot.intelligence.commits[0];
-		expect(commit).toBeDefined();
+		// Test-setup invariant: the demo snapshot must always contain a commit.
+		if (commit === undefined) throw new Error('demo snapshot has no commits');
 		const newYork = createViewerActivityProjection(snapshot, 'America/New_York');
 		const tokyo = createViewerActivityProjection(snapshot, 'Asia/Tokyo');
 		const newYorkDate = new Intl.DateTimeFormat('en-CA', {
@@ -30,7 +31,7 @@ describe('createViewerActivityProjection', () => {
 			month: '2-digit',
 			day: '2-digit'
 		})
-			.format(new Date(commit!.committedAt))
+			.format(new Date(commit.committedAt))
 			.replaceAll('/', '-');
 		const tokyoDate = new Intl.DateTimeFormat('en-CA', {
 			timeZone: tokyo.timeZone,
@@ -38,9 +39,9 @@ describe('createViewerActivityProjection', () => {
 			month: '2-digit',
 			day: '2-digit'
 		})
-			.format(new Date(commit!.committedAt))
+			.format(new Date(commit.committedAt))
 			.replaceAll('/', '-');
-		expect(commitsForViewerDate([commit!], newYorkDate, newYork.timeZone)).toEqual([commit]);
-		expect(commitsForViewerDate([commit!], tokyoDate, tokyo.timeZone)).toEqual([commit]);
+		expect(commitsForViewerDate([commit], newYorkDate, newYork.timeZone)).toEqual([commit]);
+		expect(commitsForViewerDate([commit], tokyoDate, tokyo.timeZone)).toEqual([commit]);
 	});
 });
