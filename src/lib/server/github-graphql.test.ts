@@ -224,7 +224,12 @@ type GitHubFetchOptions = {
 	readonly paginatedRepository?: string;
 	readonly failingPaginationRepository?: string;
 	readonly searchResponse?: unknown;
+	readonly searchResponseForAuthorization?: (authorization: string | null) => unknown;
 	readonly searchVariables?: Array<Record<string, unknown>>;
+	readonly requestAuthorizations?: Array<{
+		readonly resource: string;
+		readonly authorization: string | null;
+	}>;
 };
 
 function githubFetch(
@@ -234,17 +239,25 @@ function githubFetch(
 ): typeof globalThis.fetch {
 	return (async (_input: RequestInfo | URL, init?: RequestInit) => {
 		const payload = parsePayload(init);
+		const authorization = new Headers(init?.headers).get('Authorization');
 		if (payload.query.includes('GitHubSignalAccount')) {
 			accountQueries.push(payload.query);
+			options.requestAuthorizations?.push({ resource: 'account', authorization });
 			return Response.json(accountResponse());
 		}
 		if (payload.query.includes('GitHubSignalSearches')) {
 			options.searchVariables?.push(payload.variables);
-			return Response.json(options.searchResponse ?? searchResponse());
+			options.requestAuthorizations?.push({ resource: 'search', authorization });
+			return Response.json(
+				options.searchResponseForAuthorization?.(authorization) ??
+					options.searchResponse ??
+					searchResponse()
+			);
 		}
 		if (payload.query.includes('GitHubRepositorySlice')) {
 			const fullName = `${String(payload.variables['owner'])}/${String(payload.variables['name'])}`;
 			repositoryQueries.push(fullName);
+			options.requestAuthorizations?.push({ resource: fullName, authorization });
 			return fullName === options.failingRepository
 				? new Response('upstream timeout', { status: 502 })
 				: Response.json(repositoryResponse(fullName, fullName === options.paginatedRepository));
@@ -269,9 +282,10 @@ function cacheFixture() {
 	});
 }
 
+const inventoryToken = Redacted.make('inventory-token');
 const inventory = [
-	{ fullName: 'octocat/product', isPrivate: false },
-	{ fullName: 'octocat/product-private', isPrivate: true }
+	{ fullName: 'octocat/product', isPrivate: false, token: inventoryToken },
+	{ fullName: 'octocat/product-private', isPrivate: true, token: inventoryToken }
 ];
 const requestWindow = {
 	token: Redacted.make('secret'),
@@ -363,6 +377,95 @@ describe('incremental GitHub GraphQL intelligence', () => {
 		expect(searchVariables[0]?.['currentMaintainerMergedPullRequests']).toContain(
 			'is:pr user:octocat is:merged'
 		);
+	});
+
+	it('uses repository-scoped credentials and disjoint search scopes', async () => {
+		const organizationToken = Redacted.make('organization-token');
+		const organizationPullRequest = pullRequestSearchResult({
+			repository: 'CodeLoud/codeloud-voice',
+			number: 68,
+			author: 'octocat',
+			authorType: 'User',
+			mergedBy: 'octocat',
+			mergedAt: '2026-08-14T13:00:00Z'
+		});
+		const primaryRepository = inventory[0];
+		if (primaryRepository === undefined) throw new Error('Primary repository fixture is absent.');
+		const searchVariables: Array<Record<string, unknown>> = [];
+		const requestAuthorizations: Array<{
+			readonly resource: string;
+			readonly authorization: string | null;
+		}> = [];
+		const intelligence = await Effect.runPromise(
+			fetchGitHubIntelligence({
+				...requestWindow,
+				repositoryInventory: [
+					primaryRepository,
+					{
+						fullName: 'CodeLoud/codeloud-voice',
+						isPrivate: true,
+						token: organizationToken
+					}
+				],
+				additionalSearchRepositories: [
+					{ repository: 'CodeLoud/codeloud-voice', token: organizationToken }
+				],
+				fetch: githubFetch([], [], {
+					searchVariables,
+					requestAuthorizations,
+					searchResponseForAuthorization: (authorization) =>
+						authorization === 'Bearer organization-token'
+							? searchResponse({
+									currentMergedPullRequests: {
+										issueCount: 1,
+										nodes: [organizationPullRequest]
+									},
+									currentMaintainerMergedPullRequests: {
+										issueCount: 1,
+										nodes: [organizationPullRequest]
+									}
+								})
+							: searchResponse()
+				}),
+				repositoryCache: cacheFixture()
+			})
+		);
+
+		expect(searchVariables).toHaveLength(2);
+		expect(searchVariables[0]?.['currentMergedPullRequests']).toContain(
+			'-repo:CodeLoud/codeloud-voice'
+		);
+		expect(searchVariables[1]?.['currentMergedPullRequests']).toContain(
+			'repo:CodeLoud/codeloud-voice'
+		);
+		expect(searchVariables[0]?.['currentMaintainerMergedPullRequests']).toContain('user:octocat');
+		expect(searchVariables[1]?.['currentMaintainerMergedPullRequests']).not.toContain(
+			'user:octocat'
+		);
+		expect(searchVariables[1]?.['currentMaintainerMergedPullRequests']).toContain(
+			'repo:CodeLoud/codeloud-voice'
+		);
+		expect(requestAuthorizations).toEqual(
+			expect.arrayContaining([
+				{ resource: 'search', authorization: 'Bearer secret' },
+				{ resource: 'search', authorization: 'Bearer organization-token' },
+				{ resource: 'octocat/product', authorization: 'Bearer inventory-token' },
+				{
+					resource: 'CodeLoud/codeloud-voice',
+					authorization: 'Bearer organization-token'
+				}
+			])
+		);
+		expect(intelligence.delivery).toMatchObject({
+			mergedPullRequests: 1,
+			authoredMergedPullRequests: 1,
+			maintainerMergedPullRequests: 0,
+			automatedMergedPullRequests: 0
+		});
+		expect(intelligence.delivery.outcomes).toMatchObject([
+			{ repository: 'CodeLoud/codeloud-voice', number: 68, responsibility: 'Authored' }
+		]);
+		expect(intelligence.repositoryCollection.successfulGraphQLRequests).toBe(5);
 	});
 
 	it('includes issues authored, closed, or closed through a pull request by the owner', async () => {

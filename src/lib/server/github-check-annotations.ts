@@ -246,11 +246,15 @@ function annotationCoverageDetail(
 	return `${evidenceCount} bounded check-run annotations observed across ${targetedRunCount} failed workflow runs.`;
 }
 
+function unavailableRunAnnotations(): RunAnnotationResult {
+	return { evidence: [], truncated: false, limitation: 'Unavailable' };
+}
+
 /** Collect bounded check-run annotations for recent failed default-branch workflow runs. */
 export function fetchWorkflowAnnotations(
 	fetch: Fetch,
-	actionsToken: Redacted.Redacted<string>,
-	checksToken: Redacted.Redacted<string> | undefined,
+	actionsTokenForRepository: (repository: string) => Redacted.Redacted<string>,
+	checksTokenForRepository: (repository: string) => Redacted.Redacted<string> | undefined,
 	runs: ReadonlyArray<WorkflowRunInput>
 ): Effect.Effect<WorkflowAnnotationCoverageInput, never> {
 	const failedRuns = runs
@@ -266,18 +270,31 @@ export function fetchWorkflowAnnotations(
 			detail: 'No failed workflow runs required annotation collection.'
 		});
 	}
-	if (checksToken === undefined) {
+	const checksTokens = new Map(
+		targetedRuns.map((run) => [run.repository, checksTokenForRepository(run.repository)])
+	);
+	if ([...checksTokens.values()].every((token) => token === undefined)) {
 		return Effect.succeed({
 			state: 'Unavailable',
 			targetedRuns: targetedRuns.length,
 			evidence: [],
 			truncated: failedRuns.length > MAX_FAILED_RUNS,
-			detail: 'GitHub Checks app authentication was unavailable; workflow totals remain current.'
+			detail: 'GitHub Checks authentication was unavailable; workflow totals remain current.'
 		});
 	}
 	return Effect.promise(() =>
 		Promise.all(
-			targetedRuns.map((run) => collectRunAnnotations(fetch, actionsToken, checksToken, run))
+			targetedRuns.map((run) => {
+				const checksToken = checksTokens.get(run.repository);
+				return checksToken === undefined
+					? Promise.resolve(unavailableRunAnnotations())
+					: collectRunAnnotations(
+							fetch,
+							actionsTokenForRepository(run.repository),
+							checksToken,
+							run
+						);
+			})
 		)
 	).pipe(
 		Effect.map((results): WorkflowAnnotationCoverageInput => {

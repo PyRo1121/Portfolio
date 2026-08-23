@@ -17,6 +17,8 @@ declare global {
 				GITHUB_CHECKS_APP_ID?: string;
 				GITHUB_CHECKS_APP_PRIVATE_KEY?: string;
 				GITHUB_CHECKS_INSTALLATION_ID?: string;
+				GITHUB_ORGANIZATION_REPOSITORIES?: string;
+				GITHUB_ORGANIZATION_TOKEN?: string;
 				GITHUB_TOKEN?: string;
 				GITHUB_USERNAME?: string;
 				TELEMETRY_RATE_LIMITER: RateLimit;

@@ -65,6 +65,8 @@ Set `GITHUB_USERNAME` in `.env`. Keep credentials outside the repository tree or
 - `~/.config/weeknote/github-token` — mode `0600` fine-grained PAT.
 - `~/.config/weeknote/github-checks-app.pem` — mode `0600` PKCS#8 key for the Checks GitHub App.
 
+Private repositories owned by another GitHub resource owner use the optional `GITHUB_ORGANIZATION_REPOSITORIES` exact allowlist and a separately scoped read-only `GITHUB_ORGANIZATION_TOKEN`. Both values are required together. In production, store the token only through `wrangler secret put GITHUB_ORGANIZATION_TOKEN`; never commit it or pass it as a command argument.
+
 ## Verification
 
 Use targeted checks while developing:

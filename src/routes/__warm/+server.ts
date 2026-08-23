@@ -6,6 +6,7 @@ import { PUBLIC_SHIPPING_RESOURCE_KINDS } from '$lib/domain/owner-project';
 import { loadLiveDashboardSnapshot } from '$lib/server/dashboard-loader';
 import { dashboardSnapshotCacheFor } from '$lib/server/dashboard-snapshot-cache';
 import { parseGitHubChecksAppConfig } from '$lib/server/github-app-auth';
+import { parseGitHubOrganizationAccessConfig } from '$lib/server/github-organization-access';
 import { loadCloudflareUsageSnapshot } from '$lib/server/cloudflare-api';
 import { cloudflareUsageCacheFor } from '$lib/server/cloudflare-usage-cache';
 import { loadCloudflareDeploymentSnapshot } from '$lib/server/cloudflare-deployments-api';
@@ -49,6 +50,13 @@ export const GET: RequestHandler = async ({ platform, request, setHeaders, url }
 			platform.env.GITHUB_CHECKS_APP_PRIVATE_KEY?.trim() ||
 			env['GITHUB_CHECKS_APP_PRIVATE_KEY']?.trim()
 	});
+	const organizationState = parseGitHubOrganizationAccessConfig({
+		token:
+			platform.env.GITHUB_ORGANIZATION_TOKEN?.trim() || env['GITHUB_ORGANIZATION_TOKEN']?.trim(),
+		repositories:
+			platform.env.GITHUB_ORGANIZATION_REPOSITORIES?.trim() ||
+			env['GITHUB_ORGANIZATION_REPOSITORIES']?.trim()
+	});
 	const cloudflareAccountId =
 		platform.env.CLOUDFLARE_ACCOUNT_ID?.trim() || env['CLOUDFLARE_ACCOUNT_ID']?.trim();
 	const cloudflareToken =
@@ -56,6 +64,12 @@ export const GET: RequestHandler = async ({ platform, request, setHeaders, url }
 
 	const dashboardCache = dashboardSnapshotCacheFor(platform.env.WEEKNOTE_CACHE, refreshLeaseClient);
 	const cachedDashboard = await dashboardCache.read(username);
+	const githubConfigurationError =
+		checksAppState._tag === 'Invalid'
+			? checksAppState.reason
+			: organizationState._tag === 'Invalid'
+				? organizationState.reason
+				: null;
 	let dashboardRefresh: Promise<Awaited<ReturnType<typeof dashboardCache.refresh>>>;
 	if (token === undefined || token.length === 0) {
 		dashboardRefresh = Promise.resolve({
@@ -63,11 +77,11 @@ export const GET: RequestHandler = async ({ platform, request, setHeaders, url }
 			attemptedAt: now.toISOString(),
 			reason: 'GitHub authentication is not configured.'
 		});
-	} else if (checksAppState._tag === 'Invalid') {
+	} else if (githubConfigurationError !== null) {
 		dashboardRefresh = Promise.resolve({
 			_tag: 'Unavailable',
 			attemptedAt: now.toISOString(),
-			reason: checksAppState.reason
+			reason: githubConfigurationError
 		});
 	} else {
 		dashboardRefresh = dashboardCache.refresh(username, cachedDashboard, now, () =>
@@ -75,6 +89,9 @@ export const GET: RequestHandler = async ({ platform, request, setHeaders, url }
 				fetch: globalThis.fetch,
 				username,
 				token,
+				...(organizationState._tag === 'Configured'
+					? { organization: organizationState.config }
+					: {}),
 				...(checksAppState._tag === 'Configured' ? { checksApp: checksAppState.config } : {}),
 				now,
 				cacheStore: platform.env.WEEKNOTE_CACHE

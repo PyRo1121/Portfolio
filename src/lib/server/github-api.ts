@@ -15,6 +15,7 @@ import { fetchWorkflowCoverage } from './github-actions';
 import { fetchGitHubChecksToken, type GitHubChecksAppConfig } from './github-app-auth';
 import { fetchGitHubIntelligence, GitHubGraphQLError } from './github-graphql';
 import { githubFetch, githubRequestHeaders } from './github-http';
+import type { GitHubOrganizationAccessConfig } from './github-organization-access';
 import type { GitHubRepositorySliceCache } from './github-repository-slice-cache';
 
 const MAX_EVENT_PAGES = 3;
@@ -114,12 +115,19 @@ export type GitHubStatsError =
 export type GitHubStatsConfig = {
 	readonly username: string;
 	readonly token: Redacted.Redacted<string>;
+	readonly organization?: GitHubOrganizationAccessConfig;
 	readonly checksApp?: GitHubChecksAppConfig;
 };
 
 type Fetch = typeof globalThis.fetch;
 type RawEvent = Schema.Schema.Type<typeof EventSchema>;
 type RawRepository = Schema.Schema.Type<typeof RepositorySchema>;
+type RawUser = Schema.Schema.Type<typeof UserSchema>;
+
+type RepositoryAccess = {
+	readonly repository: RawRepository;
+	readonly token: Redacted.Redacted<string>;
+};
 
 function requestJson(
 	fetch: Fetch,
@@ -141,6 +149,117 @@ function requestJson(
 				: Effect.fail(new GitHubRequestError(path, response.status, null))
 		)
 	);
+}
+
+function decodeUser(
+	body: unknown,
+	resource: string
+): Effect.Effect<RawUser, GitHubResponseParseError> {
+	return Schema.decodeUnknown(UserSchema)(body).pipe(
+		Effect.mapError((cause) => new GitHubResponseParseError(resource, cause))
+	);
+}
+
+function verifyIdentity(
+	user: RawUser,
+	configuredUsername: string
+): Effect.Effect<void, GitHubIdentityMismatchError> {
+	return user.login.toLocaleLowerCase() === configuredUsername.toLocaleLowerCase()
+		? Effect.void
+		: Effect.fail(new GitHubIdentityMismatchError(configuredUsername, user.login));
+}
+
+function repositoryApiPath(fullName: string): string | null {
+	const separator = fullName.indexOf('/');
+	if (
+		separator <= 0 ||
+		separator !== fullName.lastIndexOf('/') ||
+		separator === fullName.length - 1
+	) {
+		return null;
+	}
+	return `/repos/${encodeURIComponent(fullName.slice(0, separator))}/${encodeURIComponent(fullName.slice(separator + 1))}`;
+}
+
+function loadPrimaryRepositories(
+	fetch: Fetch,
+	token: Redacted.Redacted<string>
+): Effect.Effect<ReadonlyArray<RepositoryAccess>, GitHubStatsError> {
+	return Effect.gen(function* () {
+		const repositories: RepositoryAccess[] = [];
+		for (let page = 1; page <= 100; page += 1) {
+			const body = yield* requestJson(
+				fetch,
+				`/user/repos?affiliation=${REPOSITORY_AFFILIATIONS}&sort=created&direction=desc&per_page=100&page=${String(page)}`,
+				token
+			);
+			const decoded = yield* Schema.decodeUnknown(Schema.Array(RepositorySchema))(body).pipe(
+				Effect.mapError((cause) => new GitHubResponseParseError('repositories', cause))
+			);
+			repositories.push(...decoded.map((repository) => ({ repository, token })));
+			if (decoded.length < 100) break;
+			if (page === 100) {
+				yield* Effect.fail(
+					new GitHubResponseParseError(
+						'repositories',
+						new Error('GitHub repository inventory exceeded the bounded 10,000 repository limit.')
+					)
+				);
+			}
+		}
+		return repositories;
+	});
+}
+
+function loadOrganizationRepositories(
+	fetch: Fetch,
+	username: string,
+	config: GitHubOrganizationAccessConfig
+): Effect.Effect<ReadonlyArray<RepositoryAccess>, GitHubStatsError> {
+	return Effect.gen(function* () {
+		const user = yield* requestJson(fetch, '/user', config.token).pipe(
+			Effect.flatMap((body) => decodeUser(body, 'organization user'))
+		);
+		yield* verifyIdentity(user, username);
+		return yield* Effect.forEach(
+			config.repositories,
+			(fullName) => {
+				const path = repositoryApiPath(fullName);
+				if (path === null) {
+					return Effect.fail(
+						new GitHubResponseParseError(
+							'organization repository configuration',
+							new Error('Repository name must contain exactly one owner separator.')
+						)
+					);
+				}
+				return requestJson(fetch, path, config.token).pipe(
+					Effect.flatMap((body) => Schema.decodeUnknown(RepositorySchema)(body)),
+					Effect.mapError((cause) =>
+						cause instanceof GitHubRequestError
+							? cause
+							: new GitHubResponseParseError('organization repository', cause)
+					),
+					Effect.map((repository) => ({ repository, token: config.token }))
+				);
+			},
+			{ concurrency: 6 }
+		);
+	});
+}
+
+function mergeRepositoryAccess(
+	primary: ReadonlyArray<RepositoryAccess>,
+	organization: ReadonlyArray<RepositoryAccess>
+): ReadonlyArray<RepositoryAccess> {
+	const repositories = new Map<string, RepositoryAccess>();
+	for (const access of primary) {
+		repositories.set(access.repository.full_name.toLocaleLowerCase(), access);
+	}
+	for (const access of organization) {
+		repositories.set(access.repository.full_name.toLocaleLowerCase(), access);
+	}
+	return [...repositories.values()];
 }
 
 function parseActionEvent(raw: RawEvent, tag: 'Issue'): GitHubActivityEvent {
@@ -259,13 +378,10 @@ export function fetchWeeklySnapshot(
 ): Effect.Effect<GitHubDashboardSnapshot, GitHubStatsError> {
 	const username = encodeURIComponent(config.username);
 	return Effect.gen(function* () {
-		const userBody = yield* requestJson(fetch, '/user', config.token);
-		const user = yield* Schema.decodeUnknown(UserSchema)(userBody).pipe(
-			Effect.mapError((cause) => new GitHubResponseParseError('user', cause))
+		const user = yield* requestJson(fetch, '/user', config.token).pipe(
+			Effect.flatMap((body) => decodeUser(body, 'user'))
 		);
-		if (user.login.toLocaleLowerCase() !== config.username.toLocaleLowerCase()) {
-			yield* Effect.fail(new GitHubIdentityMismatchError(config.username, user.login));
-		}
+		yield* verifyIdentity(user, config.username);
 
 		const eventPath = `/users/${username}/events`;
 		const rawEvents: RawEvent[] = [];
@@ -283,28 +399,13 @@ export function fetchWeeklySnapshot(
 		}
 		const events = rawEvents.map(parseEvent);
 
-		const rawRepositories: RawRepository[] = [];
-		for (let page = 1; page <= 100; page += 1) {
-			const repositoryBody = yield* requestJson(
-				fetch,
-				`/user/repos?affiliation=${REPOSITORY_AFFILIATIONS}&sort=created&direction=desc&per_page=100&page=${String(page)}`,
-				config.token
-			);
-			const repositoryPage = yield* Schema.decodeUnknown(Schema.Array(RepositorySchema))(
-				repositoryBody
-			).pipe(Effect.mapError((cause) => new GitHubResponseParseError('repositories', cause)));
-			rawRepositories.push(...repositoryPage);
-			if (repositoryPage.length < 100) break;
-			if (page === 100) {
-				yield* Effect.fail(
-					new GitHubResponseParseError(
-						'repositories',
-						new Error('GitHub repository inventory exceeded the bounded 10,000 repository limit.')
-					)
-				);
-			}
-		}
-		const repositories = rawRepositories.map(toRepository);
+		const primaryRepositories = yield* loadPrimaryRepositories(fetch, config.token);
+		const organizationRepositories =
+			config.organization === undefined
+				? []
+				: yield* loadOrganizationRepositories(fetch, config.username, config.organization);
+		const repositoryAccess = mergeRepositoryAccess(primaryRepositories, organizationRepositories);
+		const repositories = repositoryAccess.map((access) => toRepository(access.repository));
 
 		const weekStart = startOfRollingWeek(now);
 		const snapshot = createWeeklySnapshot({
@@ -315,6 +416,14 @@ export function fetchWeeklySnapshot(
 			pushMeasurements: []
 		});
 		const weekEnd = addZonedDays(weekStart, 7, COLLECTION_TIME_ZONE);
+		const organization = config.organization;
+		const additionalSearchRepositories =
+			organization === undefined
+				? []
+				: organization.repositories.map((repository) => ({
+						repository,
+						token: organization.token
+					}));
 		const intelligence = yield* fetchGitHubIntelligence({
 			fetch,
 			token: config.token,
@@ -323,10 +432,12 @@ export function fetchWeeklySnapshot(
 			weekStart,
 			weekEnd,
 			now,
-			repositoryInventory: rawRepositories.map((repository) => ({
-				fullName: repository.full_name,
-				isPrivate: repository.private
+			repositoryInventory: repositoryAccess.map((access) => ({
+				fullName: access.repository.full_name,
+				isPrivate: access.repository.private,
+				token: access.token
 			})),
+			additionalSearchRepositories,
 			repositoryCache
 		});
 		const checksToken = yield* config.checksApp === undefined
@@ -339,10 +450,22 @@ export function fetchWeeklySnapshot(
 					),
 					Effect.catchAll(() => Effect.succeed(undefined))
 				);
+		const repositoryTokens = new Map(
+			repositoryAccess.map((access) => [
+				access.repository.full_name.toLocaleLowerCase(),
+				access.token
+			])
+		);
+		const organizationRepositoryNames = new Set(
+			organization?.repositories.map((repository) => repository.toLocaleLowerCase()) ?? []
+		);
 		const workflows = yield* fetchWorkflowCoverage(
 			fetch,
-			config.token,
-			checksToken,
+			(repository) => repositoryTokens.get(repository.toLocaleLowerCase()) ?? config.token,
+			(repository) =>
+				organizationRepositoryNames.has(repository.toLocaleLowerCase())
+					? repositoryTokens.get(repository.toLocaleLowerCase())
+					: checksToken,
 			config.username,
 			intelligence.repositories,
 			weekStart,

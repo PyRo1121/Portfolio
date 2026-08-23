@@ -478,6 +478,7 @@ type Fetch = typeof globalThis.fetch;
 type DecodedRepository = Schema.Schema.Type<typeof RepositorySchema>;
 type DecodedCommit = Schema.Schema.Type<typeof CommitSchema>;
 type SearchConnection = Schema.Schema.Type<typeof SearchConnectionSchema>;
+type SearchData = Schema.Schema.Type<typeof SearchDataSchema>;
 
 function graphQLRequest(
 	fetch: Fetch,
@@ -943,6 +944,101 @@ function isoDate(date: Date): string {
 	return date.toISOString().slice(0, 10);
 }
 
+function scopedSearch(query: string, scope: string): string {
+	return scope.length === 0 ? query : `${query} ${scope}`;
+}
+
+function searchVariables(
+	username: string,
+	searchDate: string,
+	weekStart: Date,
+	weekEnd: Date,
+	previousStart: Date,
+	scope: string,
+	repositoryScoped: boolean
+): Record<string, string> {
+	return {
+		authoredPullRequests: scopedSearch(`is:pr author:${username} created:>=${searchDate}`, scope),
+		mergedPullRequests: scopedSearch(`is:pr author:${username} merged:>=${searchDate}`, scope),
+		reviewedPullRequests: scopedSearch(
+			`is:pr reviewed-by:${username} updated:>=${searchDate}`,
+			scope
+		),
+		authoredIssues: scopedSearch(`is:issue author:${username} created:>=${searchDate}`, scope),
+		commentedItems: scopedSearch(`commenter:${username} updated:>=${searchDate}`, scope),
+		currentMergedPullRequests: scopedSearch(
+			`is:pr author:${username} merged:${weekStart.toISOString()}..${weekEnd.toISOString()}`,
+			scope
+		),
+		currentMaintainerMergedPullRequests: scopedSearch(
+			`is:pr ${repositoryScoped ? '' : `user:${username} `}is:merged merged:${weekStart.toISOString()}..${weekEnd.toISOString()}`,
+			scope
+		),
+		currentClosedIssues: scopedSearch(
+			`is:issue author:${username} closed:${weekStart.toISOString()}..${weekEnd.toISOString()}`,
+			scope
+		),
+		currentMaintainerClosedIssues: scopedSearch(
+			`is:issue ${repositoryScoped ? '' : `user:${username} `}is:closed closed:${weekStart.toISOString()}..${weekEnd.toISOString()}`,
+			scope
+		),
+		previousMergedPullRequests: scopedSearch(
+			`is:pr author:${username} merged:${previousStart.toISOString()}..${weekStart.toISOString()}`,
+			scope
+		),
+		previousMaintainerMergedPullRequests: scopedSearch(
+			`is:pr ${repositoryScoped ? '' : `user:${username} `}is:merged merged:${previousStart.toISOString()}..${weekStart.toISOString()}`,
+			scope
+		),
+		previousClosedIssues: scopedSearch(
+			`is:issue author:${username} closed:${previousStart.toISOString()}..${weekStart.toISOString()}`,
+			scope
+		),
+		previousMaintainerClosedIssues: scopedSearch(
+			`is:issue ${repositoryScoped ? '' : `user:${username} `}is:closed closed:${previousStart.toISOString()}..${weekStart.toISOString()}`,
+			scope
+		)
+	};
+}
+
+function mergeSearchConnection(connections: ReadonlyArray<SearchConnection>): SearchConnection {
+	return {
+		issueCount: connections.reduce((total, connection) => total + connection.issueCount, 0),
+		nodes: connections.flatMap((connection) => connection.nodes)
+	};
+}
+
+function mergeSearchData(responses: readonly [SearchData, ...SearchData[]]): SearchData {
+	const connections = <Key extends Exclude<keyof SearchData, 'rateLimit'>>(
+		key: Key
+	): SearchConnection => mergeSearchConnection(responses.map((response) => response[key]));
+	const first = responses[0];
+	return {
+		authoredPullRequests: connections('authoredPullRequests'),
+		mergedPullRequests: connections('mergedPullRequests'),
+		reviewedPullRequests: connections('reviewedPullRequests'),
+		authoredIssues: connections('authoredIssues'),
+		commentedItems: connections('commentedItems'),
+		currentMergedPullRequests: connections('currentMergedPullRequests'),
+		currentMaintainerMergedPullRequests: connections('currentMaintainerMergedPullRequests'),
+		currentClosedIssues: connections('currentClosedIssues'),
+		currentMaintainerClosedIssues: connections('currentMaintainerClosedIssues'),
+		previousMergedPullRequests: connections('previousMergedPullRequests'),
+		previousMaintainerMergedPullRequests: connections('previousMaintainerMergedPullRequests'),
+		previousClosedIssues: connections('previousClosedIssues'),
+		previousMaintainerClosedIssues: connections('previousMaintainerClosedIssues'),
+		rateLimit: {
+			cost: responses.reduce((total, response) => total + response.rateLimit.cost, 0),
+			limit: first.rateLimit.limit,
+			remaining: Math.min(...responses.map((response) => response.rateLimit.remaining)),
+			resetAt:
+				[...responses]
+					.map((response) => response.rateLimit.resetAt)
+					.sort((left, right) => left.localeCompare(right))[0] ?? first.rateLimit.resetAt
+		}
+	};
+}
+
 export type GitHubIntelligenceRequest = {
 	readonly fetch: Fetch;
 	readonly token: Redacted.Redacted<string>;
@@ -954,6 +1050,11 @@ export type GitHubIntelligenceRequest = {
 	readonly repositoryInventory: ReadonlyArray<{
 		readonly fullName: string;
 		readonly isPrivate: boolean;
+		readonly token: Redacted.Redacted<string>;
+	}>;
+	readonly additionalSearchRepositories?: ReadonlyArray<{
+		readonly repository: string;
+		readonly token: Redacted.Redacted<string>;
 	}>;
 	readonly repositoryCache: GitHubRepositorySliceCache;
 };
@@ -971,6 +1072,7 @@ export function fetchGitHubIntelligence(
 		weekEnd,
 		now,
 		repositoryInventory,
+		additionalSearchRepositories = [],
 		repositoryCache
 	} = request;
 	const previousStart = addZonedDays(weekStart, -7, COLLECTION_TIME_ZONE);
@@ -985,27 +1087,54 @@ export function fetchGitHubIntelligence(
 		yearStart: yearStart.toISOString(),
 		now: now.toISOString()
 	};
-	const searchVariables = {
-		authoredPullRequests: `is:pr author:${username} created:>=${searchDate}`,
-		mergedPullRequests: `is:pr author:${username} merged:>=${searchDate}`,
-		reviewedPullRequests: `is:pr reviewed-by:${username} updated:>=${searchDate}`,
-		authoredIssues: `is:issue author:${username} created:>=${searchDate}`,
-		commentedItems: `commenter:${username} updated:>=${searchDate}`,
-		currentMergedPullRequests: `is:pr author:${username} merged:${weekStart.toISOString()}..${weekEnd.toISOString()}`,
-		currentMaintainerMergedPullRequests: `is:pr user:${username} is:merged merged:${weekStart.toISOString()}..${weekEnd.toISOString()}`,
-		currentClosedIssues: `is:issue author:${username} closed:${weekStart.toISOString()}..${weekEnd.toISOString()}`,
-		currentMaintainerClosedIssues: `is:issue user:${username} is:closed closed:${weekStart.toISOString()}..${weekEnd.toISOString()}`,
-		previousMergedPullRequests: `is:pr author:${username} merged:${previousStart.toISOString()}..${weekStart.toISOString()}`,
-		previousMaintainerMergedPullRequests: `is:pr user:${username} is:merged merged:${previousStart.toISOString()}..${weekStart.toISOString()}`,
-		previousClosedIssues: `is:issue author:${username} closed:${previousStart.toISOString()}..${weekStart.toISOString()}`,
-		previousMaintainerClosedIssues: `is:issue user:${username} is:closed closed:${previousStart.toISOString()}..${weekStart.toISOString()}`
-	};
+	const primarySearchScope = additionalSearchRepositories
+		.map(({ repository }) => `-repo:${repository}`)
+		.join(' ');
+	const searchRequests = [
+		{
+			token,
+			variables: searchVariables(
+				username,
+				searchDate,
+				weekStart,
+				weekEnd,
+				previousStart,
+				primarySearchScope,
+				false
+			),
+			resource: 'dashboard search query'
+		},
+		...additionalSearchRepositories.map(({ repository, token: repositoryToken }) => ({
+			token: repositoryToken,
+			variables: searchVariables(
+				username,
+				searchDate,
+				weekStart,
+				weekEnd,
+				previousStart,
+				`repo:${repository}`,
+				true
+			),
+			resource: 'organization repository search query'
+		}))
+	];
+	const repositoryTokens = new Map(
+		repositoryInventory.map((repository) => [
+			repository.fullName.toLocaleLowerCase(),
+			repository.token
+		])
+	);
 
 	return Effect.gen(function* () {
-		const [accountBody, searchBody, repositoryCollection] = yield* Effect.all(
+		const [accountBody, searchBodies, repositoryCollection] = yield* Effect.all(
 			[
 				graphQLRequest(fetch, token, ACCOUNT_QUERY, accountVariables, 'account dashboard query'),
-				graphQLRequest(fetch, token, SEARCH_QUERY, searchVariables, 'dashboard search query'),
+				Effect.forEach(
+					searchRequests,
+					(search) =>
+						graphQLRequest(fetch, search.token, SEARCH_QUERY, search.variables, search.resource),
+					{ concurrency: 3 }
+				),
 				collectGitHubRepositorySlices({
 					username,
 					repositoryNames: repositoryInventory.map((repository) => repository.fullName),
@@ -1017,16 +1146,26 @@ export function fetchGitHubIntelligence(
 						graphQLCost: failure.graphQLCost,
 						successfulGraphQLRequests: failure.successfulGraphQLRequests
 					}),
-					load: (fullName) =>
-						fetchGitHubRepositorySlice({
+					load: (fullName) => {
+						const repositoryToken = repositoryTokens.get(fullName.toLocaleLowerCase());
+						if (repositoryToken === undefined) {
+							return Effect.fail(
+								new GitHubGraphQLError(
+									'repository credential resolution',
+									new Error('Repository inventory did not retain its credential.')
+								)
+							);
+						}
+						return fetchGitHubRepositorySlice({
 							fetch,
-							token,
+							token: repositoryToken,
 							fullName,
 							authorId,
 							weekStart: weekStart.toISOString(),
 							weekEnd: weekEnd.toISOString(),
 							previousStart: previousStart.toISOString()
-						})
+						});
+					}
 				})
 			],
 			{ concurrency: 3 }
@@ -1034,21 +1173,34 @@ export function fetchGitHubIntelligence(
 		const accountResponse = yield* Schema.decodeUnknown(CoreResponseSchema)(accountBody).pipe(
 			Effect.mapError((cause) => new GitHubGraphQLError('account response parsing', cause))
 		);
-		const searchResponse = yield* Schema.decodeUnknown(SearchResponseSchema)(searchBody).pipe(
-			Effect.mapError((cause) => new GitHubGraphQLError('search response parsing', cause))
-		);
 		if (accountResponse.errors?.length || accountResponse.data == null) {
 			return yield* Effect.fail(
 				new GitHubGraphQLError('account dashboard response', accountResponse.errors)
 			);
 		}
-		if (searchResponse.errors?.length || searchResponse.data == null) {
+		const decodedSearches: SearchData[] = [];
+		for (const searchBody of searchBodies) {
+			const searchResponse = yield* Schema.decodeUnknown(SearchResponseSchema)(searchBody).pipe(
+				Effect.mapError((cause) => new GitHubGraphQLError('search response parsing', cause))
+			);
+			if (searchResponse.errors?.length || searchResponse.data == null) {
+				return yield* Effect.fail(
+					new GitHubGraphQLError('dashboard search response', searchResponse.errors)
+				);
+			}
+			decodedSearches.push(searchResponse.data);
+		}
+		const primarySearch = decodedSearches[0];
+		if (primarySearch === undefined) {
 			return yield* Effect.fail(
-				new GitHubGraphQLError('dashboard search response', searchResponse.errors)
+				new GitHubGraphQLError(
+					'dashboard search response',
+					new Error('Primary GitHub search response was absent.')
+				)
 			);
 		}
 		const account = accountResponse.data;
-		const searches = searchResponse.data;
+		const searches = mergeSearchData([primarySearch, ...decodedSearches.slice(1)]);
 		const repositories = repositoryCollection.repositories;
 		const collaborationConnections = [
 			searches.authoredPullRequests,
@@ -1094,7 +1246,8 @@ export function fetchGitHubIntelligence(
 				staleRepositories: repositoryCollection.staleRepositories,
 				graphQLCost:
 					account.rateLimit.cost + searches.rateLimit.cost + repositoryCollection.graphQLCost,
-				successfulGraphQLRequests: 2 + repositoryCollection.successfulGraphQLRequests
+				successfulGraphQLRequests:
+					1 + decodedSearches.length + repositoryCollection.successfulGraphQLRequests
 			},
 			contributionDays: account.viewer.year.contributionCalendar.weeks.flatMap((week) =>
 				week.contributionDays.map((day) => ({

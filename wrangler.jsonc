@@ -56,6 +56,7 @@
 		"CLOUDFLARE_ACCOUNT_ID": "f1e95b3e1b502cf366dfc81a863695fa",
 		"GITHUB_CHECKS_APP_ID": "4598962",
 		"GITHUB_CHECKS_INSTALLATION_ID": "153820305",
+		"GITHUB_ORGANIZATION_REPOSITORIES": "CodeLoud/codeloud,CodeLoud/codeloud-voice,CodeLoud/codeloud-relay",
 		"GITHUB_USERNAME": "PyRo1121"
 	},
 	"observability": {

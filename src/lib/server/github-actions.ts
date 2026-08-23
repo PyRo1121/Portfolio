@@ -183,11 +183,11 @@ function aggregate(results: ReadonlyArray<RepositoryWindowResult>): {
 	return { total: runs.length, ...conclusionCounts(runs) };
 }
 
-/** Fetch bounded, user-attributed workflow evidence for active owned repositories. */
+/** Fetch bounded, user-attributed workflow evidence with each repository's credential. */
 export function fetchWorkflowCoverage(
 	fetch: Fetch,
-	token: Redacted.Redacted<string>,
-	checksToken: Redacted.Redacted<string> | undefined,
+	tokenForRepository: (repository: string) => Redacted.Redacted<string>,
+	checksTokenForRepository: (repository: string) => Redacted.Redacted<string> | undefined,
 	username: string,
 	repositories: ReadonlyArray<RepositoryIntelligenceInput>,
 	currentStart: Date,
@@ -200,7 +200,7 @@ export function fetchWorkflowCoverage(
 			activeRepositories.map((repository) =>
 				fetchRepositoryWindow(
 					fetch,
-					token,
+					tokenForRepository(repository.fullName),
 					username,
 					repository.fullName,
 					repository.defaultBranch,
@@ -214,7 +214,7 @@ export function fetchWorkflowCoverage(
 			activeRepositories.map((repository) =>
 				fetchRepositoryWindow(
 					fetch,
-					token,
+					tokenForRepository(repository.fullName),
 					username,
 					repository.fullName,
 					repository.defaultBranch,
@@ -232,7 +232,12 @@ export function fetchWorkflowCoverage(
 		const currentRuns = currentAvailable
 			.flatMap((result) => result.runs)
 			.sort((left, right) => right.createdAt.localeCompare(left.createdAt));
-		const annotations = yield* fetchWorkflowAnnotations(fetch, token, checksToken, currentRuns);
+		const annotations = yield* fetchWorkflowAnnotations(
+			fetch,
+			tokenForRepository,
+			checksTokenForRepository,
+			currentRuns
+		);
 		return {
 			coveredRepositories: currentAvailable.length,
 			totalRepositories: activeRepositories.length,

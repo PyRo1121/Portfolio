@@ -20,7 +20,9 @@ function run(conclusion: string | null): WorkflowRunInput {
 }
 
 const actionsToken = Redacted.make('actions-secret');
+const actionsTokenForRepository = () => actionsToken;
 const checksToken = Redacted.make('checks-secret');
+const checksTokenForRepository = () => checksToken;
 
 describe('fetchWorkflowAnnotations', () => {
 	it('links a bounded failure annotation to its exact workflow job and run', async () => {
@@ -59,7 +61,9 @@ describe('fetchWorkflowAnnotations', () => {
 		}) as typeof globalThis.fetch;
 
 		const result = await Effect.runPromise(
-			fetchWorkflowAnnotations(fetch, actionsToken, checksToken, [run('failure')])
+			fetchWorkflowAnnotations(fetch, actionsTokenForRepository, checksTokenForRepository, [
+				run('failure')
+			])
 		);
 		expect(result).toMatchObject({
 			state: 'Observed',
@@ -94,7 +98,9 @@ describe('fetchWorkflowAnnotations', () => {
 			return new Response('unexpected', { status: 500 });
 		}) as typeof globalThis.fetch;
 		const result = await Effect.runPromise(
-			fetchWorkflowAnnotations(fetch, actionsToken, checksToken, [run('success')])
+			fetchWorkflowAnnotations(fetch, actionsTokenForRepository, checksTokenForRepository, [
+				run('success')
+			])
 		);
 		expect(result).toMatchObject({ state: 'Observed', targetedRuns: 0, evidence: [] });
 		expect(calls).toBe(0);
@@ -108,7 +114,7 @@ describe('fetchWorkflowAnnotations', () => {
 		}) as typeof globalThis.fetch;
 
 		const result = await Effect.runPromise(
-			fetchWorkflowAnnotations(fetch, actionsToken, undefined, [run('failure')])
+			fetchWorkflowAnnotations(fetch, actionsTokenForRepository, () => undefined, [run('failure')])
 		);
 
 		expect(result).toEqual({
@@ -116,7 +122,7 @@ describe('fetchWorkflowAnnotations', () => {
 			targetedRuns: 1,
 			evidence: [],
 			truncated: false,
-			detail: 'GitHub Checks app authentication was unavailable; workflow totals remain current.'
+			detail: 'GitHub Checks authentication was unavailable; workflow totals remain current.'
 		});
 		expect(calls).toBe(0);
 	});
@@ -125,7 +131,9 @@ describe('fetchWorkflowAnnotations', () => {
 		const fetch = (async () =>
 			new Response('forbidden', { status: 403 })) as typeof globalThis.fetch;
 		const result = await Effect.runPromise(
-			fetchWorkflowAnnotations(fetch, actionsToken, checksToken, [run('failure')])
+			fetchWorkflowAnnotations(fetch, actionsTokenForRepository, checksTokenForRepository, [
+				run('failure')
+			])
 		);
 		expect(result).toMatchObject({
 			state: 'Unavailable',

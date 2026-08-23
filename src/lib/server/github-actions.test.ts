@@ -74,11 +74,18 @@ describe('summarizeRepositoryWorkflows', () => {
 		});
 	});
 
-	it('excludes automated dynamic runs from user-triggered verification totals', async () => {
-		const requested: string[] = [];
-		const fetch = (async (input: RequestInfo | URL) => {
+	it('excludes automated dynamic runs and uses the repository credential', async () => {
+		const requested: Array<{
+			readonly url: string;
+			readonly authorization: string | null;
+		}> = [];
+		const resolvedRepositories: string[] = [];
+		const fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
 			const url = String(input);
-			requested.push(url);
+			requested.push({
+				url,
+				authorization: new Headers(init?.headers).get('Authorization')
+			});
 			return Response.json({
 				total_count: 2,
 				workflow_runs: [
@@ -112,8 +119,11 @@ describe('summarizeRepositoryWorkflows', () => {
 		const coverage = await Effect.runPromise(
 			fetchWorkflowCoverage(
 				fetch,
-				Redacted.make('secret'),
-				Redacted.make('checks-secret'),
+				(repositoryName) => {
+					resolvedRepositories.push(repositoryName);
+					return Redacted.make('repository-secret');
+				},
+				() => Redacted.make('checks-secret'),
 				'octocat',
 				[repository],
 				new Date('2026-08-08T00:00:00.000Z'),
@@ -127,6 +137,10 @@ describe('summarizeRepositoryWorkflows', () => {
 			annotations: { state: 'Observed', targetedRuns: 0, evidence: [] }
 		});
 		expect(coverage.current.recent.map((workflow) => workflow.event)).toEqual(['push']);
+		expect(resolvedRepositories).toEqual(['octocat/portfolio', 'octocat/portfolio']);
 		expect(requested).toHaveLength(2);
+		expect(
+			requested.every(({ authorization }) => authorization === 'Bearer repository-secret')
+		).toBe(true);
 	});
 });

@@ -4,6 +4,7 @@ import type { GitHubDashboardSnapshot } from '$lib/domain/github-intelligence';
 import { loadLiveDashboardSnapshot } from '$lib/server/dashboard-loader';
 import { parseGitHubChecksAppConfig } from '$lib/server/github-app-auth';
 import { dashboardSnapshotCacheFor } from '$lib/server/dashboard-snapshot-cache';
+import { parseGitHubOrganizationAccessConfig } from '$lib/server/github-organization-access';
 import { refreshLeaseClientFor } from '$lib/server/refresh-lease-client';
 
 const DEFAULT_USERNAME = 'PyRo1121';
@@ -44,6 +45,15 @@ export async function loadGitHubDashboardPageSlice(
 			platform.env.GITHUB_CHECKS_APP_PRIVATE_KEY?.trim() ||
 			env['GITHUB_CHECKS_APP_PRIVATE_KEY']?.trim()
 	});
+	const organizationToken =
+		platform.env.GITHUB_ORGANIZATION_TOKEN?.trim() || env['GITHUB_ORGANIZATION_TOKEN']?.trim();
+	const organizationRepositories =
+		platform.env.GITHUB_ORGANIZATION_REPOSITORIES?.trim() ||
+		env['GITHUB_ORGANIZATION_REPOSITORIES']?.trim();
+	const organizationState = parseGitHubOrganizationAccessConfig({
+		token: organizationToken,
+		repositories: organizationRepositories
+	});
 	if (token === undefined || token.length === 0) {
 		return {
 			snapshot: null,
@@ -61,18 +71,27 @@ export async function loadGitHubDashboardPageSlice(
 		refreshLeaseClient
 	);
 	const cached = await dashboardSnapshotCache.read(username);
-	const refresh: Promise<DashboardRefreshResult> =
+	const invalidReason =
 		checksAppState._tag === 'Invalid'
+			? checksAppState.reason
+			: organizationState._tag === 'Invalid'
+				? organizationState.reason
+				: null;
+	const refresh: Promise<DashboardRefreshResult> =
+		invalidReason !== null
 			? Promise.resolve({
 					_tag: 'Unavailable',
 					attemptedAt: now.toISOString(),
-					reason: checksAppState.reason
+					reason: invalidReason
 				})
 			: dashboardSnapshotCache.refresh(username, cached, now, () =>
 					loadLiveDashboardSnapshot({
 						fetch: globalThis.fetch,
 						username,
 						token,
+						...(organizationState._tag === 'Configured'
+							? { organization: organizationState.config }
+							: {}),
 						...(checksAppState._tag === 'Configured' ? { checksApp: checksAppState.config } : {}),
 						now,
 						cacheStore: platform.env.WEEKNOTE_CACHE
