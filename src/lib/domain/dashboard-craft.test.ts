@@ -105,6 +105,13 @@ describe('createChecksIntelligence', () => {
 				[passingRepository, 'passing']
 			]
 		);
+		expect(checks.current.repositories[0]?.workflows).toEqual([
+			{ name: 'CI', state: 'attention', stateLabel: 'Failed' },
+			{ name: 'Deploy', state: 'running', stateLabel: 'Running' }
+		]);
+		expect(checks.current.repositories[1]?.workflows).toEqual([
+			{ name: 'CI', state: 'passing', stateLabel: 'Passing' }
+		]);
 		expect(checks).not.toHaveProperty('workflowPassRate');
 	});
 

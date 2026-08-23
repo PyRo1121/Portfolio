@@ -7,6 +7,12 @@ import type {
 export type RepositoryCheckState =
 	'passing' | 'attention' | 'running' | 'indeterminate' | 'noRecord' | 'unavailable';
 
+type WorkflowCheckSignal = {
+	readonly name: string;
+	readonly state: RepositoryCheckState;
+	readonly stateLabel: string;
+};
+
 export type RepositoryCheckSignal = {
 	readonly repository: string;
 	readonly state: RepositoryCheckState;
@@ -15,6 +21,7 @@ export type RepositoryCheckSignal = {
 	readonly latestWorkflowCount: number;
 	readonly failedWorkflowNames: ReadonlyArray<string>;
 	readonly recoveredFailures: number;
+	readonly workflows: ReadonlyArray<WorkflowCheckSignal>;
 };
 
 /** Check evidence organized around latest state, recovery, history, and explicit limits. */
@@ -79,6 +86,18 @@ function stateForLatestRuns(latestRuns: ReadonlyArray<WorkflowRunInput>): Reposi
 	return 'indeterminate';
 }
 
+function workflowStateLabel(state: RepositoryCheckState): string {
+	const labels: Readonly<Record<RepositoryCheckState, string>> = {
+		passing: 'Passing',
+		attention: 'Failed',
+		running: 'Running',
+		indeterminate: 'Other result',
+		noRecord: 'No run',
+		unavailable: 'Unavailable'
+	};
+	return labels[state];
+}
+
 function stateLabel(state: RepositoryCheckState): string {
 	const labels: Readonly<Record<RepositoryCheckState, string>> = {
 		passing: 'Latest checks passing',
@@ -110,11 +129,12 @@ function repositorySignal(
 	summary: RepositoryWorkflowSummaryInput | undefined,
 	unavailable: ReadonlySet<string>
 ): RepositoryCheckSignal {
-	const latestRuns = summary?.latestRuns ?? [];
+	const latestRuns = unavailable.has(repository) ? [] : (summary?.latestRuns ?? []);
 	const state = unavailable.has(repository) ? 'unavailable' : stateForLatestRuns(latestRuns);
 	const failedWorkflowNames = latestRuns
-		.filter((run) => run.conclusion !== null && FAILURE_CONCLUSIONS.has(run.conclusion))
-		.map((run) => run.name)
+		.flatMap((run) =>
+			run.conclusion !== null && FAILURE_CONCLUSIONS.has(run.conclusion) ? [run.name] : []
+		)
 		.sort((left, right) => left.localeCompare(right));
 	const recoveredFailures = summary?.recoveredFailures ?? 0;
 	return {
@@ -124,7 +144,15 @@ function repositorySignal(
 		detail: repositoryDetail(state, latestRuns.length, failedWorkflowNames, recoveredFailures),
 		latestWorkflowCount: latestRuns.length,
 		failedWorkflowNames,
-		recoveredFailures
+		recoveredFailures,
+		workflows: latestRuns.map((run) => {
+			const workflowState = stateForRun(run);
+			return {
+				name: run.name,
+				state: workflowState,
+				stateLabel: workflowStateLabel(workflowState)
+			};
+		})
 	};
 }
 

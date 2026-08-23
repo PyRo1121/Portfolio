@@ -41,39 +41,36 @@
 	</nav>
 
 	<section class="checks-summary">
-		<header><span>Latest observed checks</span><small>Rolling 7 days</small></header>
-		<div class="checks-summary__value">
-			<strong
-				>{formatInteger(checks.current.repositoriesWithEvidence)}<small
-					>/{formatInteger(checks.current.totalRepositories)}</small
-				></strong
-			><span>active repositories with latest-run evidence</span>
-		</div>
-		<article>
+		<header><span>Current checks</span><small>Latest workflow state</small></header>
+		<div class="checks-summary__status">
+			<span>Repository health now</span>
 			<strong>{checks.current.headline}</strong>
 			<p>{checks.current.detail}</p>
-		</article>
+		</div>
 		<div class="checks-summary__facts">
 			<div>
 				<CheckCircle size={15} weight="duotone" /><strong
 					>{formatInteger(checks.current.passingRepositories)}</strong
-				><span>passing</span>
+				><span>passing now</span>
 			</div>
 			<div>
 				<XCircle size={15} weight="duotone" /><strong
 					>{formatInteger(checks.current.attentionRepositories)}</strong
-				><span>attention</span>
+				><span>need attention</span>
+			</div>
+			<div>
+				<CircleNotch size={15} weight="duotone" /><strong
+					>{formatInteger(checks.current.runningRepositories)}</strong
+				><span>in progress</span>
 			</div>
 			<div>
 				<ArrowCounterClockwise size={15} weight="duotone" /><strong
 					>{formatInteger(checks.current.recoveredFailureSequences)}</strong
-				><span>recoveries</span>
+				><span>recovered sequences</span>
 			</div>
 		</div>
 		<footer>
-			<span>Not a quality grade</span><strong
-				>Latest state, recovery, and history stay separate</strong
-			>
+			<span>Absolute evidence only</span><strong>No percentages, ratios, or quality grade</strong>
 		</footer>
 	</section>
 
@@ -105,6 +102,15 @@
 							<span>{repository.stateLabel}</span>
 						</div>
 					</div>
+					{#if repository.workflows.length > 0}
+						<div class="repository-check__workflows" aria-label="Latest workflow results">
+							{#each repository.workflows as workflow (workflow.name)}
+								<span class={`workflow-chip workflow-chip--${workflow.state}`}>
+									<i></i><strong>{workflow.name}</strong><small>{workflow.stateLabel}</small>
+								</span>
+							{/each}
+						</div>
+					{/if}
 					<p>{repository.detail}</p>
 				</article>
 			{:else}
@@ -116,29 +122,8 @@
 	<section
 		class={mobilePanel === 'history' ? 'workflow-history panel-visible' : 'workflow-history'}
 	>
-		<header><span>7-day workflow history</span><small>Context, not a score</small></header>
+		<header><span>Recent run history</span><small>Absolute counts · rolling 7 days</small></header>
 		<div class="workflow-history__body">
-			<div
-				class="workflow-history__track"
-				aria-label={`${checks.history.successfulRuns} passed, ${checks.history.failedRuns} failed, ${checks.history.cancelledRuns} cancelled, and ${checks.history.otherRuns} other workflow runs`}
-			>
-				{#if checks.history.successfulRuns > 0}<i
-						class="history-passed"
-						style={`flex:${checks.history.successfulRuns}`}
-					></i>{/if}
-				{#if checks.history.failedRuns > 0}<i
-						class="history-failed"
-						style={`flex:${checks.history.failedRuns}`}
-					></i>{/if}
-				{#if checks.history.cancelledRuns > 0}<i
-						class="history-cancelled"
-						style={`flex:${checks.history.cancelledRuns}`}
-					></i>{/if}
-				{#if checks.history.otherRuns > 0}<i
-						class="history-other"
-						style={`flex:${checks.history.otherRuns}`}
-					></i>{/if}
-			</div>
 			<div class="workflow-history__counts">
 				<div>
 					<span>Passed</span><strong>{formatInteger(checks.history.successfulRuns)}</strong>
@@ -147,12 +132,11 @@
 				<div>
 					<span>Cancelled</span><strong>{formatInteger(checks.history.cancelledRuns)}</strong>
 				</div>
-				<div>
-					<span>Completed</span><strong>{formatInteger(checks.history.completedRuns)}</strong>
-				</div>
+				<div><span>Other</span><strong>{formatInteger(checks.history.otherRuns)}</strong></div>
 			</div>
 			<p>
-				Every observed outcome remains visible; the latest repository state is reported separately.
+				<strong>{formatInteger(checks.history.totalRuns)} runs observed.</strong> Historical outcomes
+				stay visible without changing the current repository state.
 			</p>
 		</div>
 	</section>
