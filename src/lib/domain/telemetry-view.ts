@@ -33,6 +33,11 @@ export type TelemetryTotals = {
 	readonly contactSessions: number;
 	readonly emailClicks: number;
 	readonly linkedinClicks: number;
+	readonly portfolioActions: number;
+	readonly portfolioSessions: number;
+	readonly featuredOmgOpens: number;
+	readonly featuredWeeknoteOpens: number;
+	readonly liveEvidenceOpens: number;
 	readonly errorCount: number;
 	readonly lastRecordedAt: string | null;
 };
@@ -50,6 +55,11 @@ export type TelemetryView = {
 	readonly emailClicks: number;
 	readonly linkedinClicks: number;
 	readonly contactActionRatePercent: number | null;
+	readonly portfolioActions: number;
+	readonly portfolioSessions: number;
+	readonly featuredOmgOpens: number;
+	readonly featuredWeeknoteOpens: number;
+	readonly liveEvidenceOpens: number;
 	readonly errorCount: number;
 	readonly paths: ReadonlyArray<TelemetryBar>;
 	readonly workspaces: ReadonlyArray<TelemetryBar>;
@@ -151,6 +161,11 @@ export function createTelemetryView(
 		emailClicks: totals.emailClicks,
 		linkedinClicks: totals.linkedinClicks,
 		contactActionRatePercent,
+		portfolioActions: totals.portfolioActions,
+		portfolioSessions: totals.portfolioSessions,
+		featuredOmgOpens: totals.featuredOmgOpens,
+		featuredWeeknoteOpens: totals.featuredWeeknoteOpens,
+		liveEvidenceOpens: totals.liveEvidenceOpens,
 		errorCount: totals.errorCount,
 		paths: top(paths, 8),
 		workspaces: top(workspaces, 8),

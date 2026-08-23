@@ -20,14 +20,16 @@ describe('createWorkspaceSignals', () => {
 		expect(signals.activity.value).toBe(String(snapshot.intelligence.commits.length));
 	});
 
-	it('headlines Quality with pass rate in a neutral tone instead of failed-run count', () => {
+	it('headlines Quality with observed workflow-run evidence instead of an ambiguous pass rate', () => {
 		const projection = createViewerActivityProjection(snapshot, 'America/New_York');
 		const signals = createWorkspaceSignals(snapshot, projection);
-		expect(snapshot.intelligence.delivery.workflows.current.failed).toBeGreaterThan(0);
+		const successful = snapshot.intelligence.delivery.workflows.current.successful;
+		const failed = snapshot.intelligence.delivery.workflows.current.failed;
+		expect(failed).toBeGreaterThan(0);
 		expect(signals.craft).toEqual({
-			value: `${snapshot.intelligence.delivery.workflowPassRate}%`,
-			label: 'passing',
-			tone: 'neutral'
+			value: String(successful + failed),
+			label: 'runs',
+			tone: 'attention'
 		});
 	});
 

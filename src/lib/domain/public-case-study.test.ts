@@ -14,6 +14,13 @@ describe('public recruiter case studies', () => {
 		]);
 	});
 
+	it('points Weeknote evidence at the dedicated live dashboard route', () => {
+		const weeknote = PUBLIC_CASE_STUDIES.find((study) => study.slug === 'weeknote');
+		expect(weeknote?.evidence).toContainEqual(
+			expect.objectContaining({ href: 'https://latham.cloud/evidence' })
+		);
+	});
+
 	it('keeps release evidence on a stable canonical URL', () => {
 		const omg = PUBLIC_CASE_STUDIES.find((study) => study.slug === 'omg');
 		expect(omg?.evidence).toContainEqual(

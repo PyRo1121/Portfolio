@@ -2,6 +2,7 @@ import { onCLS, onFCP, onINP, onLCP, onTTFB } from 'web-vitals';
 import {
 	shouldCollectTelemetryPath,
 	type ContactAction,
+	type PortfolioAction,
 	type TelemetryDeviceClass,
 	type TelemetryEventType
 } from '$lib/domain/telemetry';
@@ -77,6 +78,20 @@ export class ClientTelemetry {
 	/** Record one explicit recruiter contact action without contact or message content. */
 	recordContact(action: ContactAction): void {
 		this.#send('contact_action', {
+			path: this.#currentPath ?? window.location.pathname,
+			action,
+			deviceClass: this.#deviceClass,
+			browserFamily: this.#browserFamily,
+			viewportWidth: this.#viewportWidth,
+			viewportHeight: this.#viewportHeight,
+			timezoneOffsetMinutes: this.#timezoneOffsetMinutes,
+			language: this.#language
+		});
+	}
+
+	/** Record one portfolio destination chosen without content or visitor identity. */
+	recordPortfolioAction(action: PortfolioAction): void {
+		this.#send('portfolio_action', {
 			path: this.#currentPath ?? window.location.pathname,
 			action,
 			deviceClass: this.#deviceClass,

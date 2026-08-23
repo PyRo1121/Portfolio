@@ -89,18 +89,34 @@
 		<ol>
 			{#each pageCommits as commit (commit.sha)}
 				<li class={selectedCommit?.sha === commit.sha ? 'selected' : ''}>
-					<a
-						href={commit.url}
-						target="_blank"
-						rel="external noreferrer"
-						onpointerenter={() => (selectedCommitSha = commit.sha)}
-						onfocus={() => (selectedCommitSha = commit.sha)}
-						><span>{commit.shortSha}</span><strong title={commit.message}>{commit.message}</strong
-						><span title={commit.repository}>{commit.repository}</span><span class="diff"
-							><b>+{formatInteger(commit.additions)}</b><i>−{formatInteger(commit.deletions)}</i
-							></span
-						><ArrowUpRight size={14} weight="light" /></a
-					>
+					{#if commit.isPrivate}
+						<button
+							type="button"
+							class="private-commit-row"
+							onpointerenter={() => (selectedCommitSha = commit.sha)}
+							onfocus={() => (selectedCommitSha = commit.sha)}
+							onclick={() => (selectedCommitSha = commit.sha)}
+							aria-label={`${commit.shortSha}, ${commit.message}, ${commit.repository}, private evidence`}
+							><span>{commit.shortSha}</span><strong title={commit.message}>{commit.message}</strong
+							><span title={commit.repository}>{commit.repository}</span><span class="diff"
+								><b>+{formatInteger(commit.additions)}</b><i>−{formatInteger(commit.deletions)}</i
+								></span
+							><span class="private-label">Private</span></button
+						>
+					{:else}
+						<a
+							href={commit.url}
+							target="_blank"
+							rel="external noreferrer"
+							onpointerenter={() => (selectedCommitSha = commit.sha)}
+							onfocus={() => (selectedCommitSha = commit.sha)}
+							><span>{commit.shortSha}</span><strong title={commit.message}>{commit.message}</strong
+							><span title={commit.repository}>{commit.repository}</span><span class="diff"
+								><b>+{formatInteger(commit.additions)}</b><i>−{formatInteger(commit.deletions)}</i
+								></span
+							><ArrowUpRight size={14} weight="light" /></a
+						>
+					{/if}
 				</li>
 			{:else}<li class="empty-ledger">No commits on this day.</li>{/each}
 		</ol>
@@ -122,9 +138,13 @@
 						>{formatGeneratedAt(selectedCommit.committedAt, projection.timeZone)}</time
 					>
 				</div>
-				<a href={selectedCommit.url} target="_blank" rel="external noreferrer"
-					>Open on GitHub <ArrowUpRight size={13} /></a
-				>
+				{#if selectedCommit.isPrivate}
+					<span class="private-evidence">Private evidence</span>
+				{:else}
+					<a href={selectedCommit.url} target="_blank" rel="external noreferrer"
+						>Open on GitHub <ArrowUpRight size={13} /></a
+					>
+				{/if}
 			</aside>
 		{/if}
 		<footer>

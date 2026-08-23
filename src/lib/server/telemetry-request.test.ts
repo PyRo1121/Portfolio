@@ -29,15 +29,23 @@ describe('parseTelemetryRequest', () => {
 		expect(result).toEqual(validPayload);
 	});
 
-	it('parses a bounded contact action without identity or message content', async () => {
-		const payload = {
-			...validPayload,
-			eventType: 'contact_action',
-			action: 'email_header'
-		};
-		const result = await Effect.runPromise(parseTelemetryRequest(request(JSON.stringify(payload))));
-		expect(result).toEqual(payload);
-	});
+	it.each([
+		['contact', 'contact_action', 'email_header'],
+		['portfolio', 'portfolio_action', 'featured_weeknote_open']
+	] as const)(
+		'parses a bounded %s action without identity or content',
+		async (_label, eventType, action) => {
+			const payload = {
+				...validPayload,
+				eventType,
+				action
+			};
+			const result = await Effect.runPromise(
+				parseTelemetryRequest(request(JSON.stringify(payload)))
+			);
+			expect(result).toEqual(payload);
+		}
+	);
 
 	it('rejects cross-origin and non-JSON browser requests', async () => {
 		const crossOrigin = await Effect.runPromiseExit(

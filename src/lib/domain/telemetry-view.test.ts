@@ -38,6 +38,11 @@ function totals(overrides: Partial<TelemetryTotals> = {}): TelemetryTotals {
 		contactSessions: 0,
 		emailClicks: 0,
 		linkedinClicks: 0,
+		portfolioActions: 0,
+		portfolioSessions: 0,
+		featuredOmgOpens: 0,
+		featuredWeeknoteOpens: 0,
+		liveEvidenceOpens: 0,
 		errorCount: 0,
 		lastRecordedAt: null,
 		...overrides
@@ -154,6 +159,11 @@ describe('createTelemetryView', () => {
 				contactSessions: 24,
 				emailClicks: 30,
 				linkedinClicks: 10,
+				portfolioActions: 25,
+				portfolioSessions: 16,
+				featuredOmgOpens: 8,
+				featuredWeeknoteOpens: 9,
+				liveEvidenceOpens: 8,
 				errorCount: 12,
 				lastRecordedAt: '2026-08-17T05:00:00.000Z'
 			},
@@ -190,6 +200,25 @@ describe('createTelemetryView', () => {
 		expect(view.contactActionRatePercent).toBe(5.3);
 	});
 
+	it('uses exact portfolio-action totals to report selected work and evidence interest', () => {
+		const view = createTelemetryView(
+			[],
+			totals({
+				totalEvents: 18,
+				portfolioActions: 18,
+				portfolioSessions: 11,
+				featuredOmgOpens: 5,
+				featuredWeeknoteOpens: 7,
+				liveEvidenceOpens: 6
+			})
+		);
+		expect(view.portfolioActions).toBe(18);
+		expect(view.portfolioSessions).toBe(11);
+		expect(view.featuredOmgOpens).toBe(5);
+		expect(view.featuredWeeknoteOpens).toBe(7);
+		expect(view.liveEvidenceOpens).toBe(6);
+	});
+
 	it('returns empty aggregates for no events', () => {
 		const view = createTelemetryView([], totals());
 		expect(view.pageViews).toBe(0);
@@ -200,6 +229,8 @@ describe('createTelemetryView', () => {
 		expect(view.contactActions).toBe(0);
 		expect(view.contactSessions).toBe(0);
 		expect(view.contactActionRatePercent).toBeNull();
+		expect(view.portfolioActions).toBe(0);
+		expect(view.portfolioSessions).toBe(0);
 		expect(view.uniqueSessions).toBe(0);
 		expect(view.paths).toEqual([]);
 		expect(view.vitals.lcpMs).toBeNull();

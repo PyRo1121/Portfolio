@@ -32,6 +32,9 @@ describe('TelemetryPayloadSchema', () => {
 			decodes({ ...common, eventType: 'error', metricName: 'runtime_error', metricValue: 1 })
 		).toBe(true);
 		expect(decodes({ ...common, eventType: 'contact_action', action: 'email_summary' })).toBe(true);
+		expect(decodes({ ...common, eventType: 'portfolio_action', action: 'featured_omg_open' })).toBe(
+			true
+		);
 	});
 
 	it('rejects missing event-specific evidence and invalid paths', () => {
@@ -41,6 +44,10 @@ describe('TelemetryPayloadSchema', () => {
 		expect(decodes({ ...common, eventType: 'contact_action', action: 'schedule_interview' })).toBe(
 			false
 		);
+		expect(decodes({ ...common, eventType: 'portfolio_action' })).toBe(false);
+		expect(
+			decodes({ ...common, eventType: 'portfolio_action', action: 'unknown_destination' })
+		).toBe(false);
 		expect(decodes({ ...common, eventType: 'page_view', path: '' })).toBe(false);
 		expect(decodes({ ...common, eventType: 'page_view', path: 'https://example.com/' })).toBe(
 			false

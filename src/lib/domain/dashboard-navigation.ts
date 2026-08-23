@@ -20,7 +20,7 @@ export function createWorkspaceSignals(
 	const today = createTodayIntelligence(snapshot, projection);
 	const craft = createCraftIntelligence(snapshot);
 	const failedRuns = craft.observed.failedWorkflowRuns;
-	const passRate = craft.observed.workflowPassRate;
+	const workflowRuns = craft.observed.successfulWorkflowRuns + failedRuns;
 	return {
 		today: { value: String(today.commits), label: 'today', tone: 'neutral' },
 		brief: { value: String(snapshot.totals.commits), label: '7 days', tone: 'neutral' },
@@ -29,14 +29,11 @@ export function createWorkspaceSignals(
 			label: 'outcomes',
 			tone: failedRuns > 0 ? 'attention' : 'neutral'
 		},
-		craft:
-			passRate === null
-				? {
-						value: String(craft.observed.successfulWorkflowRuns + failedRuns),
-						label: 'runs',
-						tone: 'neutral'
-					}
-				: { value: `${passRate}%`, label: 'passing', tone: 'neutral' },
+		craft: {
+			value: String(workflowRuns),
+			label: 'runs',
+			tone: failedRuns > 0 ? 'attention' : 'neutral'
+		},
 		repositories: {
 			value: String(snapshot.intelligence.account.activeRepositories),
 			label: 'active',

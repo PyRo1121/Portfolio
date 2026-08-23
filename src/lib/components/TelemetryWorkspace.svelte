@@ -48,6 +48,9 @@
 		if (event.eventType === 'contact_action') {
 			return (event.metricName ?? 'contact action').replaceAll('_', ' ');
 		}
+		if (event.eventType === 'portfolio_action') {
+			return (event.metricName ?? 'portfolio action').replaceAll('_', ' ');
+		}
 		if (event.eventType === 'error') return event.metricName ?? 'runtime error';
 		return 'page view';
 	}
@@ -58,13 +61,16 @@
 		<div>
 			<span><ChartBar size={14} weight="fill" /> Visitor telemetry</span>
 			<h1>Visitors</h1>
-			<p>Cookieless page, workspace, contact-action, and Core Web Vitals evidence.</p>
+			<p>
+				Cookieless page, workspace, portfolio-action, contact-action, and Core Web Vitals evidence.
+			</p>
 		</div>
 		{#if view !== null}
 			<section aria-label="Visitor summary">
 				<div><strong>{view.pageViews}</strong><span>page views</span></div>
 				<div><strong>{view.uniqueSessions}</strong><span>sessions</span></div>
 				<div><strong>{view.workspaceViews}</strong><span>workspace views</span></div>
+				<div><strong>{view.portfolioActions}</strong><span>portfolio actions</span></div>
 				<div><strong>{view.contactActions}</strong><span>contact actions</span></div>
 				<div>
 					<strong
@@ -245,6 +251,19 @@
 				<p>Clicks are observed actions; they do not prove that a message was sent.</p>
 			</section>
 
+			<section class="telemetry-panel telemetry-portfolio" aria-labelledby="telemetry-portfolio">
+				<header>
+					<span id="telemetry-portfolio">Portfolio paths</span><small>Complete 30-day window</small>
+				</header>
+				<div class="boundary-metrics">
+					<div><span>OMG opens</span><strong>{view.featuredOmgOpens}</strong></div>
+					<div><span>Weeknote opens</span><strong>{view.featuredWeeknoteOpens}</strong></div>
+					<div><span>Evidence opens</span><strong>{view.liveEvidenceOpens}</strong></div>
+					<div><span>Action sessions</span><strong>{view.portfolioSessions}</strong></div>
+				</div>
+				<p>Actions show chosen destinations; page views remain the evidence that a route loaded.</p>
+			</section>
+
 			<section class="telemetry-panel telemetry-recent" aria-labelledby="telemetry-recent">
 				<header>
 					<span id="telemetry-recent">Recent events</span><small>Latest beacons</small>
@@ -367,10 +386,10 @@
 	}
 	.telemetry-overview section {
 		display: grid;
-		grid-template-columns: repeat(5, minmax(0, 1fr));
+		grid-template-columns: repeat(6, minmax(0, 1fr));
 		gap: 0;
 		align-items: stretch;
-		min-width: min(100%, 38rem);
+		min-width: min(100%, 44rem);
 	}
 	.telemetry-overview section > div {
 		display: grid;
@@ -554,7 +573,8 @@
 		font: 700 1.1rem/1 var(--mono);
 	}
 	.telemetry-cloudflare p,
-	.telemetry-contact p {
+	.telemetry-contact p,
+	.telemetry-portfolio p {
 		margin: 0.7rem 0 0;
 		color: var(--muted);
 		font-size: 0.68rem;

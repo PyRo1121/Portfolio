@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
 	aboutSeo,
+	evidenceSeo,
 	homeSeo,
 	PUBLIC_AVAILABILITY_LINE,
 	PUBLIC_CONTACT_EMAIL,
@@ -13,9 +14,14 @@ import {
 	renderPublicSitemapXml
 } from './public-seo';
 
-const publicCopy = [homeSeo.title, homeSeo.description, aboutSeo.title, aboutSeo.description].join(
-	' '
-);
+const publicCopy = [
+	homeSeo.title,
+	homeSeo.description,
+	evidenceSeo.title,
+	evidenceSeo.description,
+	aboutSeo.title,
+	aboutSeo.description
+].join(' ');
 
 describe('public SEO copy', () => {
 	it('does not mention finance', () => {
@@ -50,15 +56,16 @@ describe('public SEO copy', () => {
 			'mailto:olen@latham.cloud?subject=Opportunity%20for%20Olen%20Latham'
 		);
 		expect(PUBLIC_AVAILABILITY_LINE).toBe(
-			'Open to IT support, cloud operations, and junior systems opportunities.'
+			'Open to IT support, cloud operations, junior systems, and software opportunities.'
 		);
 		expect(PUBLIC_RESUME_LINE).toBe('Résumé available on request.');
 	});
 
 	it('keeps the public sitemap on crawlable URLs only', () => {
-		expect(publicSitemapPaths).toEqual(['/', '/about', '/work/omg', '/work/weeknote']);
+		expect(publicSitemapPaths).toEqual(['/', '/evidence', '/about', '/work/omg', '/work/weeknote']);
 		const xml = renderPublicSitemapXml();
 		expect(xml).toContain('<loc>https://latham.cloud/</loc>');
+		expect(xml).toContain('<loc>https://latham.cloud/evidence</loc>');
 		expect(xml).toContain('<loc>https://latham.cloud/about</loc>');
 		expect(xml).toContain('<loc>https://latham.cloud/work/omg</loc>');
 		expect(xml).toContain('<loc>https://latham.cloud/work/weeknote</loc>');
@@ -67,10 +74,15 @@ describe('public SEO copy', () => {
 		expect(xml).not.toContain('/__warm');
 	});
 
-	it('points Person JSON-LD at GitHub, X, and LinkedIn', () => {
+	it('points Person JSON-LD at the retained GitHub and LinkedIn identities only', () => {
 		expect(homeSeo.jsonLd).toContain('https://github.com/PyRo1121');
-		expect(homeSeo.jsonLd).toContain('https://x.com/PyRo1121');
+		expect(homeSeo.jsonLd).not.toContain('https://x.com/PyRo1121');
 		expect(homeSeo.jsonLd).toContain('https://www.linkedin.com/in/olen-latham-9b647654/');
 		expect(homeSeo.jsonLd).toContain('"jobTitle":"Software developer"');
+	});
+
+	it('gives the live evidence dashboard its own canonical page', () => {
+		expect(evidenceSeo.canonical).toBe('https://latham.cloud/evidence');
+		expect(evidenceSeo.title).toContain('Live engineering evidence');
 	});
 });

@@ -245,13 +245,27 @@
 		<header><span>Recent commits</span><small>Open on GitHub</small></header>
 		<div>
 			{#each today.recentCommits as commit (commit.sha)}
-				<a href={commit.url} target="_blank" rel="external noreferrer"
-					><span>{commit.shortSha}</span><strong>{commit.message}</strong><small
-						>{commit.repository}</small
-					><time datetime={commit.committedAt}
-						>{formatRelativeTime(commit.committedAt, snapshot.generatedAt)}</time
-					></a
-				>
+				{#if commit.isPrivate}
+					<div
+						class="private-commit"
+						aria-label={`${commit.shortSha}, ${commit.message}, ${commit.repository}, private evidence`}
+						title="Private commit evidence is not publicly linkable"
+					>
+						<span>{commit.shortSha}</span><strong>{commit.message}</strong><small
+							>{commit.repository} · private</small
+						><time datetime={commit.committedAt}
+							>{formatRelativeTime(commit.committedAt, snapshot.generatedAt)}</time
+						>
+					</div>
+				{:else}
+					<a href={commit.url} target="_blank" rel="external noreferrer"
+						><span>{commit.shortSha}</span><strong>{commit.message}</strong><small
+							>{commit.repository}</small
+						><time datetime={commit.committedAt}
+							>{formatRelativeTime(commit.committedAt, snapshot.generatedAt)}</time
+						></a
+					>
+				{/if}
 			{:else}<p>Your first useful commit will appear here.</p>{/each}
 		</div>
 	</section>

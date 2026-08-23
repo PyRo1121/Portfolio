@@ -6,7 +6,6 @@ export const PUBLIC_SITE_ORIGIN = 'https://latham.cloud';
 export const PUBLIC_PERSON_ID = `${PUBLIC_SITE_ORIGIN}/#olen-latham`;
 
 export const PUBLIC_GITHUB_URL = 'https://github.com/PyRo1121';
-export const PUBLIC_X_URL = 'https://x.com/PyRo1121';
 export const PUBLIC_LINKEDIN_URL = 'https://www.linkedin.com/in/olen-latham-9b647654/';
 
 /** Public address for direct recruiter and collaborator contact. */
@@ -18,7 +17,7 @@ export const PUBLIC_CONTACT_MAILTO =
 
 /** Truthful role categories currently invited by the public portfolio. */
 export const PUBLIC_AVAILABILITY_LINE =
-	'Open to IT support, cloud operations, and junior systems opportunities.';
+	'Open to IT support, cloud operations, junior systems, and software opportunities.';
 export const PUBLIC_RESUME_LINE = 'Résumé available on request.';
 
 /** Raster social card used by Open Graph, Twitter, and structured profile data. */
@@ -52,7 +51,7 @@ function personNode(): Record<string, unknown> {
 		jobTitle: 'Software developer',
 		email: 'mailto:olen@latham.cloud',
 		knowsAbout: [...PUBLIC_SEO_SKILLS],
-		sameAs: [PUBLIC_GITHUB_URL, PUBLIC_X_URL, PUBLIC_LINKEDIN_URL]
+		sameAs: [PUBLIC_GITHUB_URL, PUBLIC_LINKEDIN_URL]
 	};
 }
 
@@ -65,18 +64,18 @@ function serializeJsonLd(graph: ReadonlyArray<Record<string, unknown>>): string 
 
 /** Home and about copy for search results. Finance is intentionally absent. */
 export const homeSeo: PublicSeoPage = {
-	title: 'Olen Latham — Software developer | TypeScript, Svelte, Cloudflare Workers',
+	title: 'Olen Latham — Developer tools, cloud systems, and technical support',
 	description:
-		'Olen Latham is a software developer shipping TypeScript and SvelteKit apps on Cloudflare Workers. Weeknote is the public GitHub delivery and project dashboard.',
+		'Olen Latham brings customer-service troubleshooting to developer tools and cloud systems. Explore OMG, Weeknote, and live engineering evidence.',
 	canonical: `${PUBLIC_SITE_ORIGIN}/`,
 	jsonLd: serializeJsonLd([
 		{
 			'@type': 'WebSite',
 			'@id': `${PUBLIC_SITE_ORIGIN}/#website`,
 			url: `${PUBLIC_SITE_ORIGIN}/`,
-			name: 'Olen Latham — Weeknote',
+			name: 'Olen Latham — Portfolio',
 			description:
-				'Public engineering dashboard for Olen Latham covering GitHub activity, software projects, and Cloudflare Workers.',
+				'Portfolio for Olen Latham covering customer-service experience, developer tools, cloud systems, and live engineering evidence.',
 			inLanguage: 'en',
 			publisher: { '@id': PUBLIC_PERSON_ID }
 		},
@@ -88,6 +87,24 @@ export const homeSeo: PublicSeoPage = {
 			isPartOf: { '@id': `${PUBLIC_SITE_ORIGIN}/#website` },
 			about: { '@id': PUBLIC_PERSON_ID },
 			mainEntity: { '@id': PUBLIC_PERSON_ID }
+		},
+		personNode()
+	])
+};
+
+export const evidenceSeo: PublicSeoPage = {
+	title: 'Live engineering evidence — Olen Latham',
+	description:
+		'Explore Olen Latham’s live GitHub activity, delivery records, project links, checks, and Cloudflare deployment evidence.',
+	canonical: `${PUBLIC_SITE_ORIGIN}/evidence`,
+	jsonLd: serializeJsonLd([
+		{
+			'@type': 'WebPage',
+			'@id': `${PUBLIC_SITE_ORIGIN}/evidence#page`,
+			url: `${PUBLIC_SITE_ORIGIN}/evidence`,
+			name: 'Live engineering evidence — Olen Latham',
+			isPartOf: { '@id': `${PUBLIC_SITE_ORIGIN}/#website` },
+			about: { '@id': PUBLIC_PERSON_ID }
 		},
 		personNode()
 	])
@@ -112,7 +129,7 @@ export const aboutSeo: PublicSeoPage = {
 	])
 };
 
-export const publicSitemapPaths = ['/', '/about', ...publicCaseStudyPaths] as const;
+export const publicSitemapPaths = ['/', '/evidence', '/about', ...publicCaseStudyPaths] as const;
 
 function locFor(path: (typeof publicSitemapPaths)[number]): string {
 	return path === '/' ? `${PUBLIC_SITE_ORIGIN}/` : `${PUBLIC_SITE_ORIGIN}${path}`;

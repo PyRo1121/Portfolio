@@ -6,7 +6,8 @@ export const TelemetryEventTypeSchema = Schema.Union(
 	Schema.Literal('workspace_view'),
 	Schema.Literal('web_vital'),
 	Schema.Literal('error'),
-	Schema.Literal('contact_action')
+	Schema.Literal('contact_action'),
+	Schema.Literal('portfolio_action')
 );
 export type TelemetryEventType = Schema.Schema.Type<typeof TelemetryEventTypeSchema>;
 
@@ -39,6 +40,14 @@ export const ContactActionSchema = Schema.Union(
 	Schema.Literal('linkedin_about')
 );
 export type ContactAction = Schema.Schema.Type<typeof ContactActionSchema>;
+
+/** Exact portfolio navigation action recorded without visitor identity or content. */
+export const PortfolioActionSchema = Schema.Union(
+	Schema.Literal('featured_omg_open'),
+	Schema.Literal('featured_weeknote_open'),
+	Schema.Literal('live_evidence_open')
+);
+export type PortfolioAction = Schema.Schema.Type<typeof PortfolioActionSchema>;
 
 /** Exclude Access-protected owner pages from public visitor analytics. */
 export function shouldCollectTelemetryPath(path: string): boolean {
@@ -112,6 +121,11 @@ export const TelemetryPayloadSchema = Schema.Union(
 		...BaseEventFields,
 		eventType: Schema.Literal('contact_action'),
 		action: ContactActionSchema
+	}),
+	Schema.Struct({
+		...BaseEventFields,
+		eventType: Schema.Literal('portfolio_action'),
+		action: PortfolioActionSchema
 	})
 );
 export type TelemetryPayload = Schema.Schema.Type<typeof TelemetryPayloadSchema>;

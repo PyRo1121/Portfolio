@@ -21,7 +21,7 @@ describe('telemetry D1 row mapping', () => {
 	it('maps complete retention-window totals from a SQL aggregate row', () => {
 		expect(
 			telemetryTotalsFromRow({
-				total_events: 5_001,
+				total_events: 5_002,
 				page_views: 2_400,
 				workspace_views: 1_200,
 				unique_sessions: 800,
@@ -31,11 +31,16 @@ describe('telemetry D1 row mapping', () => {
 				contact_sessions: 9,
 				email_clicks: 10,
 				linkedin_clicks: 4,
+				portfolio_actions: 21,
+				portfolio_sessions: 13,
+				featured_omg_opens: 7,
+				featured_weeknote_opens: 8,
+				live_evidence_opens: 6,
 				error_count: 12,
 				last_recorded_at: '2026-08-17T05:00:00.000Z'
 			})
 		).toEqual({
-			totalEvents: 5_001,
+			totalEvents: 5_002,
 			pageViews: 2_400,
 			workspaceViews: 1_200,
 			uniqueSessions: 800,
@@ -45,6 +50,11 @@ describe('telemetry D1 row mapping', () => {
 			contactSessions: 9,
 			emailClicks: 10,
 			linkedinClicks: 4,
+			portfolioActions: 21,
+			portfolioSessions: 13,
+			featuredOmgOpens: 7,
+			featuredWeeknoteOpens: 8,
+			liveEvidenceOpens: 6,
 			errorCount: 12,
 			lastRecordedAt: '2026-08-17T05:00:00.000Z'
 		});
@@ -117,6 +127,35 @@ describe('telemetry D1 row mapping', () => {
 				visit_hash: null
 			})
 		).toMatchObject({ eventType: 'contact_action', metricName: 'email_summary', metricValue: 1 });
+	});
+
+	it('maps a portfolio action without identity or content', () => {
+		expect(
+			telemetryEventFromRow({
+				id: 'tele-portfolio-action',
+				owner_email: 'olen@latham.cloud',
+				event_type: 'portfolio_action',
+				recorded_at: '2026-08-17T04:00:00.000Z',
+				path: '/',
+				workspace: null,
+				referrer_host: null,
+				country: 'US',
+				device_class: 'desktop',
+				browser_family: 'chromium',
+				viewport_width: 1440,
+				viewport_height: 900,
+				timezone_offset_minutes: 300,
+				language: 'en',
+				metric_name: 'featured_weeknote_open',
+				metric_value: 1,
+				session_hash: 's1',
+				visit_hash: null
+			})
+		).toMatchObject({
+			eventType: 'portfolio_action',
+			metricName: 'featured_weeknote_open',
+			metricValue: 1
+		});
 	});
 
 	it('maps a web_vital beacon metric', () => {

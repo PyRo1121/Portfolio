@@ -70,9 +70,13 @@ a {
 	top: 0.5rem;
 	left: 0.5rem;
 	padding: 0.6rem 0.8rem;
-	background: var(--ink);
-	color: var(--bg);
+	border: 1px solid #d8a54a;
+	background: #f0f0eb;
+	color: #0b0d0e;
+	font: 650 0.68rem/1 var(--mono, 'JetBrains Mono Variable', monospace);
+	text-decoration: none;
 	transform: translateY(-150%);
+	transition: transform 180ms ease;
 }
 .skip-link:focus {
 	transform: none;
@@ -1022,7 +1026,8 @@ a {
 	background: var(--accent);
 	transform-origin: left;
 }
-.today-commits a {
+.today-commits a,
+.today-commits .private-commit {
 	display: grid;
 	min-height: 0;
 	flex: 1;
@@ -1038,6 +1043,7 @@ a {
 	background: var(--high);
 }
 .today-commits a > span,
+.today-commits .private-commit > span,
 .today-commits small,
 .today-commits time {
 	overflow: hidden;
@@ -1046,7 +1052,8 @@ a {
 	text-overflow: ellipsis;
 	white-space: nowrap;
 }
-.today-commits a strong {
+.today-commits a strong,
+.today-commits .private-commit strong {
 	overflow: hidden;
 	font-size: 0.66rem;
 	text-overflow: ellipsis;
@@ -2148,7 +2155,8 @@ a {
 	font-size: 0.84rem;
 }
 .commit-header,
-.ledger-table li a {
+.ledger-table li a,
+.ledger-table li .private-commit-row {
 	display: grid;
 	grid-template-columns: 4.5rem minmax(0, 1.6fr) minmax(7rem, 0.5fr) 6rem 1rem;
 	align-items: center;
@@ -2173,16 +2181,27 @@ a {
 	min-height: 0;
 	border-bottom: 1px solid var(--line);
 }
-.ledger-table li a {
+.ledger-table li a,
+.ledger-table li .private-commit-row {
+	width: 100%;
 	height: 100%;
 	min-height: 0;
 	padding: 0.35rem 0.7rem;
+	border: 0;
+	background: transparent;
 	color: var(--muted);
+	text-align: left;
 	text-decoration: none;
+}
+.ledger-table li .private-commit-row {
+	cursor: pointer;
 }
 .ledger-table li a:hover,
 .ledger-table li a:focus-visible,
-.ledger-table li.selected a {
+.ledger-table li .private-commit-row:hover,
+.ledger-table li .private-commit-row:focus-visible,
+.ledger-table li.selected a,
+.ledger-table li.selected .private-commit-row {
 	background: var(--high);
 	color: var(--ink);
 }
@@ -2202,6 +2221,12 @@ a {
 	font-weight: 540;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+}
+.private-label {
+	color: var(--accent);
+	font-size: 0.42rem;
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
 }
 .diff {
 	text-align: right;
@@ -2242,7 +2267,8 @@ a {
 }
 .commit-inspector__identity span,
 .commit-inspector__facts,
-.commit-inspector > a {
+.commit-inspector > a,
+.commit-inspector > .private-evidence {
 	font: 500 0.55rem/1.25 var(--mono);
 	color: var(--muted);
 }
@@ -2273,13 +2299,18 @@ a {
 .commit-inspector__facts b {
 	color: var(--ink);
 }
-.commit-inspector > a {
+.commit-inspector > a,
+.commit-inspector > .private-evidence {
 	display: inline-flex;
 	align-items: center;
 	gap: 0.3rem;
 	color: var(--accent);
 	text-decoration: none;
 	white-space: nowrap;
+}
+.commit-inspector > .private-evidence {
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
 }
 
 .command-palette {
@@ -2647,7 +2678,8 @@ a {
 	.today-workstreams article > div {
 		display: none;
 	}
-	.today-commits a {
+	.today-commits a,
+	.today-commits .private-commit {
 		grid-template-columns: 3.4rem minmax(0, 1fr) 4rem;
 	}
 	.today-commits small {

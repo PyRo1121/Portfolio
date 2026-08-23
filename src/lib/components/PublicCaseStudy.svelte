@@ -38,10 +38,12 @@
 	<meta name="twitter:image:alt" content="Olen Latham — software, systems, and cloud work" />
 </svelte:head>
 
-<main class="case-study">
+<a class="skip-link" href="#case-study-content">Skip to case study</a>
+
+<main id="case-study-content" class="case-study" tabindex="-1">
 	<nav class="topline" aria-label="Page navigation">
-		<a href={resolve('/about')}><span aria-hidden="true">←</span> About Olen</a>
-		<a href={resolve('/')}>Weeknote</a>
+		<a href={resolve('/')}><span aria-hidden="true">←</span> Portfolio</a>
+		<a href={resolve('/evidence')}>Live evidence</a>
 	</nav>
 
 	<header class="hero">

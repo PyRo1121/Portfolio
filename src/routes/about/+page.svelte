@@ -50,9 +50,11 @@
 	{@html jsonLdScriptTag(aboutSeo.jsonLd)}
 </svelte:head>
 
-<main class="about-page">
+<a class="skip-link" href="#about-content">Skip to about</a>
+
+<main id="about-content" class="about-page" tabindex="-1">
 	<nav class="topline" aria-label="Page navigation">
-		<a href={resolve('/')}><span aria-hidden="true">←</span> Weeknote</a>
+		<a href={resolve('/')}><span aria-hidden="true">←</span> Portfolio</a>
 		<span>About Olen</span>
 	</nav>
 
@@ -163,7 +165,7 @@
 			<a href={PUBLIC_GITHUB_URL} target="_blank" rel="external noreferrer">
 				<GithubLogo size={16} weight="fill" /> GitHub
 			</a>
-			<a href={resolve('/')}>Weeknote <ArrowUpRight size={14} weight="bold" /></a>
+			<a href={resolve('/evidence')}>Live evidence <ArrowUpRight size={14} weight="bold" /></a>
 		</nav>
 	</footer>
 </main>
@@ -310,11 +312,14 @@
 			monospace;
 	}
 	figure {
+		width: min(100%, 20rem);
 		margin: 0;
+		justify-self: end;
 	}
 	figure img {
 		display: block;
 		width: 100%;
+		height: auto;
 		aspect-ratio: 1;
 		border-top: 2px solid #d8a54a;
 		filter: saturate(0.82) contrast(1.04);

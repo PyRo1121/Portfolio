@@ -65,7 +65,7 @@ export const PUBLIC_CASE_STUDIES = [
 		eyebrow: 'Case study · Weeknote',
 		title: 'The story behind the contribution graph.',
 		summary:
-			'Weeknote is the live portfolio you are reading: a Svelte 5 application that connects engineering activity to delivery records, deployments, and the limits of the available evidence.',
+			'Weeknote is the live evidence dashboard behind this portfolio: a Svelte 5 application that connects engineering activity to delivery records, deployments, and the limits of the available evidence.',
 		problem:
 			'GitHub makes it easy to count commits and contribution squares. Those numbers do not explain what shipped, whether a check passed, which deployment is live, or when provider data is missing. I wanted a public record that could say “no evidence” instead of filling the gap with a score or a confident guess.',
 		work: 'I built the interface in Svelte 5 and the server boundaries around Effect, GitHub APIs, Cloudflare Workers, D1, KV, and a Durable Object refresh coordinator. Public reads and owner-only records are separated, provider failures are isolated, and cached evidence is replaced only by a complete fresh snapshot.',
@@ -79,8 +79,8 @@ export const PUBLIC_CASE_STUDIES = [
 		evidence: [
 			{
 				label: 'Live dashboard',
-				href: 'https://latham.cloud',
-				note: 'The deployed public application and current evidence.'
+				href: 'https://latham.cloud/evidence',
+				note: 'The deployed public dashboard and current evidence.'
 			},
 			{
 				label: 'Source repository',

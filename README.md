@@ -6,12 +6,13 @@ Live at **[latham.cloud](https://latham.cloud)**.
 
 ## Public portfolio
 
-- **[Dashboard](https://latham.cloud)** — current GitHub activity, delivery outcomes, workflow runs, repositories, and verified project mappings.
-- **[About Olen](https://latham.cloud/about)** — the customer-service-to-technology story, current role interests, and direct contact paths.
+- **[Portfolio](https://latham.cloud)** — Olen’s customer-service-to-technology story, selected work, live evidence summary, and direct contact paths.
+- **[Live evidence](https://latham.cloud/evidence)** — current GitHub activity, delivery outcomes, workflow runs, repositories, and verified project mappings.
+- **[About Olen](https://latham.cloud/about)** — the complete career-transition story and current role interests.
 - **[OMG case study](https://latham.cloud/work/omg)** — the motivation, boundaries, and public evidence behind a Rust package and runtime management CLI.
-- **[Weeknote case study](https://latham.cloud/work/weeknote)** — why this dashboard exists and how its evidence model was designed.
+- **[Weeknote case study](https://latham.cloud/work/weeknote)** — why the evidence dashboard exists and how its model was designed.
 
-The public dashboard includes:
+The public evidence dashboard includes:
 
 - **Today / Week** — commits, additions, deletions, and activity rhythm presented in the viewer’s local timezone.
 - **Delivery** — authored and maintainer outcomes, automated updates, releases, and GitHub Actions workflow runs with distinct attribution.
@@ -35,7 +36,7 @@ Important distinctions are preserved in collection and presentation:
 
 `/owner` is protected by Cloudflare Access with cryptographic JWT verification. It contains career records, Cloudflare usage, project mappings, visitor telemetry, and recruiter-action totals that are not part of the public payload.
 
-Public telemetry is cookieless and bounded. It records navigation, browser performance, normalized errors, and explicit contact-link actions without storing raw IP addresses, contact message content, or visitor identity. A contact click is reported only as an observed action—not proof that a message was sent.
+Public telemetry is cookieless and bounded. It records navigation, selected-work and evidence actions, browser performance, normalized errors, and explicit contact-link actions without storing raw IP addresses, contact message content, or visitor identity. A click is reported only as an observed action—not proof that a case study was read or that a message was sent.
 
 ## Architecture
 
