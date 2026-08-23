@@ -28,7 +28,7 @@
 		today: 'Today',
 		brief: 'Week',
 		delivery: 'Deliver',
-		craft: 'Quality',
+		craft: 'Checks',
 		repositories: 'Project',
 		activity: 'Commits',
 		briefing: 'Brief',

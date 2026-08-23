@@ -126,6 +126,32 @@ describe('DashboardSnapshotCache', () => {
 		});
 	});
 
+	it('hydrates legacy workflow summaries with empty current-state and recovery evidence', async () => {
+		const { cache, values } = cacheFixture();
+		await cache.refresh('octocat', null, new Date(), async () => liveSnapshot());
+		const [key] = values.keys();
+		expect(key).toBeDefined();
+		const envelope = parseJson<{
+			snapshot: {
+				intelligence: {
+					delivery: {
+						workflows: { current: { repositories: Array<Record<string, unknown>> } };
+					};
+				};
+			};
+		}>(values.get(key!)!);
+		for (const repository of envelope.snapshot.intelligence.delivery.workflows.current
+			.repositories) {
+			delete repository['latestRuns'];
+			delete repository['recoveredFailures'];
+		}
+		values.set(key!, JSON.stringify(envelope));
+
+		const repositories = (await cache.read('octocat'))?.snapshot.intelligence.delivery.workflows
+			.current.repositories;
+		expect(repositories?.[0]).toMatchObject({ latestRuns: [], recoveredFailures: 0 });
+	});
+
 	it('hydrates legacy delivery snapshots with an authored-only merge breakdown', async () => {
 		const { cache, values } = cacheFixture();
 		await cache.refresh('octocat', null, new Date(), async () => liveSnapshot());

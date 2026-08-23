@@ -171,7 +171,9 @@ const RepositoryWorkflowSummarySchema = Schema.Struct({
 	successful: Schema.Number,
 	failed: Schema.Number,
 	cancelled: Schema.Number,
-	other: Schema.Number
+	other: Schema.Number,
+	latestRuns: Schema.optional(Schema.Array(WorkflowRunSchema)),
+	recoveredFailures: Schema.optional(Schema.Number)
 });
 const WorkflowTotalsSchema = Schema.Struct({
 	total: Schema.Number,
@@ -336,7 +338,6 @@ const DashboardSnapshotSchema = Schema.Struct({
 			outcomes: Schema.Number,
 			previousOutcomes: Schema.Number,
 			outcomeDelta: Schema.Number,
-			workflowPassRate: Schema.NullOr(Schema.Number),
 			pullRequestMerges: Schema.optional(Schema.Array(PullRequestMergeEvidenceSchema)),
 			artifacts: Schema.Array(DeliveryArtifactSchema),
 			workflows: WorkflowCoverageSchema
@@ -461,6 +462,14 @@ export class DashboardSnapshotCache {
 							...storedWorkflows,
 							current: {
 								...storedWorkflows.current,
+								repositories: storedWorkflows.current.repositories.map((repository) => ({
+									...repository,
+									latestRuns: (repository.latestRuns ?? []).map((run) => ({
+										...run,
+										headSha: run.headSha ?? ''
+									})),
+									recoveredFailures: repository.recoveredFailures ?? 0
+								})),
 								recent: storedWorkflows.current.recent.map((run) => ({
 									...run,
 									headSha: run.headSha ?? ''

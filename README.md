@@ -16,7 +16,7 @@ The public evidence dashboard includes:
 
 - **Today / Week** — commits, additions, deletions, and activity rhythm presented in the viewer’s local timezone.
 - **Delivery** — authored and maintainer outcomes, automated updates, releases, and GitHub Actions workflow runs with distinct attribution.
-- **Quality** — workflow-run outcomes, reverts, annotations, and change-mass signals without converting them into a quality score.
+- **Checks** — latest default-branch workflow state, recovered failures, seven-day run history, and neutral change context without converting CI into a quality score.
 - **Projects** — public project identities, canonical links, and deployment evidence linked only through exact provider identifiers.
 - **Commits** — per-repository commit evidence, including private repositories through server-only credentials.
 

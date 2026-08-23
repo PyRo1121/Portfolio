@@ -234,6 +234,10 @@ export type RepositoryWorkflowSummaryInput = {
 	readonly failed: number;
 	readonly cancelled: number;
 	readonly other: number;
+	/** Latest observed default-branch run for each workflow name in the rolling window. */
+	readonly latestRuns: ReadonlyArray<WorkflowRunInput>;
+	/** Failure sequences followed by a later successful run of the same workflow. */
+	readonly recoveredFailures: number;
 };
 
 /** Bounded Actions coverage collected from active repositories. */
@@ -401,7 +405,6 @@ export type DeliveryIntelligence = {
 	readonly outcomes: number;
 	readonly previousOutcomes: number;
 	readonly outcomeDelta: number;
-	readonly workflowPassRate: number | null;
 	readonly pullRequestMerges: ReadonlyArray<PullRequestMergeEvidence>;
 	readonly artifacts: ReadonlyArray<DeliveryArtifact>;
 	readonly workflows: WorkflowCoverageInput;
@@ -706,11 +709,6 @@ function buildDelivery(input: GitHubIntelligenceInput['delivery']): DeliveryInte
 	const outcomes = humanMergedPullRequests + input.closedIssues + releases + prereleaseBuilds;
 	const previousOutcomes =
 		input.previousHumanMergedPullRequests + input.previousClosedIssues + input.previousReleaseCount;
-	const completedRuns = input.workflows.current.successful + input.workflows.current.failed;
-	const workflowPassRate =
-		completedRuns === 0
-			? null
-			: Math.round((input.workflows.current.successful / completedRuns) * 100);
 	const outcomeArtifacts: DeliveryArtifact[] = input.outcomes.map((outcome) => {
 		let responsibility = '';
 		if (outcome.kind === 'PullRequest' && outcome.responsibility !== 'Authored') {
@@ -783,7 +781,6 @@ function buildDelivery(input: GitHubIntelligenceInput['delivery']): DeliveryInte
 		outcomes,
 		previousOutcomes,
 		outcomeDelta: outcomes - previousOutcomes,
-		workflowPassRate,
 		pullRequestMerges,
 		artifacts: [
 			...outcomeArtifacts
@@ -1004,6 +1001,19 @@ export function createDemoIntelligence(base: WeeklySnapshot): GitHubDashboardSna
 		const date = new Date(start.getTime() - (83 - index) * DAY_IN_MS);
 		return { date: date.toISOString().slice(0, 10), count: (index * 7 + (index % 5)) % 13 };
 	});
+	const demoWorkflowRun = (id: number, repository: string): WorkflowRunInput => ({
+		id,
+		name: 'CI',
+		title: 'Verify default branch',
+		repository,
+		url: base.profile.profileUrl,
+		event: 'push',
+		status: 'completed',
+		conclusion: 'success',
+		branch: 'main',
+		headSha: `demo-check-${String(id).padStart(29, '0')}`,
+		createdAt: base.generatedAt
+	});
 	return createGitHubDashboardSnapshot(base, {
 		repositories: demoRepositories,
 		repositoryCollection: {
@@ -1073,7 +1083,19 @@ export function createDemoIntelligence(base: WeeklySnapshot): GitHubDashboardSna
 							successful: 4,
 							failed: 1,
 							cancelled: 0,
-							other: 0
+							other: 0,
+							latestRuns: [demoWorkflowRun(1, `${base.profile.login}/signal-garden`)],
+							recoveredFailures: 1
+						},
+						{
+							repository: `${base.profile.login}/weeknote`,
+							total: 3,
+							successful: 3,
+							failed: 0,
+							cancelled: 0,
+							other: 0,
+							latestRuns: [demoWorkflowRun(2, `${base.profile.login}/weeknote`)],
+							recoveredFailures: 0
 						}
 					],
 					recent: [],

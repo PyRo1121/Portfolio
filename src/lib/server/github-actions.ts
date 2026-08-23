@@ -93,12 +93,66 @@ function conclusionCounts(runs: ReadonlyArray<WorkflowRunInput>): {
 	return { successful, failed, cancelled, other };
 }
 
+function latestRunsByWorkflow(
+	runs: ReadonlyArray<WorkflowRunInput>
+): ReadonlyArray<WorkflowRunInput> {
+	const latest = new Map<string, WorkflowRunInput>();
+	for (const run of runs) {
+		const current = latest.get(run.name);
+		if (
+			current === undefined ||
+			run.createdAt > current.createdAt ||
+			(run.createdAt === current.createdAt && run.id > current.id)
+		) {
+			latest.set(run.name, run);
+		}
+	}
+	return [...latest.values()].sort(
+		(left, right) => right.createdAt.localeCompare(left.createdAt) || right.id - left.id
+	);
+}
+
+function recoveredFailureSequences(runs: ReadonlyArray<WorkflowRunInput>): number {
+	const byWorkflow = new Map<string, WorkflowRunInput[]>();
+	for (const run of runs) {
+		const workflowRuns = byWorkflow.get(run.name) ?? [];
+		workflowRuns.push(run);
+		byWorkflow.set(run.name, workflowRuns);
+	}
+	let recoveries = 0;
+	for (const workflowRuns of byWorkflow.values()) {
+		let awaitingRecovery = false;
+		for (const run of workflowRuns.sort(
+			(left, right) => left.createdAt.localeCompare(right.createdAt) || left.id - right.id
+		)) {
+			if (
+				run.conclusion === 'failure' ||
+				run.conclusion === 'timed_out' ||
+				run.conclusion === 'action_required' ||
+				run.conclusion === 'stale'
+			) {
+				awaitingRecovery = true;
+			} else if (run.conclusion === 'success' && awaitingRecovery) {
+				recoveries += 1;
+				awaitingRecovery = false;
+			}
+		}
+	}
+	return recoveries;
+}
+
 /** Summarize exact workflow runs for one repository. */
 export function summarizeRepositoryWorkflows(
 	repository: string,
 	runs: ReadonlyArray<WorkflowRunInput>
 ): RepositoryWorkflowSummaryInput {
-	return { repository, total: runs.length, ...conclusionCounts(runs) };
+	return {
+		repository,
+		total: runs.length,
+		...conclusionCounts(runs),
+		latestRuns: latestRunsByWorkflow(runs),
+		recoveredFailures: recoveredFailureSequences(runs)
+	};
 }
 
 function fetchRepositoryWindow(

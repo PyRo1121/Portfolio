@@ -70,8 +70,27 @@ describe('summarizeRepositoryWorkflows', () => {
 			successful: 1,
 			failed: 2,
 			cancelled: 1,
-			other: 1
+			other: 1,
+			latestRuns: [run(5, null, 'in_progress')],
+			recoveredFailures: 0
 		});
+	});
+
+	it('retains the latest run per workflow and counts failure-to-success recovery sequences', () => {
+		const ciFailure = { ...run(1, 'failure'), name: 'CI' };
+		const ciRecovery = { ...run(2, 'success'), name: 'CI' };
+		const releaseSuccess = { ...run(3, 'success'), name: 'Release' };
+		const releaseFailure = { ...run(4, 'failure'), name: 'Release' };
+
+		const summary = summarizeRepositoryWorkflows('octocat/project', [
+			ciFailure,
+			ciRecovery,
+			releaseSuccess,
+			releaseFailure
+		]);
+
+		expect(summary.latestRuns.map((workflow) => workflow.id)).toEqual([4, 2]);
+		expect(summary.recoveredFailures).toBe(1);
 	});
 
 	it('excludes automated dynamic runs and uses the repository credential', async () => {
@@ -137,6 +156,11 @@ describe('summarizeRepositoryWorkflows', () => {
 			annotations: { state: 'Observed', targetedRuns: 0, evidence: [] }
 		});
 		expect(coverage.current.recent.map((workflow) => workflow.event)).toEqual(['push']);
+		expect(coverage.current.repositories[0]).toMatchObject({
+			repository: 'octocat/portfolio',
+			latestRuns: [{ id: 1, conclusion: 'success' }],
+			recoveredFailures: 0
+		});
 		expect(resolvedRepositories).toEqual(['octocat/portfolio', 'octocat/portfolio']);
 		expect(requested).toHaveLength(2);
 		expect(

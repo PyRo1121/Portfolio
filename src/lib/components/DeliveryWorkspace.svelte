@@ -172,8 +172,8 @@
 			>
 		</header>
 		<div class="verification-headline">
-			<strong>{delivery.workflowPassRate === null ? '—' : `${delivery.workflowPassRate}%`}</strong>
-			<span>pass rate across completed user-triggered workflow runs</span>
+			<strong>{formatInteger(workflow.total)}</strong>
+			<span>user-triggered default-branch runs observed in the rolling window</span>
 		</div>
 		<div
 			class="verification-track"

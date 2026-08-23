@@ -53,8 +53,8 @@ const publicList: ReadonlyArray<WorkspaceDefinition> = [
 	{
 		id: 'craft',
 		index: 4,
-		label: 'Quality',
-		description: 'Workflow, commit-size, and message data',
+		label: 'Checks',
+		description: 'Latest workflow state, recovery, history, and change context',
 		shortcut: '4'
 	},
 	{

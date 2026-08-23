@@ -1,4 +1,4 @@
-import { createCraftIntelligence } from './dashboard-craft';
+import { createChecksIntelligence } from './dashboard-craft';
 import { createTodayIntelligence } from './dashboard-today';
 import type { ViewerActivityProjection } from './dashboard-viewer-time';
 import type { PublicWorkspace } from './dashboard-workspace';
@@ -18,9 +18,8 @@ export function createWorkspaceSignals(
 	projection: ViewerActivityProjection
 ): PublicWorkspaceSignals {
 	const today = createTodayIntelligence(snapshot, projection);
-	const craft = createCraftIntelligence(snapshot);
-	const failedRuns = craft.observed.failedWorkflowRuns;
-	const workflowRuns = craft.observed.successfulWorkflowRuns + failedRuns;
+	const checks = createChecksIntelligence(snapshot);
+	const failedRuns = checks.history.failedRuns;
 	return {
 		today: { value: String(today.commits), label: 'today', tone: 'neutral' },
 		brief: { value: String(snapshot.totals.commits), label: '7 days', tone: 'neutral' },
@@ -30,9 +29,9 @@ export function createWorkspaceSignals(
 			tone: failedRuns > 0 ? 'attention' : 'neutral'
 		},
 		craft: {
-			value: String(workflowRuns),
-			label: 'runs',
-			tone: failedRuns > 0 ? 'attention' : 'neutral'
+			value: String(checks.current.repositoriesWithEvidence),
+			label: 'checked',
+			tone: checks.current.attentionRepositories > 0 ? 'attention' : 'neutral'
 		},
 		repositories: {
 			value: String(snapshot.intelligence.account.activeRepositories),

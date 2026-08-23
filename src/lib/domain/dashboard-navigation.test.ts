@@ -20,33 +20,33 @@ describe('createWorkspaceSignals', () => {
 		expect(signals.activity.value).toBe(String(snapshot.intelligence.commits.length));
 	});
 
-	it('headlines Quality with observed workflow-run evidence instead of an ambiguous pass rate', () => {
+	it('headlines Checks with repositories that have latest-run evidence instead of a pass rate', () => {
 		const projection = createViewerActivityProjection(snapshot, 'America/New_York');
 		const signals = createWorkspaceSignals(snapshot, projection);
-		const successful = snapshot.intelligence.delivery.workflows.current.successful;
-		const failed = snapshot.intelligence.delivery.workflows.current.failed;
-		expect(failed).toBeGreaterThan(0);
+		expect(snapshot.intelligence.delivery.workflows.current.failed).toBeGreaterThan(0);
 		expect(signals.craft).toEqual({
-			value: String(successful + failed),
-			label: 'runs',
-			tone: 'attention'
+			value: '2',
+			label: 'checked',
+			tone: 'neutral'
 		});
 	});
 
-	it('uses a quiet workflow-run count when pass rate is unavailable', () => {
+	it('uses a quiet zero when no repository has latest-run evidence', () => {
 		const withoutChecks: typeof snapshot = {
 			...snapshot,
 			intelligence: {
 				...snapshot.intelligence,
 				delivery: {
 					...snapshot.intelligence.delivery,
-					workflowPassRate: null,
 					workflows: {
 						...snapshot.intelligence.delivery.workflows,
 						current: {
 							...snapshot.intelligence.delivery.workflows.current,
 							successful: 0,
-							failed: 0
+							failed: 0,
+							repositories: snapshot.intelligence.delivery.workflows.current.repositories.map(
+								(repository) => ({ ...repository, latestRuns: [], recoveredFailures: 0 })
+							)
 						}
 					}
 				}
@@ -55,7 +55,7 @@ describe('createWorkspaceSignals', () => {
 		const projection = createViewerActivityProjection(withoutChecks, 'America/New_York');
 		expect(createWorkspaceSignals(withoutChecks, projection).craft).toEqual({
 			value: '0',
-			label: 'runs',
+			label: 'checked',
 			tone: 'neutral'
 		});
 	});

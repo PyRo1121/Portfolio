@@ -174,7 +174,6 @@ describe('createGitHubDashboardSnapshot', () => {
 		});
 		expect(snapshot.intelligence.delivery).toMatchObject({
 			outcomes: 1,
-			workflowPassRate: 50,
 			outcomeDelta: 1,
 			mergedPullRequests: 2,
 			automatedMergedPullRequests: 1,

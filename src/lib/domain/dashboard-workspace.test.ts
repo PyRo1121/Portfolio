@@ -23,6 +23,10 @@ describe('audience workspace definitions', () => {
 			'5',
 			'6'
 		]);
+		expect(publicWorkspaceDefinitions.find((workspace) => workspace.id === 'craft')).toMatchObject({
+			label: 'Checks',
+			description: 'Latest workflow state, recovery, history, and change context'
+		});
 	});
 
 	it('lists owner briefing and ops areas without shipping workspaces', () => {

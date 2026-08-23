@@ -79,7 +79,7 @@ const WORKSPACE_LABELS: Readonly<Record<string, string>> = {
 	today: 'Today',
 	brief: 'Week',
 	delivery: 'Delivery',
-	craft: 'Quality',
+	craft: 'Checks',
 	repositories: 'Projects',
 	activity: 'Commits',
 	cloudflare: 'Cloudflare',
