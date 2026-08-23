@@ -92,19 +92,19 @@
 	<main id="portfolio-content" tabindex="-1">
 		<section class="hero" aria-labelledby="portfolio-heading">
 			<div class="hero-copy">
-				<p class="hello">Hi, I’m Olen.</p>
-				<h1 id="portfolio-heading">I like fixing problems that waste people’s time.</h1>
+				<p class="hello">Support-minded software and systems</p>
+				<h1 id="portfolio-heading">I turn technical friction into a clear next step.</h1>
 				<p class="hero-summary">
-					I bring customer-service patience to developer tools, cloud systems, and technical
-					problems that need a clear next step.
+					Rust tools, Svelte applications, Cloudflare infrastructure, and the debugging work between
+					them—built to be understandable, testable, and useful in production.
 				</p>
 				<div class="hero-actions">
-					<a class="primary-action" href="#work">View my work</a>
+					<a class="primary-action" href="#work">See what I’ve built</a>
 					<a
 						href={PUBLIC_CONTACT_MAILTO}
 						rel="external"
 						onclick={() => clientTelemetry?.recordContact('email_summary')}
-						><EnvelopeSimple size={17} weight="fill" /> Email Olen</a
+						><EnvelopeSimple size={17} weight="fill" /> Start a conversation</a
 					>
 				</div>
 			</div>
@@ -114,7 +114,7 @@
 					<img src={profilePhotoUrl} alt="Olen Latham" width="640" height="640" />
 				</div>
 				<figcaption>
-					<span>Currently</span>
+					<span>Role fit</span>
 					<p>{PUBLIC_AVAILABILITY_LINE}</p>
 				</figcaption>
 			</figure>
@@ -123,7 +123,7 @@
 		<section class="evidence-strip" aria-labelledby="live-evidence-heading">
 			<div>
 				<span>Live evidence</span>
-				<h2 id="live-evidence-heading">Fresh work, kept in proportion.</h2>
+				<h2 id="live-evidence-heading">Recent work, backed by the record.</h2>
 			</div>
 			{#if evidence._tag === 'Current'}
 				<div class="evidence-facts">
@@ -157,10 +157,10 @@
 
 		<section id="work" class="selected-work" aria-labelledby="work-heading">
 			<header>
-				<h2 id="work-heading">Two projects. Two problems worth understanding.</h2>
+				<h2 id="work-heading">Two products. One operating principle: remove the friction.</h2>
 				<p>
-					The case studies explain the decisions. The repositories and live dashboard provide the
-					record.
+					OMG simplifies fragmented tooling. Weeknote makes engineering activity auditable. Each
+					case study shows the problem, the decisions, and the evidence.
 				</p>
 			</header>
 
@@ -182,11 +182,14 @@
 				<div class="project-copy">
 					<p class="project-kind">OMG / Rust CLI</p>
 					<h3>{omg.title}</h3>
-					<p>{omg.summary}</p>
-					<ul aria-label="OMG evidence highlights">
-						<li>Tagged public release</li>
+					<p>
+						A Rust CLI that gives package managers and language runtimes one predictable command
+						surface—without hiding platform-specific behavior.
+					</p>
+					<ul aria-label="OMG capability highlights">
+						<li>Rust CLI and systems design</li>
 						<li>Cross-platform package backends</li>
-						<li>Tests, benchmarks, and security documentation</li>
+						<li>Release, test, benchmark, and security ownership</li>
 					</ul>
 					<a
 						href={resolve('/work/omg')}
@@ -214,11 +217,14 @@
 				<div class="project-copy">
 					<p class="project-kind">Weeknote / Svelte 5 and Cloudflare</p>
 					<h3>{weeknote.title}</h3>
-					<p>{weeknote.summary}</p>
-					<ul aria-label="Weeknote evidence highlights">
-						<li>GitHub and deployment evidence</li>
-						<li>Complete-snapshot cache boundary</li>
-						<li>Protected owner records and cookieless telemetry</li>
+					<p>
+						A production SvelteKit and Cloudflare application that turns GitHub activity into a
+						bounded evidence record: work, checks, deployments, and explicit unknowns.
+					</p>
+					<ul aria-label="Weeknote capability highlights">
+						<li>Svelte 5 and Effect TypeScript</li>
+						<li>Workers, D1, KV, and Durable Objects</li>
+						<li>Multi-credential GitHub and deployment evidence</li>
 					</ul>
 					<a
 						href={resolve('/work/weeknote')}
@@ -229,26 +235,50 @@
 			</article>
 		</section>
 
-		<section class="about-preview" aria-labelledby="about-preview-heading">
-			<div>
-				<h2 id="about-preview-heading">Customer service is part of the technical story.</h2>
-			</div>
-			<div>
-				<p>
-					At Bank of America, the work starts with listening: understand what went wrong, make a
-					confusing situation clearer, and help someone reach the next step.
-				</p>
-				<p>
-					That same approach shapes how I debug software, document decisions, and learn unfamiliar
-					systems until I can make progress.
-				</p>
-				<a href={resolve('/about')}>Read the full story <ArrowUpRight size={15} weight="bold" /></a>
+		<section class="capabilities" aria-labelledby="capabilities-heading">
+			<header>
+				<p class="section-label">Where I’m useful</p>
+				<h2 id="capabilities-heading">From “something’s wrong” to a fix people can trust.</h2>
+				<p>I’m strongest where communication, troubleshooting, and implementation meet.</p>
+				<a href={resolve('/about')}>Read how I got here <ArrowUpRight size={15} weight="bold" /></a>
+			</header>
+			<div class="capability-list">
+				<article>
+					<span>01 / Diagnose</span>
+					<div>
+						<h3>Troubleshooting under ambiguity</h3>
+						<p>
+							Turn vague symptoms into a reproducible issue, explain what is known, and keep the
+							next step clear.
+						</p>
+					</div>
+				</article>
+				<article>
+					<span>02 / Build</span>
+					<div>
+						<h3>Tools and automation</h3>
+						<p>
+							Build typed CLIs, interfaces, and integrations that replace repetitive work with a
+							dependable path.
+						</p>
+					</div>
+				</article>
+				<article>
+					<span>03 / Operate</span>
+					<div>
+						<h3>Cloud delivery</h3>
+						<p>
+							Trace credentials, APIs, caches, deployments, and failure boundaries instead of
+							treating production as a black box.
+						</p>
+					</div>
+				</article>
 			</div>
 		</section>
 
 		<section id="contact" class="closing" aria-labelledby="contact-heading">
 			<div>
-				<h2 id="contact-heading">Looking for steady follow-through?</h2>
+				<h2 id="contact-heading">Need someone who can stay with the problem?</h2>
 				<p>{PUBLIC_AVAILABILITY_LINE}</p>
 			</div>
 			<div class="closing-actions">
@@ -361,6 +391,7 @@
 	}
 	.hello,
 	.project-kind,
+	.section-label,
 	.evidence-strip > div:first-child > span,
 	.portrait figcaption span {
 		margin: 0;
@@ -504,7 +535,7 @@
 	}
 	.evidence-strip > a,
 	.project-copy > a,
-	.about-preview a {
+	.capabilities a {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.4rem;
@@ -521,7 +552,7 @@
 		max-width: 46rem;
 	}
 	.selected-work h2,
-	.about-preview h2,
+	.capabilities h2,
 	.closing h2 {
 		margin: 0;
 		font-size: clamp(2.45rem, 4.7vw, 4.5rem);
@@ -608,29 +639,61 @@
 	.project-copy > a {
 		margin-top: 1.5rem;
 	}
-	.about-preview {
+	.capabilities {
 		display: grid;
-		grid-template-columns: minmax(16rem, 0.8fr) minmax(0, 1.2fr);
-		gap: clamp(3rem, 9vw, 8rem);
+		grid-template-columns: minmax(18rem, 0.82fr) minmax(0, 1.18fr);
+		gap: clamp(3rem, 8vw, 7rem);
 		padding: clamp(4rem, 8vw, 7rem) 0;
 		border-top: 1px solid rgb(231 232 225 / 16%);
 	}
-	.about-preview h2 {
-		max-width: 11ch;
+	.capabilities > header {
+		align-self: start;
+	}
+	.capabilities h2 {
+		max-width: 12ch;
+		margin-top: 0.8rem;
 		font-size: clamp(2.2rem, 4vw, 3.8rem);
 	}
-	.about-preview > div:last-child {
-		max-width: 43rem;
+	.capabilities > header > p:not(.section-label) {
+		max-width: 31rem;
+		margin: 1.3rem 0 0;
+		color: #8a8f8a;
+		font-size: 0.94rem;
+		line-height: 1.6;
 	}
-	.about-preview p {
-		margin: 0 0 1.15rem;
-		color: #b2b6b1;
-		font-size: clamp(1rem, 1.6vw, 1.18rem);
-		line-height: 1.65;
+	.capabilities > header > a {
+		margin-top: 1.35rem;
+	}
+	.capability-list {
+		border-top: 1px solid rgb(231 232 225 / 18%);
+	}
+	.capability-list article {
+		display: grid;
+		grid-template-columns: 6.5rem minmax(0, 1fr);
+		gap: 1.25rem;
+		padding: 1.5rem 0;
+		border-bottom: 1px solid rgb(231 232 225 / 18%);
+	}
+	.capability-list article > span {
+		padding-top: 0.16rem;
+		color: #d8a54a;
+		font:
+			600 0.54rem/1.3 'JetBrains Mono Variable',
+			monospace;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+	}
+	.capability-list h3 {
+		margin: 0;
+		font-size: 1.05rem;
+		letter-spacing: -0.025em;
+	}
+	.capability-list p {
+		margin: 0.55rem 0 0;
+		color: #8a8f8a;
+		font-size: 0.82rem;
+		line-height: 1.55;
 		text-wrap: pretty;
-	}
-	.about-preview a {
-		margin-top: 0.5rem;
 	}
 	.closing {
 		display: grid;
@@ -719,7 +782,7 @@
 		}
 		.evidence-strip,
 		.project,
-		.about-preview,
+		.capabilities,
 		.closing {
 			grid-template-columns: 1fr;
 		}
@@ -752,7 +815,7 @@
 		.project-weeknote .project-image {
 			grid-row: 1;
 		}
-		.about-preview,
+		.capabilities,
 		.closing {
 			gap: 2.25rem;
 		}

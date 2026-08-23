@@ -45,7 +45,11 @@ describe('public SEO copy', () => {
 		expect(homeSeo.jsonLd).toContain(PUBLIC_SOCIAL_IMAGE_URL);
 	});
 
-	it('positions the About page around Olen’s real career transition and projects', () => {
+	it('uses the landing page to sell capability and the About page to explain the transition', () => {
+		expect(homeSeo.description).toContain(
+			'builds support-minded developer tools and cloud systems'
+		);
+		expect(homeSeo.description).not.toContain('customer-service');
 		expect(aboutSeo.title).toContain('From customer support to software and cloud systems');
 		expect(aboutSeo.description).toContain('OMG and Weeknote');
 	});
