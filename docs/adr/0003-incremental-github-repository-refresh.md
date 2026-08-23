@@ -6,7 +6,7 @@ Accepted.
 
 ## Context
 
-The authenticated GraphQL core query requested contribution calendars plus metadata, releases, and authored default-branch history for every owned repository. GitHub intermittently returned `504`, and successful core requests took approximately eight seconds. One repository failure invalidated the entire query and prevented independent recovery.
+The authenticated GraphQL core query requested contribution calendars plus metadata, releases, and authored default-branch history for every repository in the account inventory. GitHub intermittently returned `504`, and successful core requests took approximately eight seconds. One repository failure invalidated the entire query and prevented independent recovery.
 
 ## Decision
 
@@ -14,7 +14,9 @@ Collection is split into:
 
 1. one account query for contribution calendars and rate limits;
 2. one isolated search query for collaboration and delivery outcomes;
-3. one query per REST-observed owned repository for metadata, releases, and default-branch history.
+3. one query per REST-observed repository for metadata, releases, and default-branch history.
+
+The REST inventory includes repositories affiliated through ownership, direct collaboration, or organization membership. This preserves authored evidence when a repository transfers from the personal account into an organization and automatically follows later organization-level splits. Repository commit queries still filter by the authenticated author's immutable GitHub node ID, so expanding inventory does not attribute teammates' commits to the owner. Repositories remain absent when the configured credential cannot access them.
 
 Repository queries run with fixed concurrency six. Every GraphQL request has a 15-second abort timeout. Commit histories exceeding the first 100 nodes retain the existing repository-specific pagination.
 

@@ -19,6 +19,7 @@ import type { GitHubRepositorySliceCache } from './github-repository-slice-cache
 
 const MAX_EVENT_PAGES = 3;
 const EVENTS_PER_PAGE = 100;
+const REPOSITORY_AFFILIATIONS = 'owner,collaborator,organization_member';
 
 const UserSchema = Schema.Struct({
 	login: Schema.String,
@@ -286,7 +287,7 @@ export function fetchWeeklySnapshot(
 		for (let page = 1; page <= 100; page += 1) {
 			const repositoryBody = yield* requestJson(
 				fetch,
-				`/user/repos?affiliation=owner&sort=created&direction=desc&per_page=100&page=${String(page)}`,
+				`/user/repos?affiliation=${REPOSITORY_AFFILIATIONS}&sort=created&direction=desc&per_page=100&page=${String(page)}`,
 				config.token
 			);
 			const repositoryPage = yield* Schema.decodeUnknown(Schema.Array(RepositorySchema))(
