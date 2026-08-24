@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { resolve } from '$app/paths';
+	import { asset, resolve } from '$app/paths';
 	import {
 		ArrowUpRightIcon as ArrowUpRight,
 		EnvelopeSimpleIcon as EnvelopeSimple,
@@ -20,7 +20,7 @@
 	import { getClientTelemetry } from '$lib/telemetry/client-telemetry';
 
 	const clientTelemetry = getClientTelemetry();
-	const profilePhotoUrl = 'https://github.com/PyRo1121.png?size=640';
+	const profilePhotoUrl = asset('/portrait.webp');
 </script>
 
 <svelte:head>

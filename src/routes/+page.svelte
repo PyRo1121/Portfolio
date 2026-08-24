@@ -27,7 +27,7 @@
 	const omg = publicCaseStudyFor('omg');
 	const weeknote = publicCaseStudyFor('weeknote');
 	const clientTelemetry = getClientTelemetry();
-	const profilePhotoUrl = 'https://github.com/PyRo1121.png?size=640';
+	const profilePhotoUrl = asset('/portrait.webp');
 	const omgImage = asset('/portfolio/omg-repository.webp');
 	const weeknoteImage = asset('/portfolio/weeknote-dashboard.webp');
 </script>

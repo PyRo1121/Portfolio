@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { asset } from '$app/paths';
 	import {
 		ArrowDownRightIcon as ArrowDownRight,
 		ArrowUpRightIcon as ArrowUpRight,
@@ -74,7 +75,7 @@
 	<section class="delivery-summary">
 		<img
 			class="delivery-portrait"
-			src={snapshot.profile.avatarUrl}
+			src={asset('/portrait.webp')}
 			alt=""
 			width="320"
 			height="320"

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { asset } from '$app/paths';
 	import {
 		ArrowDownRight,
 		ArrowUpRight,
@@ -102,7 +103,7 @@
 	<section class="today-summary" aria-labelledby="today-heading">
 		<img
 			class="today-portrait"
-			src={snapshot.profile.avatarUrl}
+			src={asset('/portrait.webp')}
 			alt=""
 			width="320"
 			height="320"

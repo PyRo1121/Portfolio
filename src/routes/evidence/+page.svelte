@@ -8,7 +8,7 @@
 		LinkedinLogoIcon as LinkedinLogo
 	} from 'phosphor-svelte';
 	import { invalidateAll } from '$app/navigation';
-	import { resolve } from '$app/paths';
+	import { asset, resolve } from '$app/paths';
 	import type { PageProps } from './$types';
 	import CommandPalette from '$lib/components/CommandPalette.svelte';
 	import DashboardSkeleton from '$lib/components/DashboardSkeleton.svelte';
@@ -162,13 +162,7 @@
 			<div class="brand-group">
 				<a class="brand" href={resolve('/')}>
 					<span class="brand__portrait">
-						<img
-							src={snapshot.profile.avatarUrl}
-							alt=""
-							width="30"
-							height="30"
-							fetchpriority="high"
-						/>
+						<img src={asset('/portrait.webp')} alt="" width="30" height="30" fetchpriority="high" />
 					</span>
 					<span class="brand__identity"
 						><strong>Olen Latham</strong><small>{PUBLIC_IDENTITY_LINE}</small></span
