@@ -360,9 +360,13 @@
 		display: flex;
 		align-items: stretch;
 		justify-content: space-between;
+		flex-wrap: wrap;
 		gap: 1.5rem;
 		padding: 1rem 1.25rem;
 		background: var(--surface);
+	}
+	.telemetry-overview > div {
+		min-width: 0;
 	}
 	.telemetry-overview > div span {
 		display: flex;
@@ -479,7 +483,7 @@
 	.telemetry-grid {
 		display: grid;
 		grid-template-columns: repeat(3, minmax(0, 1fr));
-		grid-auto-rows: minmax(8rem, 1fr);
+		grid-auto-rows: auto;
 		gap: 1px;
 		overflow: auto;
 		min-height: 0;
