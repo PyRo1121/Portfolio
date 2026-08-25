@@ -722,7 +722,7 @@ a {
 	width: min(27rem, 112%);
 	height: 108%;
 	object-fit: cover;
-	object-position: 58% 30%;
+	object-position: 35% 30%;
 	opacity: 0.32;
 	filter: grayscale(0.78) saturate(0.62) contrast(1.18);
 	mix-blend-mode: luminosity;
@@ -734,7 +734,7 @@ a {
 	);
 }
 .delivery-portrait {
-	object-position: 60% 34%;
+	object-position: 50% 34%;
 }
 .today-summary > header {
 	padding: 0 0 0.8rem !important;
