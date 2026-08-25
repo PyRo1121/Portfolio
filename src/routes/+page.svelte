@@ -114,7 +114,6 @@
 					<img src={profilePhotoUrl} alt="Olen Latham" width="640" height="640" />
 				</div>
 				<figcaption>
-					<span>Role fit</span>
 					<p>{PUBLIC_AVAILABILITY_LINE}</p>
 				</figcaption>
 			</figure>
@@ -186,11 +185,6 @@
 						A Rust CLI that gives package managers and language runtimes one predictable command
 						surface—without hiding platform-specific behavior.
 					</p>
-					<ul aria-label="OMG capability highlights">
-						<li>Rust CLI and systems design</li>
-						<li>Cross-platform package backends</li>
-						<li>Release, test, benchmark, and security ownership</li>
-					</ul>
 					<a
 						href={resolve('/work/omg')}
 						onclick={() => clientTelemetry?.recordPortfolioAction('featured_omg_open')}
@@ -221,11 +215,6 @@
 						A production SvelteKit and Cloudflare application that turns GitHub activity into a
 						bounded evidence record: work, checks, deployments, and explicit unknowns.
 					</p>
-					<ul aria-label="Weeknote capability highlights">
-						<li>Svelte 5 and Effect TypeScript</li>
-						<li>Workers, D1, KV, and Durable Objects</li>
-						<li>Multi-credential GitHub and deployment evidence</li>
-					</ul>
 					<a
 						href={resolve('/work/weeknote')}
 						onclick={() => clientTelemetry?.recordPortfolioAction('featured_weeknote_open')}
@@ -244,7 +233,6 @@
 			</header>
 			<div class="capability-list">
 				<article>
-					<span>01 / Diagnose</span>
 					<div>
 						<h3>Troubleshooting under ambiguity</h3>
 						<p>
@@ -254,7 +242,6 @@
 					</div>
 				</article>
 				<article>
-					<span>02 / Build</span>
 					<div>
 						<h3>Tools and automation</h3>
 						<p>
@@ -264,7 +251,6 @@
 					</div>
 				</article>
 				<article>
-					<span>03 / Operate</span>
 					<div>
 						<h3>Cloud delivery</h3>
 						<p>
@@ -340,7 +326,7 @@
 		align-items: center;
 		justify-content: space-between;
 		gap: 2rem;
-		border-bottom: 1px solid rgb(231 232 225 / 16%);
+		border-bottom: 1px solid var(--line);
 	}
 	.wordmark {
 		display: grid;
@@ -354,7 +340,7 @@
 		letter-spacing: -0.02em;
 	}
 	.wordmark span {
-		color: #777c78;
+		color: var(--faint);
 		font:
 			500 0.52rem/1 'JetBrains Mono Variable',
 			monospace;
@@ -367,7 +353,7 @@
 	}
 	.site-header nav a,
 	.site-footer nav a {
-		color: #8a8f8a;
+		color: var(--muted);
 		font:
 			600 0.62rem/1 'JetBrains Mono Variable',
 			monospace;
@@ -379,8 +365,8 @@
 	}
 	.site-header nav .contact-link {
 		padding: 0.68rem 0.8rem;
-		border: 1px solid #d8a54a;
-		color: #d8a54a;
+		border: 1px solid var(--accent);
+		color: var(--accent);
 	}
 	.hero {
 		display: grid;
@@ -392,10 +378,9 @@
 	.hello,
 	.project-kind,
 	.section-label,
-	.evidence-strip > div:first-child > span,
-	.portrait figcaption span {
+	.evidence-strip > div:first-child > span {
 		margin: 0;
-		color: #d8a54a;
+		color: var(--accent);
 		font:
 			650 0.66rem/1.2 'JetBrains Mono Variable',
 			monospace;
@@ -414,7 +399,7 @@
 	.hero-summary {
 		max-width: 39rem;
 		margin: 1.7rem 0 0;
-		color: #b2b6b1;
+		color: var(--muted);
 		font-size: 1.04rem;
 		line-height: 1.6;
 		text-wrap: pretty;
@@ -434,7 +419,7 @@
 		justify-content: center;
 		gap: 0.45rem;
 		padding: 0 1rem;
-		border: 1px solid rgb(231 232 225 / 22%);
+		border: 1px solid var(--strong);
 		color: #f0f0eb;
 		font-size: 0.8rem;
 		font-weight: 650;
@@ -446,13 +431,13 @@
 	}
 	.hero-actions .primary-action,
 	.closing-actions .primary-action {
-		border-color: #d8a54a;
-		background: #d8a54a;
+		border-color: var(--accent);
+		background: var(--accent);
 		color: #0b0d0e;
 	}
 	.hero-actions a:hover,
 	.closing-actions a:hover {
-		border-color: #d8a54a;
+		border-color: var(--accent);
 		background: rgb(216 165 74 / 9%);
 	}
 	.hero-actions .primary-action:hover,
@@ -470,7 +455,7 @@
 	}
 	.portrait-frame {
 		position: relative;
-		border-top: 2px solid #d8a54a;
+		border-top: 2px solid var(--accent);
 	}
 	.portrait-frame::after {
 		position: absolute;
@@ -491,8 +476,8 @@
 		padding: 0.85rem 0 0;
 	}
 	.portrait figcaption p {
-		margin: 0.45rem 0 0;
-		color: #8a8f8a;
+		margin: 0.55rem 0 0;
+		color: var(--muted);
 		font-size: 0.72rem;
 		line-height: 1.5;
 	}
@@ -502,8 +487,8 @@
 		align-items: center;
 		gap: 2rem;
 		padding: 1.35rem 0;
-		border-top: 1px solid rgb(231 232 225 / 18%);
-		border-bottom: 1px solid rgb(231 232 225 / 18%);
+		border-top: 1px solid var(--line);
+		border-bottom: 1px solid var(--line);
 	}
 	.evidence-strip h2 {
 		margin: 0.4rem 0 0;
@@ -518,17 +503,17 @@
 		display: grid;
 		gap: 0.35rem;
 		padding: 0.2rem 1rem;
-		border-left: 1px solid rgb(231 232 225 / 16%);
+		border-left: 1px solid var(--line);
 	}
 	.evidence-facts strong {
-		color: #94bb9c;
+		color: var(--positive);
 		font-size: 1rem;
 		font-weight: 650;
 		font-variant-numeric: tabular-nums;
 	}
 	.evidence-facts span,
 	.evidence-unavailable {
-		color: #777c78;
+		color: var(--faint);
 		font:
 			500 0.5rem/1.5 'JetBrains Mono Variable',
 			monospace;
@@ -539,7 +524,7 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 0.4rem;
-		color: #d8a54a;
+		color: var(--accent);
 		font-size: 0.78rem;
 		font-weight: 650;
 		text-decoration: none;
@@ -564,7 +549,7 @@
 	.selected-work > header p {
 		max-width: 42rem;
 		margin: 1.25rem 0 0;
-		color: #8a8f8a;
+		color: var(--muted);
 		font-size: 0.94rem;
 		line-height: 1.6;
 	}
@@ -574,7 +559,7 @@
 		align-items: center;
 		gap: clamp(2.5rem, 6vw, 6rem);
 		padding: clamp(3.8rem, 7vw, 6rem) 0;
-		border-bottom: 1px solid rgb(231 232 225 / 16%);
+		border-bottom: 1px solid var(--line);
 	}
 	.project-weeknote .project-image {
 		grid-column: 2;
@@ -587,8 +572,8 @@
 	.project-image {
 		display: block;
 		overflow: hidden;
-		border-top: 2px solid #d8a54a;
-		background: #111516;
+		border-top: 2px solid var(--accent);
+		background: var(--surface);
 	}
 	.project-image img {
 		display: block;
@@ -617,24 +602,10 @@
 	}
 	.project-copy > p:not(.project-kind) {
 		margin: 1.25rem 0 0;
-		color: #b2b6b1;
+		color: var(--muted);
 		font-size: 0.93rem;
 		line-height: 1.6;
 		text-wrap: pretty;
-	}
-	.project-copy ul {
-		display: grid;
-		gap: 0.65rem;
-		margin: 1.35rem 0 0;
-		padding: 0;
-		color: #898e89;
-		font-size: 0.76rem;
-		line-height: 1.4;
-		list-style: none;
-	}
-	.project-copy li {
-		padding-left: 0.85rem;
-		border-left: 1px solid #d8a54a;
 	}
 	.project-copy > a {
 		margin-top: 1.5rem;
@@ -644,7 +615,7 @@
 		grid-template-columns: minmax(18rem, 0.82fr) minmax(0, 1.18fr);
 		gap: clamp(3rem, 8vw, 7rem);
 		padding: clamp(4rem, 8vw, 7rem) 0;
-		border-top: 1px solid rgb(231 232 225 / 16%);
+		border-top: 1px solid var(--line);
 	}
 	.capabilities > header {
 		align-self: start;
@@ -657,7 +628,7 @@
 	.capabilities > header > p:not(.section-label) {
 		max-width: 31rem;
 		margin: 1.3rem 0 0;
-		color: #8a8f8a;
+		color: var(--muted);
 		font-size: 0.94rem;
 		line-height: 1.6;
 	}
@@ -665,23 +636,13 @@
 		margin-top: 1.35rem;
 	}
 	.capability-list {
-		border-top: 1px solid rgb(231 232 225 / 18%);
+		border-top: 1px solid var(--line);
 	}
 	.capability-list article {
 		display: grid;
-		grid-template-columns: 6.5rem minmax(0, 1fr);
-		gap: 1.25rem;
+		gap: 0;
 		padding: 1.5rem 0;
-		border-bottom: 1px solid rgb(231 232 225 / 18%);
-	}
-	.capability-list article > span {
-		padding-top: 0.16rem;
-		color: #d8a54a;
-		font:
-			600 0.54rem/1.3 'JetBrains Mono Variable',
-			monospace;
-		letter-spacing: 0.05em;
-		text-transform: uppercase;
+		border-bottom: 1px solid var(--line);
 	}
 	.capability-list h3 {
 		margin: 0;
@@ -690,7 +651,7 @@
 	}
 	.capability-list p {
 		margin: 0.55rem 0 0;
-		color: #8a8f8a;
+		color: var(--muted);
 		font-size: 0.82rem;
 		line-height: 1.55;
 		text-wrap: pretty;
@@ -701,7 +662,7 @@
 		align-items: center;
 		gap: 3rem;
 		padding: clamp(3.5rem, 7vw, 6rem) 0;
-		border-top: 1px solid #d8a54a;
+		border-top: 1px solid var(--accent);
 	}
 	.closing h2 {
 		max-width: 11ch;
@@ -709,7 +670,7 @@
 	.closing > div:first-child p {
 		max-width: 42rem;
 		margin: 1rem 0 0;
-		color: #b2b6b1;
+		color: var(--muted);
 		line-height: 1.6;
 	}
 	.closing-actions {
@@ -718,7 +679,7 @@
 	.closing-actions p {
 		width: 100%;
 		margin: 0.35rem 0 0;
-		color: #777c78;
+		color: var(--faint);
 		font:
 			500 0.58rem/1.55 'JetBrains Mono Variable',
 			monospace;
@@ -729,8 +690,8 @@
 		align-items: center;
 		justify-content: space-between;
 		gap: 2rem;
-		border-top: 1px solid rgb(231 232 225 / 16%);
-		color: #777c78;
+		border-top: 1px solid var(--line);
+		color: var(--faint);
 		font:
 			500 0.56rem/1 'JetBrains Mono Variable',
 			monospace;
@@ -741,7 +702,7 @@
 		gap: 0.35rem;
 	}
 	a:focus-visible {
-		outline: 2px solid #d8a54a;
+		outline: 2px solid var(--accent);
 		outline-offset: 4px;
 	}
 	@media (max-width: 900px) {
@@ -849,7 +810,7 @@
 			grid-column: 1 / -1;
 			padding-top: 0.9rem;
 			padding-left: 0;
-			border-top: 1px solid rgb(231 232 225 / 16%);
+			border-top: 1px solid var(--line);
 			border-left: 0;
 		}
 		.closing-actions {
