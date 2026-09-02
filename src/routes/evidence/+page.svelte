@@ -139,7 +139,6 @@
 	<meta property="og:image:height" content="630" />
 	<meta property="og:image:alt" content="Olen Latham — software, systems, and cloud work" />
 	<meta name="twitter:card" content="summary_large_image" />
-	<meta name="theme-color" content="#0b0d0e" />
 	<meta name="twitter:title" content={evidenceSeo.title} />
 	<meta name="twitter:description" content={evidenceSeo.description} />
 	<meta name="twitter:image" content={PUBLIC_SOCIAL_IMAGE_URL} />
@@ -162,7 +161,7 @@
 			<div class="brand-group">
 				<a class="brand" href={resolve('/')}>
 					<span class="brand__portrait">
-						<img src={asset('/portrait.webp')} alt="" width="30" height="30" fetchpriority="high" />
+						<img src={asset('/portrait.webp')} alt="" width="30" height="30" />
 					</span>
 					<span class="brand__identity"
 						><strong>Olen Latham</strong><small>{PUBLIC_IDENTITY_LINE}</small></span

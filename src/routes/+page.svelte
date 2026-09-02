@@ -111,7 +111,7 @@
 
 			<figure class="portrait">
 				<div class="portrait-frame">
-					<img src={profilePhotoUrl} alt="Olen Latham" width="640" height="640" />
+					<img src={profilePhotoUrl} alt="Olen Latham" width="640" height="642" />
 				</div>
 				<figcaption>
 					<p>{PUBLIC_AVAILABILITY_LINE}</p>
