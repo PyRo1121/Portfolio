@@ -97,10 +97,6 @@ function outcomeKindLabel(artifact: DeliveryArtifact): string {
 	return 'GitHub outcome';
 }
 
-function outcomeHeadline(artifact: DeliveryArtifact): string {
-	return formatGitHubArtifactTitle(artifact.title);
-}
-
 function createOutcome(snapshot: GitHubDashboardSnapshot): AccountabilityOutcome {
 	const artifact = strongestRetainedDeliveryOutcome(snapshot);
 	if (artifact === null) {
@@ -127,7 +123,7 @@ function createOutcome(snapshot: GitHubDashboardSnapshot): AccountabilityOutcome
 	return {
 		state: 'Observed',
 		kindLabel: outcomeKindLabel(artifact),
-		headline: outcomeHeadline(artifact),
+		headline: formatGitHubArtifactTitle(artifact.title),
 		detail: `${artifact.detail} · ${artifact.repository}`,
 		repository: artifact.repository,
 		occurredAt: artifact.occurredAt,
