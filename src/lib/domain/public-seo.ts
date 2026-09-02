@@ -66,7 +66,7 @@ function serializeJsonLd(graph: ReadonlyArray<Record<string, unknown>>): string 
 export const homeSeo: PublicSeoPage = {
 	title: 'Olen Latham — Developer tools, cloud systems, and technical support',
 	description:
-		'Olen Latham builds support-minded developer tools and cloud systems with Rust, TypeScript, Svelte, and Cloudflare. Explore OMG, Weeknote, and live evidence.',
+		'Olen Latham builds support-minded developer tools and cloud systems with Rust, TypeScript, Svelte, and Cloudflare. Explore OMG, DeployLint, and the projects behind them.',
 	canonical: `${PUBLIC_SITE_ORIGIN}/`,
 	jsonLd: serializeJsonLd([
 		{

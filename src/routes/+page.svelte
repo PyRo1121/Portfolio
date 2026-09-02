@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { asset, resolve } from '$app/paths';
-	import type { PageProps } from './$types';
 	import {
 		ArrowUpRightIcon as ArrowUpRight,
 		EnvelopeSimpleIcon as EnvelopeSimple,
@@ -8,6 +7,7 @@
 		LinkedinLogoIcon as LinkedinLogo
 	} from 'phosphor-svelte';
 	import { publicCaseStudyFor } from '$lib/domain/public-case-study';
+	import { SHOWCASE_PROJECTS } from '$lib/domain/showcase';
 	import {
 		homeSeo,
 		jsonLdScriptTag,
@@ -22,8 +22,6 @@
 	import { loadClientTelemetry } from '$lib/telemetry/telemetry-gate';
 	import type { ClientTelemetry } from '$lib/telemetry/client-telemetry';
 
-	let { data }: PageProps = $props();
-	const evidence = $derived(data.evidence);
 	const omg = publicCaseStudyFor('omg');
 	const weeknote = publicCaseStudyFor('weeknote');
 	let clientTelemetry = $state<ClientTelemetry | null>(null);
@@ -76,9 +74,8 @@
 		</a>
 		<nav aria-label="Portfolio navigation">
 			<a href="#work">Work</a>
-			<a
-				href={resolve('/evidence')}
-				onclick={() => clientTelemetry?.recordPortfolioAction('live_evidence_open')}>Evidence</a
+			<a href={`${PUBLIC_GITHUB_URL}?tab=repositories`} target="_blank" rel="external noreferrer"
+				>Repositories</a
 			>
 			<a href={resolve('/about')}>About</a>
 			<a
@@ -120,39 +117,44 @@
 			</figure>
 		</section>
 
-		<section class="evidence-strip" aria-labelledby="live-evidence-heading">
+		<section id="work" class="showcase" aria-labelledby="showcase-heading">
 			<div>
-				<span>Live evidence</span>
-				<h2 id="live-evidence-heading">Recent work, backed by the record.</h2>
+				<span>Selected projects</span>
+				<h2 id="showcase-heading">Working software, with the source one click away.</h2>
 			</div>
-			{#if evidence._tag === 'Current'}
-				<div class="evidence-facts">
-					<div>
-						<strong>{evidence.commits}</strong><span
-							>authored commits<br />{evidence.periodLabel}</span
-						>
-					</div>
-					<div>
-						<strong>{evidence.activeRepositories}</strong><span
-							>active repositories<br />public and allowlisted</span
-						>
-					</div>
-					<div>
-						<strong>{evidence.provenance}</strong><span
-							>complete snapshot<br /><time datetime={evidence.generatedAt}
-								>{evidence.generatedAtLabel}</time
-							></span
-						>
-					</div>
-				</div>
-			{:else}
-				<p class="evidence-unavailable">{evidence.reason}</p>
-			{/if}
-			<a
-				href={resolve('/evidence')}
-				onclick={() => clientTelemetry?.recordPortfolioAction('live_evidence_open')}
-				>Explore the evidence <ArrowUpRight size={15} weight="bold" /></a
-			>
+			<ul class="showcase-grid">
+				{#each SHOWCASE_PROJECTS as project (project.name)}
+					<li class="showcase-card">
+						<div class="showcase-head">
+							<strong>{project.name}</strong>
+							<span class="showcase-topics"
+								>{#each project.topics as topic, index (topic)}{#if index > 0}
+										·
+									{/if}{topic}{/each}</span
+							>
+						</div>
+						<p>{project.tagline}</p>
+						<div class="showcase-links">
+							{#if project.demoUrl}
+								<a
+									href={project.demoUrl}
+									target="_blank"
+									rel="external noreferrer"
+									onclick={() => clientTelemetry?.recordPortfolioAction('live_evidence_open')}
+									>Open live demo <ArrowUpRight size={14} weight="bold" /></a
+								>
+							{/if}
+							<a
+								href={project.repoUrl}
+								target="_blank"
+								rel="external noreferrer"
+								onclick={() => clientTelemetry?.recordPortfolioAction('featured_omg_open')}
+								><GithubLogo size={14} weight="fill" /> Source</a
+							>
+						</div>
+					</li>
+				{/each}
+			</ul>
 		</section>
 
 		<section id="work" class="selected-work" aria-labelledby="work-heading">
@@ -294,10 +296,8 @@
 			<a href={PUBLIC_GITHUB_URL} target="_blank" rel="external noreferrer"
 				><GithubLogo size={15} weight="fill" /> GitHub</a
 			>
-			<a
-				href={resolve('/evidence')}
-				onclick={() => clientTelemetry?.recordPortfolioAction('live_evidence_open')}
-				>Live evidence</a
+			<a href={`${PUBLIC_GITHUB_URL}?tab=repositories`} target="_blank" rel="external noreferrer"
+				>Repositories</a
 			>
 			<a href={resolve('/about')}>About</a>
 		</nav>
@@ -379,7 +379,7 @@
 	.hello,
 	.project-kind,
 	.section-label,
-	.evidence-strip > div:first-child > span {
+	.showcase > div:first-child > span {
 		margin: 0;
 		color: var(--accent);
 		font:
@@ -482,44 +482,72 @@
 		font-size: 0.72rem;
 		line-height: 1.5;
 	}
-	.evidence-strip {
-		display: grid;
-		grid-template-columns: minmax(10rem, 0.7fr) minmax(24rem, 1.55fr) auto;
-		align-items: center;
-		gap: 2rem;
+	.showcase {
 		padding: 1.35rem 0;
 		border-top: 1px solid var(--line);
 		border-bottom: 1px solid var(--line);
 	}
-	.evidence-strip h2 {
+	.showcase h2 {
 		margin: 0.4rem 0 0;
 		font-size: 1.15rem;
 		letter-spacing: -0.03em;
 	}
-	.evidence-facts {
+	.showcase-grid {
 		display: grid;
-		grid-template-columns: repeat(3, 1fr);
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 1rem;
+		margin: 1.6rem 0 0;
+		padding: 0;
+		list-style: none;
 	}
-	.evidence-facts > div {
+	.showcase-card {
 		display: grid;
-		gap: 0.35rem;
-		padding: 0.2rem 1rem;
-		border-left: 1px solid var(--line);
+		gap: 0.55rem;
+		padding: 1rem 1.1rem;
+		border: 1px solid var(--line);
+		background: var(--surface);
 	}
-	.evidence-facts strong {
-		color: var(--positive);
-		font-size: 1rem;
-		font-weight: 650;
-		font-variant-numeric: tabular-nums;
+	.showcase-head {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 0.45rem;
 	}
-	.evidence-facts span,
-	.evidence-unavailable {
+	.showcase-head strong {
+		font-size: 0.95rem;
+		font-weight: 680;
+		letter-spacing: -0.02em;
+	}
+	.showcase-topics {
 		color: var(--faint);
 		font:
-			500 0.5rem/1.5 'JetBrains Mono Variable',
+			500 0.55rem/1.4 'JetBrains Mono Variable',
 			monospace;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
 	}
-	.evidence-strip > a,
+	.showcase-card > p {
+		margin: 0;
+		color: var(--muted);
+		font-size: 0.78rem;
+		line-height: 1.55;
+	}
+	.showcase-links {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 1.1rem;
+	}
+	.showcase-links a {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		color: var(--accent);
+		font-size: 0.72rem;
+		font-weight: 650;
+		text-decoration: none;
+		white-space: nowrap;
+	}
 	.project-copy > a,
 	.capabilities a {
 		display: inline-flex;
@@ -707,17 +735,8 @@
 		outline-offset: 4px;
 	}
 	@media (max-width: 900px) {
-		.evidence-strip {
-			grid-template-columns: 1fr auto;
-		}
-		.evidence-facts,
-		.evidence-unavailable {
-			grid-column: 1 / -1;
-			grid-row: 2;
-		}
-		.evidence-strip > a {
-			grid-column: 2;
-			grid-row: 1;
+		.showcase-grid {
+			grid-template-columns: 1fr;
 		}
 	}
 	@media (max-width: 760px) {
@@ -742,25 +761,14 @@
 			width: min(100%, 20rem);
 			justify-self: start;
 		}
-		.evidence-strip,
+		.showcase,
 		.project,
 		.capabilities,
 		.closing {
 			grid-template-columns: 1fr;
 		}
-		.evidence-strip {
-			gap: 1.25rem;
-			padding: 1.5rem 0;
-		}
-		.evidence-facts,
-		.evidence-unavailable,
-		.evidence-strip > a {
-			grid-column: 1;
-			grid-row: auto;
-		}
-		.evidence-facts > div:first-child {
-			padding-left: 0;
-			border-left: 0;
+		.showcase-grid {
+			grid-template-columns: 1fr;
 		}
 		.selected-work {
 			padding: 4.5rem 0;
@@ -803,16 +811,6 @@
 		}
 		.hero-actions a {
 			padding: 0 0.6rem;
-		}
-		.evidence-facts {
-			grid-template-columns: 1fr 1fr;
-		}
-		.evidence-facts > div:last-child {
-			grid-column: 1 / -1;
-			padding-top: 0.9rem;
-			padding-left: 0;
-			border-top: 1px solid var(--line);
-			border-left: 0;
 		}
 		.closing-actions {
 			display: grid;
