@@ -92,7 +92,7 @@ a {
 }
 .brand {
 	display: inline-flex;
-	width: max-content;
+	min-width: 0;
 	align-items: center;
 	gap: 0.65rem;
 	color: var(--ink);
@@ -143,6 +143,13 @@ a {
 .brand__identity {
 	display: grid;
 	gap: 0.05rem;
+	min-width: 0;
+}
+.brand__identity strong,
+.brand__identity small {
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
 }
 .social-links {
 	display: flex;
@@ -2082,6 +2089,42 @@ a {
 	}
 }
 
+@media (max-width: 1240px) {
+	.workspace-link {
+		min-width: 0;
+		padding: 0 0.4rem;
+	}
+	.workspace-link__signal {
+		display: none;
+	}
+	.workspace-link__copy strong {
+		font-size: 0.56rem;
+	}
+	.brand__identity small {
+		display: none;
+	}
+	.actions kbd {
+		display: none;
+	}
+	.connection {
+		max-width: 8rem;
+		overflow: hidden;
+		white-space: nowrap;
+		text-overflow: ellipsis;
+	}
+}
+@media (max-width: 1024px) {
+	.social-links {
+		display: none;
+	}
+	.workspace-link svg {
+		display: none;
+	}
+	.workspace-rail {
+		overflow-x: auto;
+		scrollbar-width: none;
+	}
+}
 @media (max-width: 900px) {
 	.app {
 		grid-template-rows: 54px minmax(0, 1fr) 52px;
