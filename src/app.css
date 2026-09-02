@@ -3,7 +3,7 @@
 
 @font-face {
 	font-family: 'Observatory Mono';
-	src: url('/observatory-mono.ttf') format('truetype');
+	src: url('/observatory-mono.woff2') format('woff2');
 	font-display: swap;
 	font-style: normal;
 	font-weight: 400;
