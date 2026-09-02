@@ -9,7 +9,7 @@ import type {
 } from '$lib/domain/github-intelligence';
 
 const CACHE_VERSION = 1;
-const DEFAULT_FRESHNESS_MS = 5 * 60_000;
+const DEFAULT_FRESHNESS_MS = 15 * 60_000;
 
 const SnapshotSourceSchema = Schema.Union(
 	Schema.Struct({ _tag: Schema.Literal('Live'), label: Schema.String }),

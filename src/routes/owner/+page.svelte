@@ -17,14 +17,8 @@
 	import WorkspaceRail from '$lib/components/WorkspaceRail.svelte';
 	import { createCareerAccountabilityReview } from '$lib/domain/career-review';
 	import { createCareerStoryEvidenceOptions } from '$lib/domain/career-story-evidence';
-	import type {
-		CloudflareDeploymentRefreshResult,
-		CloudflareDeploymentSnapshot
-	} from '$lib/domain/cloudflare-deployments';
-	import type {
-		CloudflareUsageRefreshResult,
-		CloudflareUsageSnapshot
-	} from '$lib/domain/cloudflare-usage';
+	import type { CloudflareDeploymentSnapshot } from '$lib/domain/cloudflare-deployments';
+	import type { CloudflareUsageSnapshot } from '$lib/domain/cloudflare-usage';
 	import {
 		resolvedViewerTimeZone,
 		SSR_VIEWER_TIME_ZONE,
@@ -40,6 +34,7 @@
 	import type { GitHubDashboardSnapshot } from '$lib/domain/github-intelligence';
 	import { getClientTelemetry } from '$lib/telemetry/client-telemetry';
 	import { DashboardView } from '$lib/state/dashboard-view.svelte';
+	import { createDeferredRefreshPoll } from '$lib/state/deferred-refresh';
 
 	let { data, form }: PageProps = $props();
 	let freshSnapshot: GitHubDashboardSnapshot | null = $state.raw(null);
@@ -68,6 +63,9 @@
 		shortcuts: shortcutMapFor(ownerWorkspaceDefinitions)
 	});
 	const clientTelemetry = getClientTelemetry();
+	const pollDashboard = createDeferredRefreshPoll();
+	const pollCloudflare = createDeferredRefreshPoll();
+	const pollDeployments = createDeferredRefreshPoll();
 	const accountabilityReview = $derived(
 		snapshot === null || data.career === null
 			? null
@@ -130,24 +128,18 @@
 		freshSnapshot = null;
 		refreshState = 'Refreshing';
 		refreshMessage = data.cache.cachedAt === null ? '' : `cached ${data.cache.cachedAt}`;
-		let cancelled = false;
-		let retryId: number | undefined;
-		void activeRefresh.then((result) => {
-			if (cancelled) return;
-			if (result._tag === 'Deferred') {
+		return pollDashboard(
+			activeRefresh,
+			() => {
 				refreshState = 'Refreshing';
 				refreshMessage = 'Another edge isolate is publishing verified evidence.';
-				retryId = window.setTimeout(() => void invalidateAll(), result.retryAfterMs);
-				return;
+			},
+			(result) => {
+				refreshState = result._tag;
+				if (result._tag === 'Fresh') freshSnapshot = result.snapshot;
+				if (result._tag === 'Unavailable') refreshMessage = result.reason;
 			}
-			refreshState = result._tag;
-			if (result._tag === 'Fresh') freshSnapshot = result.snapshot;
-			if (result._tag === 'Unavailable') refreshMessage = result.reason;
-		});
-		return () => {
-			cancelled = true;
-			if (retryId !== undefined) window.clearTimeout(retryId);
-		};
+		);
 	});
 
 	$effect(() => {
@@ -156,24 +148,18 @@
 		cloudflareRefreshState = 'Refreshing';
 		cloudflareMessage =
 			data.cloudflareCache.cachedAt === null ? '' : `cached ${data.cloudflareCache.cachedAt}`;
-		let cancelled = false;
-		let retryId: number | undefined;
-		void activeRefresh.then((result: CloudflareUsageRefreshResult) => {
-			if (cancelled) return;
-			if (result._tag === 'Deferred') {
+		return pollCloudflare(
+			activeRefresh,
+			() => {
 				cloudflareRefreshState = 'Refreshing';
 				cloudflareMessage = 'Another edge isolate is publishing Cloudflare evidence.';
-				retryId = window.setTimeout(() => void invalidateAll(), result.retryAfterMs);
-				return;
+			},
+			(result) => {
+				cloudflareRefreshState = result._tag;
+				if (result._tag === 'Fresh') freshCloudflare = result.snapshot;
+				if (result._tag === 'Unavailable') cloudflareMessage = result.reason;
 			}
-			cloudflareRefreshState = result._tag;
-			if (result._tag === 'Fresh') freshCloudflare = result.snapshot;
-			if (result._tag === 'Unavailable') cloudflareMessage = result.reason;
-		});
-		return () => {
-			cancelled = true;
-			if (retryId !== undefined) window.clearTimeout(retryId);
-		};
+		);
 	});
 
 	$effect(() => {
@@ -186,24 +172,18 @@
 					? 'Warming deployment evidence.'
 					: ''
 				: `cached ${data.cloudflareDeploymentCache.cachedAt}`;
-		let cancelled = false;
-		let retryId: number | undefined;
-		void activeRefresh.then((result: CloudflareDeploymentRefreshResult) => {
-			if (cancelled) return;
-			if (result._tag === 'Deferred') {
+		return pollDeployments(
+			activeRefresh,
+			() => {
 				deploymentRefreshState = 'Refreshing';
 				deploymentMessage = 'Another edge isolate is publishing deployment evidence.';
-				retryId = window.setTimeout(() => void invalidateAll(), result.retryAfterMs);
-				return;
+			},
+			(result) => {
+				deploymentRefreshState = result._tag;
+				if (result._tag === 'Fresh') freshCloudflareDeployments = result.snapshot;
+				if (result._tag === 'Unavailable') deploymentMessage = result.reason;
 			}
-			deploymentRefreshState = result._tag;
-			if (result._tag === 'Fresh') freshCloudflareDeployments = result.snapshot;
-			if (result._tag === 'Unavailable') deploymentMessage = result.reason;
-		});
-		return () => {
-			cancelled = true;
-			if (retryId !== undefined) window.clearTimeout(retryId);
-		};
+		);
 	});
 </script>
 

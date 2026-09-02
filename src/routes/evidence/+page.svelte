@@ -7,6 +7,7 @@
 		GlobeSimpleIcon as GlobeSimple,
 		LinkedinLogoIcon as LinkedinLogo
 	} from 'phosphor-svelte';
+	import { createDeferredRefreshPoll } from '$lib/state/deferred-refresh';
 	import { invalidateAll } from '$app/navigation';
 	import { asset, resolve } from '$app/paths';
 	import type { PageProps } from './$types';
@@ -56,6 +57,7 @@
 		reload: invalidateAll
 	});
 	const clientTelemetry = getClientTelemetry();
+	const poll = createDeferredRefreshPoll();
 	const viewerProjection = $derived(
 		snapshot === null ? null : createViewerActivityProjection(snapshot, viewerTimeZone)
 	);
@@ -96,24 +98,18 @@
 		if (data.snapshot === null) refreshState = 'Refreshing';
 		refreshMessage = data.cache.cachedAt === null ? '' : `cached ${data.cache.cachedAt}`;
 		stayAlive.markReloaded();
-		let cancelled = false;
-		let retryId: number | undefined;
-		void activeRefresh.then((result) => {
-			if (cancelled) return;
-			if (result._tag === 'Deferred') {
+		return poll(
+			activeRefresh,
+			() => {
 				refreshState = 'Refreshing';
 				refreshMessage = 'Another edge isolate is publishing verified evidence.';
-				retryId = window.setTimeout(() => void invalidateAll(), result.retryAfterMs);
-				return;
+			},
+			(result) => {
+				refreshState = result._tag;
+				if (result._tag === 'Fresh') freshSnapshot = result.snapshot;
+				if (result._tag === 'Unavailable') refreshMessage = result.reason;
 			}
-			refreshState = result._tag;
-			if (result._tag === 'Fresh') freshSnapshot = result.snapshot;
-			if (result._tag === 'Unavailable') refreshMessage = result.reason;
-		});
-		return () => {
-			cancelled = true;
-			if (retryId !== undefined) window.clearTimeout(retryId);
-		};
+		);
 	});
 
 	$effect(() => stayAlive.start());
