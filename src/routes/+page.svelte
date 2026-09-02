@@ -19,13 +19,15 @@
 		PUBLIC_RESUME_LINE,
 		PUBLIC_SOCIAL_IMAGE_URL
 	} from '$lib/domain/public-seo';
-	import { getClientTelemetry } from '$lib/telemetry/client-telemetry';
+	import { loadClientTelemetry } from '$lib/telemetry/telemetry-gate';
+	import type { ClientTelemetry } from '$lib/telemetry/client-telemetry';
 
 	let { data }: PageProps = $props();
 	const evidence = $derived(data.evidence);
 	const omg = publicCaseStudyFor('omg');
 	const weeknote = publicCaseStudyFor('weeknote');
-	const clientTelemetry = getClientTelemetry();
+	let clientTelemetry = $state<ClientTelemetry | null>(null);
+	loadClientTelemetry().then((loaded) => (clientTelemetry = loaded));
 	const profilePhotoUrl = asset('/portrait.webp');
 	const omgImage = asset('/portfolio/omg-repository.webp');
 	const weeknoteImage = asset('/portfolio/weeknote-dashboard.webp');

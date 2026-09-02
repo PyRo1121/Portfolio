@@ -32,7 +32,8 @@
 	import { createOwnerBriefingView } from '$lib/domain/owner-briefing';
 	import { createOwnerWorkspaceSignals } from '$lib/domain/owner-workspace-navigation';
 	import type { GitHubDashboardSnapshot } from '$lib/domain/github-intelligence';
-	import { getClientTelemetry } from '$lib/telemetry/client-telemetry';
+	import { loadClientTelemetry } from '$lib/telemetry/telemetry-gate';
+	import type { ClientTelemetry } from '$lib/telemetry/client-telemetry';
 	import { DashboardView } from '$lib/state/dashboard-view.svelte';
 	import { createDeferredRefreshPoll } from '$lib/state/deferred-refresh';
 
@@ -62,7 +63,8 @@
 		initialWorkspace: 'briefing',
 		shortcuts: shortcutMapFor(ownerWorkspaceDefinitions)
 	});
-	const clientTelemetry = getClientTelemetry();
+	let clientTelemetry = $state<ClientTelemetry | null>(null);
+	loadClientTelemetry().then((loaded) => (clientTelemetry = loaded));
 	const pollDashboard = createDeferredRefreshPoll();
 	const pollCloudflare = createDeferredRefreshPoll();
 	const pollDeployments = createDeferredRefreshPoll();

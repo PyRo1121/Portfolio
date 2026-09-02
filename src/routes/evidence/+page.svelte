@@ -34,7 +34,8 @@
 		PUBLIC_LINKEDIN_URL,
 		PUBLIC_SOCIAL_IMAGE_URL
 	} from '$lib/domain/public-seo';
-	import { getClientTelemetry } from '$lib/telemetry/client-telemetry';
+	import { loadClientTelemetry } from '$lib/telemetry/telemetry-gate';
+	import type { ClientTelemetry } from '$lib/telemetry/client-telemetry';
 	import { DashboardView } from '$lib/state/dashboard-view.svelte';
 
 	let { data }: PageProps = $props();
@@ -56,7 +57,8 @@
 		},
 		reload: invalidateAll
 	});
-	const clientTelemetry = getClientTelemetry();
+	let clientTelemetry = $state<ClientTelemetry | null>(null);
+	loadClientTelemetry().then((loaded) => (clientTelemetry = loaded));
 	const poll = createDeferredRefreshPoll();
 	const viewerProjection = $derived(
 		snapshot === null ? null : createViewerActivityProjection(snapshot, viewerTimeZone)
