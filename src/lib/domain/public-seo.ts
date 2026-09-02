@@ -95,7 +95,7 @@ export const homeSeo: PublicSeoPage = {
 export const aboutSeo: PublicSeoPage = {
 	title: 'About Olen Latham — From customer support to software and cloud systems',
 	description:
-		'Olen Latham works in customer service and builds developer tools with Rust, TypeScript, Svelte, and Cloudflare. Read the story behind OMG and Weeknote.',
+		'Olen Latham works in customer service and builds developer tools with Rust, TypeScript, Svelte, and Cloudflare. Read the story behind OMG and DeployLint.',
 	canonical: `${PUBLIC_SITE_ORIGIN}/about`,
 	jsonLd: serializeJsonLd([
 		{

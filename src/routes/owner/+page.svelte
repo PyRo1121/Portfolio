@@ -190,7 +190,7 @@
 </script>
 
 <svelte:head>
-	<title>Owner home — Weeknote</title>
+	<title>Owner home — latham.cloud</title>
 	<meta name="robots" content="noindex" />
 </svelte:head>
 <a class="skip-link" href="#workspace-stage">Skip to dashboard</a>

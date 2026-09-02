@@ -23,7 +23,7 @@
 
 <main id="error-content" class="error-page" tabindex="-1">
 	<nav class="topline" aria-label="Page navigation">
-		<a href={resolve('/')}><span aria-hidden="true">←</span> Weeknote</a>
+		<a href={resolve('/')}><span aria-hidden="true">←</span> Portfolio</a>
 		<span>Error boundary</span>
 	</nav>
 

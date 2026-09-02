@@ -2,7 +2,6 @@
 	import { resolve } from '$app/paths';
 	import { ArrowUpRightIcon as ArrowUpRight } from 'phosphor-svelte';
 	import type { PublicCaseStudy } from '$lib/domain/public-case-study';
-	import { publicCaseStudyFor } from '$lib/domain/public-case-study';
 	import {
 		PUBLIC_GITHUB_URL,
 		PUBLIC_SITE_ORIGIN,
@@ -19,7 +18,6 @@
 	const canonical = $derived(`${PUBLIC_SITE_ORIGIN}/work/${study.slug}`);
 	const seo = $derived(caseStudySeo(study));
 	const pageTitle = $derived(seo.title);
-	const nextStudy = $derived(publicCaseStudyFor(study.slug === 'omg' ? 'weeknote' : 'omg'));
 </script>
 
 <svelte:head>
@@ -109,19 +107,6 @@
 				</a>
 			{/each}
 		</div>
-	</section>
-
-	<section class="next-study" aria-label="Next case study">
-		<span>Keep reading</span>
-		{#if nextStudy.slug === 'omg'}
-			<a href={resolve('/work/omg')}>
-				{nextStudy.title}<ArrowUpRight size={15} weight="bold" />
-			</a>
-		{:else}
-			<a href={resolve('/work/weeknote')}>
-				{nextStudy.title}<ArrowUpRight size={15} weight="bold" />
-			</a>
-		{/if}
 	</section>
 
 	<footer>
@@ -330,32 +315,6 @@
 		font-size: 0.78rem;
 		line-height: 1.45;
 	}
-	.next-study {
-		display: flex;
-		align-items: baseline;
-		justify-content: space-between;
-		gap: 2rem;
-		margin-top: 2.75rem;
-		padding: 1.25rem 0;
-		border-top: 1px solid rgb(231 232 225 / 16%);
-	}
-	.next-study span {
-		color: #808580;
-		font:
-			600 0.62rem/1 'JetBrains Mono Variable',
-			monospace;
-		letter-spacing: 0.06em;
-		text-transform: uppercase;
-	}
-	.next-study a {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.4rem;
-		color: #d8a54a;
-		font-size: clamp(1rem, 1.7vw, 1.25rem);
-		font-weight: 650;
-		line-height: 1.2;
-	}
 	footer {
 		display: flex;
 		align-items: center;
@@ -424,11 +383,6 @@
 		}
 		.evidence > header,
 		.evidence-list a {
-			gap: 0.75rem;
-		}
-		.next-study {
-			align-items: flex-start;
-			flex-direction: column;
 			gap: 0.75rem;
 		}
 		footer {

@@ -45,7 +45,7 @@ describe('public SEO copy', () => {
 		);
 		expect(homeSeo.description).not.toContain('customer-service');
 		expect(aboutSeo.title).toContain('From customer support to software and cloud systems');
-		expect(aboutSeo.description).toContain('OMG and Weeknote');
+		expect(aboutSeo.description).toContain('OMG and DeployLint');
 	});
 
 	it('publishes one direct recruiter contact path and exact availability statement', () => {
@@ -60,12 +60,11 @@ describe('public SEO copy', () => {
 	});
 
 	it('keeps the public sitemap on crawlable URLs only', () => {
-		expect(publicSitemapPaths).toEqual(['/', '/about', '/work/omg', '/work/weeknote']);
+		expect(publicSitemapPaths).toEqual(['/', '/about', '/work/omg']);
 		const xml = renderPublicSitemapXml();
 		expect(xml).toContain('<loc>https://latham.cloud/</loc>');
 		expect(xml).toContain('<loc>https://latham.cloud/about</loc>');
 		expect(xml).toContain('<loc>https://latham.cloud/work/omg</loc>');
-		expect(xml).toContain('<loc>https://latham.cloud/work/weeknote</loc>');
 		expect(xml).not.toContain('/career/portfolio.md');
 		expect(xml).not.toContain('/owner');
 		expect(xml).not.toContain('/__warm');

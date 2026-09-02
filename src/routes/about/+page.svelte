@@ -125,21 +125,6 @@
 					Read the OMG case study <ArrowUpRight size={15} weight="bold" />
 				</a>
 			</article>
-
-			<article>
-				<h3>A contribution graph with context</h3>
-				<p>
-					GitHub can show that I was busy. It does not explain what shipped, what failed, or where
-					the evidence stops. I built Weeknote because I wanted a more honest record of the work.
-				</p>
-				<p>
-					It now connects GitHub activity, checks, deployments, Cloudflare infrastructure, and
-					visitor data while keeping private work and owner-only records behind clear boundaries.
-				</p>
-				<a href={resolve('/work/weeknote')}>
-					Read the Weeknote case study <ArrowUpRight size={15} weight="bold" />
-				</a>
-			</article>
 		</div>
 	</section>
 

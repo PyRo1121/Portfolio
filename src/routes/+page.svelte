@@ -23,12 +23,10 @@
 	import type { ClientTelemetry } from '$lib/telemetry/client-telemetry';
 
 	const omg = publicCaseStudyFor('omg');
-	const weeknote = publicCaseStudyFor('weeknote');
 	let clientTelemetry = $state<ClientTelemetry | null>(null);
 	loadClientTelemetry().then((loaded) => (clientTelemetry = loaded));
 	const profilePhotoUrl = asset('/portrait.webp');
 	const omgImage = asset('/portfolio/omg-repository.webp');
-	const weeknoteImage = asset('/portfolio/weeknote-dashboard.webp');
 </script>
 
 <svelte:head>
@@ -161,10 +159,10 @@
 
 		<section id="work" class="selected-work" aria-labelledby="work-heading">
 			<header>
-				<h2 id="work-heading">Two products. One operating principle: remove the friction.</h2>
+				<h2 id="work-heading">One operating principle: remove the friction.</h2>
 				<p>
-					OMG simplifies fragmented tooling. Weeknote makes engineering activity auditable. Each
-					case study shows the problem, the decisions, and the evidence.
+					OMG simplifies fragmented tooling. The case study shows the problem, the decisions, and
+					the evidence.
 				</p>
 			</header>
 
@@ -194,36 +192,6 @@
 						href={resolve('/work/omg')}
 						onclick={() => clientTelemetry?.recordPortfolioAction('featured_omg_open')}
 						>Read the OMG case study <ArrowUpRight size={15} weight="bold" /></a
-					>
-				</div>
-			</article>
-
-			<article class="project project-weeknote">
-				<a
-					class="project-image"
-					href={resolve('/work/weeknote')}
-					onclick={() => clientTelemetry?.recordPortfolioAction('featured_weeknote_open')}
-					aria-label="Read the Weeknote case study"
-				>
-					<img
-						src={weeknoteImage}
-						alt="The live Weeknote dashboard showing current GitHub activity, repository evidence, and contact paths"
-						width="1440"
-						height="900"
-						loading="lazy"
-					/>
-				</a>
-				<div class="project-copy">
-					<p class="project-kind">Weeknote / Svelte 5 and Cloudflare</p>
-					<h3>{weeknote.title}</h3>
-					<p>
-						A production SvelteKit and Cloudflare application that turns GitHub activity into a
-						bounded evidence record: work, checks, deployments, and explicit unknowns.
-					</p>
-					<a
-						href={resolve('/work/weeknote')}
-						onclick={() => clientTelemetry?.recordPortfolioAction('featured_weeknote_open')}
-						>Read the Weeknote case study <ArrowUpRight size={15} weight="bold" /></a
 					>
 				</div>
 			</article>
@@ -592,14 +560,6 @@
 		padding: clamp(3.8rem, 7vw, 6rem) 0;
 		border-bottom: 1px solid var(--line);
 	}
-	.project-weeknote .project-image {
-		grid-column: 2;
-		grid-row: 1;
-	}
-	.project-weeknote .project-copy {
-		grid-column: 1;
-		grid-row: 1;
-	}
 	.project-image {
 		display: block;
 		overflow: hidden;
@@ -778,14 +738,6 @@
 		.project {
 			gap: 2.25rem;
 			padding: 3.5rem 0;
-		}
-		.project-weeknote .project-image,
-		.project-weeknote .project-copy {
-			grid-column: 1;
-			grid-row: auto;
-		}
-		.project-weeknote .project-image {
-			grid-row: 1;
 		}
 		.capabilities,
 		.closing {

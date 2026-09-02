@@ -33,12 +33,5 @@ export const SHOWCASE_PROJECTS: ReadonlyArray<ShowcaseProject> = [
 		repoUrl: `${PUBLIC_GITHUB_URL}/deploylint`,
 		demoUrl: 'https://deploylint.com',
 		topics: ['TypeScript', 'GitHub Actions', 'CI']
-	},
-	{
-		name: 'Weeknote',
-		tagline: 'This portfolio: engineering activity made auditable without overstating data.',
-		repoUrl: `${PUBLIC_GITHUB_URL}/Portfolio`,
-		demoUrl: 'https://latham.cloud',
-		topics: ['Svelte 5', 'Effect', 'Cloudflare Workers']
 	}
 ] as const satisfies ReadonlyArray<ShowcaseProject>;

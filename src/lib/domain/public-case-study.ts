@@ -5,7 +5,7 @@ export type PublicCaseStudyEvidence = {
 };
 
 export type PublicCaseStudy = {
-	readonly slug: 'omg' | 'weeknote';
+	readonly slug: 'omg';
 	readonly eyebrow: string;
 	readonly title: string;
 	readonly summary: string;
@@ -59,44 +59,10 @@ export const PUBLIC_CASE_STUDIES = [
 				note: 'The current repository architecture and subsystem boundaries.'
 			}
 		]
-	},
-	{
-		slug: 'weeknote',
-		eyebrow: 'Case study · Weeknote',
-		title: 'The story behind the contribution graph.',
-		summary:
-			'Weeknote is the live evidence dashboard behind this portfolio: a Svelte 5 application that connects engineering activity to delivery records, deployments, and the limits of the available evidence.',
-		problem:
-			'GitHub makes it easy to count commits and contribution squares. Those numbers do not explain what shipped, whether a check passed, which deployment is live, or when provider data is missing. I wanted a public record that could say “no evidence” instead of filling the gap with a score or a confident guess.',
-		work: 'I built the interface in Svelte 5 and the server boundaries around Effect, GitHub APIs, Cloudflare Workers, D1, KV, and a Durable Object refresh coordinator. Public reads and owner-only records are separated, provider failures are isolated, and cached evidence is replaced only by a complete fresh snapshot.',
-		difficulty:
-			'The difficult work was deciding what the data was allowed to mean. A local merge is not automatically a pull request. A Worker deployment does not always have a Workers Build record. Browser sessions are not the same measurement as Cloudflare unique visitors. The application has to preserve those distinctions all the way into the labels people read.',
-		result:
-			'Weeknote runs this portfolio on latham.cloud with Effect boundaries at every provider, tested failure paths, and private owner records that never appear in public payloads. The same site records contact actions without storing message content or visitor identity.',
-		reflection:
-			'Weeknote taught me that trustworthy software is often less about collecting more data and more about refusing to overstate the data you already have.',
-		tools: ['TypeScript', 'Svelte 5', 'Effect', 'Cloudflare Workers', 'D1', 'Durable Objects'],
-		evidence: [
-			{
-				label: 'Live site',
-				href: 'https://latham.cloud',
-				note: 'The deployed application the case study describes.'
-			},
-			{
-				label: 'Source repository',
-				href: 'https://github.com/PyRo1121/Portfolio',
-				note: 'Application source, tests, migrations, and deployment gate.'
-			},
-			{
-				label: 'Engineering decisions',
-				href: 'https://github.com/PyRo1121/Portfolio/tree/main/docs/adr',
-				note: 'Architecture decision records for the important boundaries.'
-			}
-		]
 	}
 ] as const satisfies ReadonlyArray<PublicCaseStudy>;
 
-export const publicCaseStudyPaths = ['/work/omg', '/work/weeknote'] as const;
+export const publicCaseStudyPaths = ['/work/omg'] as const;
 
 export function publicCaseStudyFor(slug: PublicCaseStudy['slug']): PublicCaseStudy {
 	const study = PUBLIC_CASE_STUDIES.find((candidate) => candidate.slug === slug);
