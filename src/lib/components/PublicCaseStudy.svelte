@@ -3,7 +3,12 @@
 	import { ArrowUpRightIcon as ArrowUpRight } from 'phosphor-svelte';
 	import type { PublicCaseStudy } from '$lib/domain/public-case-study';
 	import { publicCaseStudyFor } from '$lib/domain/public-case-study';
-	import { PUBLIC_SITE_ORIGIN, PUBLIC_SOCIAL_IMAGE_URL } from '$lib/domain/public-seo';
+	import {
+		PUBLIC_SITE_ORIGIN,
+		PUBLIC_SOCIAL_IMAGE_URL,
+		caseStudySeo,
+		jsonLdScriptTag
+	} from '$lib/domain/public-seo';
 
 	type Props = {
 		readonly study: PublicCaseStudy;
@@ -11,9 +16,8 @@
 
 	let { study }: Props = $props();
 	const canonical = $derived(`${PUBLIC_SITE_ORIGIN}/work/${study.slug}`);
-	const pageTitle = $derived(
-		`${study.eyebrow.replace('Case study · ', '')} case study — Olen Latham`
-	);
+	const seo = $derived(caseStudySeo(study));
+	const pageTitle = $derived(seo.title);
 	const nextStudy = $derived(publicCaseStudyFor(study.slug === 'omg' ? 'weeknote' : 'omg'));
 </script>
 
@@ -36,6 +40,9 @@
 	<meta name="twitter:description" content={study.summary} />
 	<meta name="twitter:image" content={PUBLIC_SOCIAL_IMAGE_URL} />
 	<meta name="twitter:image:alt" content="Olen Latham — software, systems, and cloud work" />
+	<!-- JSON-LD is serialized from local constants, not untrusted input. -->
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html jsonLdScriptTag(seo.jsonLd)}
 </svelte:head>
 
 <a class="skip-link" href="#case-study-content">Skip to case study</a>

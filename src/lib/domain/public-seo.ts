@@ -1,4 +1,4 @@
-import { publicCaseStudyPaths } from './public-case-study';
+import { publicCaseStudyPaths, type PublicCaseStudy } from './public-case-study';
 
 /** Canonical public origin. Crawlable pages stay on this host. */
 export const PUBLIC_SITE_ORIGIN = 'https://latham.cloud';
@@ -129,6 +129,33 @@ export const aboutSeo: PublicSeoPage = {
 	])
 };
 
+/** Case-study page metadata, built from the same study data the page renders. */
+export function caseStudySeo(study: PublicCaseStudy): PublicSeoPage {
+	const canonical = `${PUBLIC_SITE_ORIGIN}/work/${study.slug}`;
+	const section = study.eyebrow.replace('Case study · ', '');
+	return {
+		title: `${section} case study — Olen Latham`,
+		description: study.summary,
+		canonical,
+		jsonLd: serializeJsonLd([
+			{
+				'@type': 'Article',
+				'@id': `${canonical}#article`,
+				url: canonical,
+				headline: study.title,
+				description: study.summary,
+				inLanguage: 'en',
+				articleSection: section,
+				keywords: [...study.tools],
+				isPartOf: { '@id': `${PUBLIC_SITE_ORIGIN}/#website` },
+				author: { '@id': PUBLIC_PERSON_ID },
+				mainEntityOfPage: canonical
+			},
+			personNode()
+		])
+	};
+}
+
 export const publicSitemapPaths = ['/', '/evidence', '/about', ...publicCaseStudyPaths] as const;
 
 function locFor(path: (typeof publicSitemapPaths)[number]): string {
@@ -137,13 +164,14 @@ function locFor(path: (typeof publicSitemapPaths)[number]): string {
 
 /** XML sitemap for public URLs only. */
 export function renderPublicSitemapXml(): string {
+	const lastmod = new Date().toISOString().slice(0, 10);
 	return [
 		'<?xml version="1.0" encoding="UTF-8"?>',
 		'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
 		...publicSitemapPaths.flatMap((path) => [
 			'  <url>',
 			`    <loc>${locFor(path)}</loc>`,
-			'    <changefreq>weekly</changefreq>',
+			`    <lastmod>${lastmod}</lastmod>`,
 			'  </url>'
 		]),
 		'</urlset>',
