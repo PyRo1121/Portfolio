@@ -1135,7 +1135,7 @@ export function fetchGitHubIntelligence(
 						graphQLRequest(fetch, search.token, SEARCH_QUERY, search.variables, search.resource),
 					{ concurrency: 3 }
 				),
-				collectGitHubRepositorySlices({
+				collectGitHubRepositorySlices<GitHubGraphQLError>({
 					username,
 					repositoryNames: repositoryInventory.map((repository) => repository.fullName),
 					windowStart: weekStart.toISOString(),

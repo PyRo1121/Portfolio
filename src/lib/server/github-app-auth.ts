@@ -176,7 +176,7 @@ export function fetchGitHubChecksToken(
 				)
 			);
 		}
-		const body = yield* Effect.tryPromise({
+		const body: unknown = yield* Effect.tryPromise({
 			try: () => response.json(),
 			catch: (cause) =>
 				new GitHubAppAuthError(

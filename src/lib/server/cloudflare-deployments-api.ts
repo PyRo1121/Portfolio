@@ -151,7 +151,9 @@ function buildRecords(raw: unknown): ReadonlyArray<Build> | null {
 			: decoded.flatMap((entry) => (Either.isRight(entry) ? [entry.right] : []));
 	}
 	if (typeof raw !== 'object' || raw === null) return null;
-	const values = Object.values(raw).flatMap((entry) => (Array.isArray(entry) ? entry : [entry]));
+	const values = Object.values(raw as Record<string, unknown>).flatMap((entry): unknown[] =>
+		Array.isArray(entry) ? entry : [entry]
+	);
 	const decoded = values.map((entry) => Schema.decodeUnknownEither(BuildSchema)(entry));
 	return decoded.some(Either.isLeft)
 		? null

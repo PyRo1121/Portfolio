@@ -52,9 +52,7 @@ export function createRefreshLeaseClient(fetch: CoordinatorFetch): RefreshLeaseC
 					`Refresh coordinator acquire returned HTTP ${String(response.status)}.`
 				);
 			}
-			return Schema.decodeUnknownSync(RefreshLeaseDecisionSchema)(
-				(await response.json()) as unknown
-			);
+			return Schema.decodeUnknownSync(RefreshLeaseDecisionSchema)(await response.json());
 		},
 		release: async (key, token) => {
 			const response = await fetch('https://refresh-coordinator/release', {

@@ -269,7 +269,7 @@ function githubFetch(
 				: Response.json(commitPageResponse(fullName));
 		}
 		throw new Error('Unexpected GraphQL operation.');
-	}) as typeof globalThis.fetch;
+	});
 }
 
 function cacheFixture() {
