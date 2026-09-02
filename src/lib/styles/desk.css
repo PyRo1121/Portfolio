@@ -2091,7 +2091,7 @@ a {
 	}
 }
 
-@media (max-width: 1240px) {
+@media (min-width: 1201px) and (max-width: 1240px) {
 	.workspace-link {
 		min-width: 0;
 		padding: 0 0.4rem;
@@ -2115,19 +2115,7 @@ a {
 		text-overflow: ellipsis;
 	}
 }
-@media (max-width: 1024px) {
-	.social-links {
-		display: none;
-	}
-	.workspace-link svg {
-		display: none;
-	}
-	.workspace-rail {
-		overflow-x: auto;
-		scrollbar-width: none;
-	}
-}
-@media (max-width: 900px) {
+@media (max-width: 1200px) {
 	.app {
 		grid-template-rows: 54px minmax(0, 1fr) 52px;
 	}
