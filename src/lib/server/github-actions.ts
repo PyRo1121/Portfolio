@@ -220,6 +220,9 @@ function fetchRepositoryWindow(
 			truncated: totalCount > MAX_PAGES * PAGE_SIZE
 		};
 	}).pipe(
+		Effect.tapErrorCause((cause) =>
+			Effect.logWarning('GitHub workflow coverage failed for repository', repository, cause)
+		),
 		Effect.catchAll(() =>
 			Effect.succeed({ repository, runs: [], unavailable: true, truncated: false })
 		)

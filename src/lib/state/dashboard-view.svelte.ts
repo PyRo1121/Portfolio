@@ -1,7 +1,10 @@
-import { Effect } from 'effect';
 import { SvelteMap } from 'svelte/reactivity';
 import type { Attachment } from 'svelte/attachments';
 import type { DashboardWorkspace } from '$lib/domain/dashboard-workspace';
+
+function errorMessage(cause: unknown): string {
+	return cause instanceof Error ? cause.message : String(cause);
+}
 
 /** Rune-backed interaction state for one audience's workspace desk. */
 export class DashboardView {
@@ -75,16 +78,16 @@ export class DashboardView {
 		if (this.#isRefreshing) return;
 		this.#isRefreshing = true;
 		this.#refreshError = null;
-		void Effect.runPromiseExit(
-			Effect.tryPromise({
-				try: operation,
-				catch: (cause) => cause
-			})
-		).then((exit) => {
-			this.#isRefreshing = false;
-			this.#refreshError =
-				exit._tag === 'Failure' ? 'Refresh failed. The previous evidence remains available.' : null;
-		});
+		void operation().then(
+			() => {
+				this.#isRefreshing = false;
+			},
+			(cause: unknown) => {
+				console.warn('Dashboard refresh failed:', errorMessage(cause));
+				this.#isRefreshing = false;
+				this.#refreshError = 'Refresh failed. The previous evidence remains available.';
+			}
+		);
 	}
 
 	/** Attach application-level keyboard shortcuts and workspace node tracking. */

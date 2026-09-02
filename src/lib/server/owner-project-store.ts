@@ -250,10 +250,10 @@ export function addOwnerProjectResource(
 	ownerEmail: string,
 	input: AddOwnerProjectResourceInput,
 	now: Date
-): Effect.Effect<void, OwnerProjectStoreError> {
+): Effect.Effect<void, OwnerProjectRecordNotFound | OwnerProjectStoreError> {
 	return Effect.tryPromise({
-		try: async () => {
-			const result = await database
+		try: () =>
+			database
 				.prepare(
 					`INSERT INTO owner_project_resources
 					 (id, project_id, owner_email, kind, environment, provider_id, display_name,
@@ -273,11 +273,15 @@ export function addOwnerProjectResource(
 					input.projectId,
 					ownerEmail
 				)
-				.run();
-			if (result.meta.changes !== 1) throw new Error('Owner project was not found.');
-		},
+				.run(),
 		catch: (cause) => new OwnerProjectStoreError('add resource', cause)
-	});
+	}).pipe(
+		Effect.flatMap((result) =>
+			result.meta.changes === 1
+				? Effect.void
+				: Effect.fail(new OwnerProjectRecordNotFound('project', input.projectId))
+		)
+	);
 }
 
 /** Remove one owner-scoped project resource association. */

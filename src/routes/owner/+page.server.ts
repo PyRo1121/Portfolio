@@ -343,12 +343,14 @@ export const actions = {
 		if (access._tag === 'Denied') return fail(403, { ownerProjectMessage: access.reason });
 		const parsed = parseAddOwnerProjectResource(await actionInput(event));
 		if (Either.isLeft(parsed)) return fail(400, { ownerProjectMessage: parsed.left.reason });
-		const exit = await Effect.runPromiseExit(
+		const outcome = await ownerProjectMutationOutcome(
 			addOwnerProjectResource(access.ownerDatabase, access.ownerEmail, parsed.right, new Date())
 		);
-		return exit._tag === 'Success'
+		return outcome === 'Success'
 			? { ownerProjectMessage: 'Resource linked.' }
-			: fail(503, { ownerProjectMessage: 'Resource could not be linked.' });
+			: outcome === 'NotFound'
+				? fail(404, { ownerProjectMessage: 'Project no longer exists.' })
+				: fail(503, { ownerProjectMessage: 'Resource could not be linked.' });
 	},
 	removeOwnerProjectResource: async (event) => {
 		const access = await actionAccess(event);
