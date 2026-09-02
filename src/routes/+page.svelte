@@ -26,7 +26,7 @@
 	let clientTelemetry = $state<ClientTelemetry | null>(null);
 	loadClientTelemetry().then((loaded) => (clientTelemetry = loaded));
 	const profilePhotoUrl = asset('/portrait.webp');
-	const omgImage = asset('/portfolio/omg-repository.webp');
+	const omgImage = asset('/portfolio/omg-landing.webp');
 </script>
 
 <svelte:head>
@@ -175,7 +175,7 @@
 				>
 					<img
 						src={omgImage}
-						alt="The public OMG repository showing its Rust source, documentation, tests, and current release"
+						alt="The OMG landing page: one command that installs apps and programming languages on Linux and macOS"
 						width="1440"
 						height="900"
 						loading="lazy"
