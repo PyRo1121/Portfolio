@@ -27,7 +27,7 @@ a {
 	background: #d8a54a;
 	color: #0b0d0e;
 }
-.app {
+:root {
 	--bg: #0b0d0e;
 	--surface: #111416;
 	--surface-deep: #0e1112;
@@ -44,6 +44,8 @@ a {
 	--sans: 'Geist Variable', sans-serif;
 	--mono: 'Observatory Mono', 'JetBrains Mono Variable', monospace;
 	--ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+.app {
 	display: grid;
 	width: 100vw;
 	height: 100dvh;
