@@ -1,5 +1,5 @@
 import { Effect, Schema } from 'effect';
-import { TelemetryPayloadSchema, type TelemetryPayload } from '$lib/domain/telemetry';
+import { TelemetryPayloadSchema, type TelemetryPayload } from '$lib/domain/telemetry-schema';
 
 const MAX_TELEMETRY_BODY_BYTES = 16_384;
 

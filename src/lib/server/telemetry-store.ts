@@ -1,10 +1,7 @@
 import type { D1Database } from '@cloudflare/workers-types';
 import { Effect, Schema } from 'effect';
-import {
-	TelemetryEventTypeSchema,
-	type TelemetryEvent,
-	type TelemetryPayload
-} from '$lib/domain/telemetry';
+import { TelemetryEventTypeSchema, type TelemetryPayload } from '$lib/domain/telemetry-schema';
+import type { TelemetryEvent } from '$lib/domain/telemetry';
 import type { TelemetryTotals } from '$lib/domain/telemetry-view';
 
 /** Expected D1 telemetry failure boundary. */

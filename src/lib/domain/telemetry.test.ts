@@ -1,6 +1,7 @@
 import { Either, Schema } from 'effect';
 import { describe, expect, it } from 'vitest';
-import { TelemetryPayloadSchema, shouldCollectTelemetryPath } from './telemetry';
+import { TelemetryPayloadSchema } from './telemetry-schema';
+import { shouldCollectTelemetryPath } from './telemetry';
 
 const common = {
 	eventId: 'f8ad3bc4-8b70-4d2c-88aa-0efb3710378f',
