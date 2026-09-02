@@ -1,3 +1,4 @@
+import { envBinding } from '$lib/server/env-binding';
 import { env } from '$env/dynamic/private';
 import { fail } from '@sveltejs/kit';
 import { Effect, Either } from 'effect';
@@ -70,9 +71,7 @@ export const load: PageServerLoad = async ({ platform, request, setHeaders }) =>
 	}
 	const refreshLeaseClient = refreshLeaseClientFor(platform.env.REFRESH_COORDINATOR);
 
-	const expectedOwnerEmail = configuredOwnerEmail(
-		platform.env.CAREER_OWNER_EMAIL?.trim() || env['CAREER_OWNER_EMAIL']?.trim()
-	);
+	const expectedOwnerEmail = configuredOwnerEmail(envBinding(platform, 'CAREER_OWNER_EMAIL'));
 	const ownerAccess = await Effect.runPromise(
 		resolveOwnerAccess(
 			request.headers,
@@ -80,7 +79,7 @@ export const load: PageServerLoad = async ({ platform, request, setHeaders }) =>
 			configuredOwnerAccess(
 				platform.env.CLOUDFLARE_ACCESS_TEAM_DOMAIN?.trim() ||
 					env['CLOUDFLARE_ACCESS_TEAM_DOMAIN']?.trim(),
-				platform.env.CLOUDFLARE_ACCESS_AUD?.trim() || env['CLOUDFLARE_ACCESS_AUD']?.trim()
+				envBinding(platform, 'CLOUDFLARE_ACCESS_AUD')
 			)
 		)
 	);
@@ -144,10 +143,8 @@ export const load: PageServerLoad = async ({ platform, request, setHeaders }) =>
 		console.warn('Visitor telemetry load failed:', telemetryExit.cause);
 	}
 
-	const cloudflareToken =
-		platform.env.CLOUDFLARE_API_TOKEN?.trim() || env['CLOUDFLARE_API_TOKEN']?.trim();
-	const cloudflareAccountId =
-		platform.env.CLOUDFLARE_ACCOUNT_ID?.trim() || env['CLOUDFLARE_ACCOUNT_ID']?.trim();
+	const cloudflareToken = envBinding(platform, 'CLOUDFLARE_API_TOKEN');
+	const cloudflareAccountId = envBinding(platform, 'CLOUDFLARE_ACCOUNT_ID');
 	const cloudflareCache = cloudflareUsageCacheFor(platform.env.WEEKNOTE_CACHE, refreshLeaseClient);
 	const cachedCloudflare =
 		cloudflareAccountId === undefined ? null : await cloudflareCache.read(cloudflareAccountId);
@@ -259,11 +256,11 @@ async function actionAccess(event: CareerActionEvent) {
 	const access = await Effect.runPromise(
 		resolveOwnerAccess(
 			event.request.headers,
-			event.platform.env.CAREER_OWNER_EMAIL?.trim() || env['CAREER_OWNER_EMAIL']?.trim(),
+			envBinding(event.platform, 'CAREER_OWNER_EMAIL'),
 			configuredOwnerAccess(
 				event.platform.env.CLOUDFLARE_ACCESS_TEAM_DOMAIN?.trim() ||
 					env['CLOUDFLARE_ACCESS_TEAM_DOMAIN']?.trim(),
-				event.platform.env.CLOUDFLARE_ACCESS_AUD?.trim() || env['CLOUDFLARE_ACCESS_AUD']?.trim()
+				envBinding(event.platform, 'CLOUDFLARE_ACCESS_AUD')
 			)
 		)
 	);

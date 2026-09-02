@@ -1,3 +1,4 @@
+import { envBinding } from '$lib/server/env-binding';
 import { env } from '$env/dynamic/private';
 import type { DashboardCacheState, DashboardRefreshResult } from '$lib/domain/dashboard-hydration';
 import type { GitHubDashboardSnapshot } from '$lib/domain/github-intelligence';
@@ -37,7 +38,7 @@ export async function loadGitHubDashboardPageSlice(
 	const username = configuredGitHubUsername(env['GITHUB_USERNAME'], platform.env.GITHUB_USERNAME);
 	const token = env['GITHUB_TOKEN']?.trim();
 	const checksAppState = parseGitHubChecksAppConfig({
-		appId: platform.env.GITHUB_CHECKS_APP_ID?.trim() || env['GITHUB_CHECKS_APP_ID']?.trim(),
+		appId: envBinding(platform, 'GITHUB_CHECKS_APP_ID'),
 		installationId:
 			platform.env.GITHUB_CHECKS_INSTALLATION_ID?.trim() ||
 			env['GITHUB_CHECKS_INSTALLATION_ID']?.trim(),
@@ -45,8 +46,7 @@ export async function loadGitHubDashboardPageSlice(
 			platform.env.GITHUB_CHECKS_APP_PRIVATE_KEY?.trim() ||
 			env['GITHUB_CHECKS_APP_PRIVATE_KEY']?.trim()
 	});
-	const organizationToken =
-		platform.env.GITHUB_ORGANIZATION_TOKEN?.trim() || env['GITHUB_ORGANIZATION_TOKEN']?.trim();
+	const organizationToken = envBinding(platform, 'GITHUB_ORGANIZATION_TOKEN');
 	const organizationRepositories =
 		platform.env.GITHUB_ORGANIZATION_REPOSITORIES?.trim() ||
 		env['GITHUB_ORGANIZATION_REPOSITORIES']?.trim();

@@ -1,3 +1,4 @@
+import { envBinding } from '$lib/server/env-binding';
 import { env } from '$env/dynamic/private';
 import { json } from '@sveltejs/kit';
 import { Effect } from 'effect';
@@ -26,7 +27,7 @@ import { refreshLeaseClientFor } from '$lib/server/refresh-lease-client';
 export const GET: RequestHandler = async ({ platform, request, setHeaders, url }) => {
 	setHeaders({ 'cache-control': 'no-store' });
 
-	const expectedSecret = platform?.env.WARM_SECRET?.trim() || env['WARM_SECRET']?.trim();
+	const expectedSecret = envBinding(platform, 'WARM_SECRET');
 	if (expectedSecret === undefined || expectedSecret.length === 0) {
 		return json({ ok: false, reason: 'Warm refresh secret is not configured.' }, { status: 503 });
 	}
@@ -40,9 +41,9 @@ export const GET: RequestHandler = async ({ platform, request, setHeaders, url }
 	const now = new Date();
 	const refreshLeaseClient = refreshLeaseClientFor(platform.env.REFRESH_COORDINATOR);
 	const username = configuredGitHubUsername(env['GITHUB_USERNAME'], platform.env.GITHUB_USERNAME);
-	const token = platform.env.GITHUB_TOKEN?.trim() || env['GITHUB_TOKEN']?.trim();
+	const token = envBinding(platform, 'GITHUB_TOKEN');
 	const checksAppState = parseGitHubChecksAppConfig({
-		appId: platform.env.GITHUB_CHECKS_APP_ID?.trim() || env['GITHUB_CHECKS_APP_ID']?.trim(),
+		appId: envBinding(platform, 'GITHUB_CHECKS_APP_ID'),
 		installationId:
 			platform.env.GITHUB_CHECKS_INSTALLATION_ID?.trim() ||
 			env['GITHUB_CHECKS_INSTALLATION_ID']?.trim(),
@@ -51,16 +52,13 @@ export const GET: RequestHandler = async ({ platform, request, setHeaders, url }
 			env['GITHUB_CHECKS_APP_PRIVATE_KEY']?.trim()
 	});
 	const organizationState = parseGitHubOrganizationAccessConfig({
-		token:
-			platform.env.GITHUB_ORGANIZATION_TOKEN?.trim() || env['GITHUB_ORGANIZATION_TOKEN']?.trim(),
+		token: envBinding(platform, 'GITHUB_ORGANIZATION_TOKEN'),
 		repositories:
 			platform.env.GITHUB_ORGANIZATION_REPOSITORIES?.trim() ||
 			env['GITHUB_ORGANIZATION_REPOSITORIES']?.trim()
 	});
-	const cloudflareAccountId =
-		platform.env.CLOUDFLARE_ACCOUNT_ID?.trim() || env['CLOUDFLARE_ACCOUNT_ID']?.trim();
-	const cloudflareToken =
-		platform.env.CLOUDFLARE_API_TOKEN?.trim() || env['CLOUDFLARE_API_TOKEN']?.trim();
+	const cloudflareAccountId = envBinding(platform, 'CLOUDFLARE_ACCOUNT_ID');
+	const cloudflareToken = envBinding(platform, 'CLOUDFLARE_API_TOKEN');
 
 	const dashboardCache = dashboardSnapshotCacheFor(platform.env.WEEKNOTE_CACHE, refreshLeaseClient);
 	const cachedDashboard = await dashboardCache.read(username);
@@ -115,9 +113,7 @@ export const GET: RequestHandler = async ({ platform, request, setHeaders, url }
 					loadCloudflareUsageSnapshot(globalThis.fetch, cloudflareAccountId, cloudflareToken, now)
 				);
 
-	const ownerEmail = configuredOwnerEmail(
-		platform.env.CAREER_OWNER_EMAIL?.trim() || env['CAREER_OWNER_EMAIL']?.trim()
-	);
+	const ownerEmail = configuredOwnerEmail(envBinding(platform, 'CAREER_OWNER_EMAIL'));
 	const maintenanceRequested = url.searchParams.get('maintenance') === '1';
 	const retentionExit =
 		ownerEmail === null || maintenanceRequested === false

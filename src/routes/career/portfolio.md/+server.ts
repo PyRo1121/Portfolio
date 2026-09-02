@@ -1,4 +1,4 @@
-import { env } from '$env/dynamic/private';
+import { envBinding } from '$lib/server/env-binding';
 import { error, text } from '@sveltejs/kit';
 import { Effect } from 'effect';
 import type { RequestHandler } from './$types';
@@ -13,9 +13,7 @@ export const GET: RequestHandler = async ({ platform, setHeaders }) => {
 		'x-robots-tag': 'noindex, nofollow'
 	});
 	if (platform === undefined) error(503, 'Career export storage is unavailable.');
-	const ownerEmail = configuredOwnerEmail(
-		platform.env.CAREER_OWNER_EMAIL?.trim() || env['CAREER_OWNER_EMAIL']?.trim()
-	);
+	const ownerEmail = configuredOwnerEmail(envBinding(platform, 'CAREER_OWNER_EMAIL'));
 	if (ownerEmail === null) error(503, 'Career export owner configuration is unavailable.');
 
 	const stories = await Effect.runPromiseExit(
