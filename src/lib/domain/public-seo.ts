@@ -92,24 +92,6 @@ export const homeSeo: PublicSeoPage = {
 	])
 };
 
-export const evidenceSeo: PublicSeoPage = {
-	title: 'Live engineering evidence — Olen Latham',
-	description:
-		'Explore Olen Latham’s live GitHub activity, delivery records, project links, checks, and Cloudflare deployment evidence.',
-	canonical: `${PUBLIC_SITE_ORIGIN}/evidence`,
-	jsonLd: serializeJsonLd([
-		{
-			'@type': 'WebPage',
-			'@id': `${PUBLIC_SITE_ORIGIN}/evidence#page`,
-			url: `${PUBLIC_SITE_ORIGIN}/evidence`,
-			name: 'Live engineering evidence — Olen Latham',
-			isPartOf: { '@id': `${PUBLIC_SITE_ORIGIN}/#website` },
-			about: { '@id': PUBLIC_PERSON_ID }
-		},
-		personNode()
-	])
-};
-
 export const aboutSeo: PublicSeoPage = {
 	title: 'About Olen Latham — From customer support to software and cloud systems',
 	description:
@@ -156,7 +138,7 @@ export function caseStudySeo(study: PublicCaseStudy): PublicSeoPage {
 	};
 }
 
-export const publicSitemapPaths = ['/', '/evidence', '/about', ...publicCaseStudyPaths] as const;
+export const publicSitemapPaths = ['/', '/about', ...publicCaseStudyPaths] as const;
 
 function locFor(path: (typeof publicSitemapPaths)[number]): string {
 	return path === '/' ? `${PUBLIC_SITE_ORIGIN}/` : `${PUBLIC_SITE_ORIGIN}${path}`;

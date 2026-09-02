@@ -4,6 +4,7 @@
 	import type { PublicCaseStudy } from '$lib/domain/public-case-study';
 	import { publicCaseStudyFor } from '$lib/domain/public-case-study';
 	import {
+		PUBLIC_GITHUB_URL,
 		PUBLIC_SITE_ORIGIN,
 		PUBLIC_SOCIAL_IMAGE_URL,
 		caseStudySeo,
@@ -50,7 +51,7 @@
 <main id="case-study-content" class="case-study" tabindex="-1">
 	<nav class="topline" aria-label="Page navigation">
 		<a href={resolve('/')}><span aria-hidden="true">←</span> Portfolio</a>
-		<a href={resolve('/evidence')}>Live evidence</a>
+		<a href={`${PUBLIC_GITHUB_URL}/Portfolio`} target="_blank" rel="external noreferrer">Source</a>
 	</nav>
 
 	<header class="hero">

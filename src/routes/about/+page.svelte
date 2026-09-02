@@ -167,7 +167,9 @@
 			<a href={PUBLIC_GITHUB_URL} target="_blank" rel="external noreferrer">
 				<GithubLogo size={16} weight="fill" /> GitHub
 			</a>
-			<a href={resolve('/evidence')}>Live evidence <ArrowUpRight size={14} weight="bold" /></a>
+			<a href={`${PUBLIC_GITHUB_URL}?tab=repositories`} target="_blank" rel="external noreferrer"
+				>Repositories <ArrowUpRight size={14} weight="bold" /></a
+			>
 		</nav>
 	</footer>
 </main>
