@@ -4,6 +4,7 @@ import {
 	type OwnerProjectSnapshot
 } from '$lib/domain/owner-project';
 import { createPublicShippingProjection } from '$lib/domain/owner-project-view';
+import { createPublicPortfolioEvidence } from '$lib/domain/public-portfolio-view';
 import type { CloudflareDeploymentSnapshot } from '$lib/domain/cloudflare-deployments';
 import { Effect } from 'effect';
 import { cloudflareDeploymentCacheFor } from './cloudflare-deployment-cache';
@@ -104,6 +105,13 @@ async function loadPublicDeployments(
 		platform.ctx.waitUntil(refresh.then(() => undefined));
 	}
 	return cached?.snapshot ?? null;
+}
+
+/** Load the portfolio landing summary. The landing uses five snapshot fields, so the server
+ * reduces the snapshot here instead of serializing the full evidence payload to the browser. */
+export async function loadPublicPortfolioPageData(event: PublicDashboardPageEvent) {
+	const { snapshot } = await loadPublicDashboardPageData(event);
+	return { evidence: createPublicPortfolioEvidence(snapshot) };
 }
 
 /** Load the verified public GitHub and shipping evidence shared by the portfolio and dashboard. */

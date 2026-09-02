@@ -107,6 +107,7 @@
 			alt=""
 			width="320"
 			height="320"
+			fetchpriority="high"
 			referrerpolicy="no-referrer"
 		/>
 		<header>
