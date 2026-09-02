@@ -14,10 +14,10 @@ describe('public recruiter case studies', () => {
 		]);
 	});
 
-	it('points Weeknote evidence at the dedicated live dashboard route', () => {
+	it('points Weeknote evidence at the deployed application', () => {
 		const weeknote = PUBLIC_CASE_STUDIES.find((study) => study.slug === 'weeknote');
 		expect(weeknote?.evidence).toContainEqual(
-			expect.objectContaining({ href: 'https://latham.cloud/evidence' })
+			expect.objectContaining({ href: 'https://latham.cloud' })
 		);
 	});
 

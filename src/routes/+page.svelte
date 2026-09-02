@@ -144,13 +144,15 @@
 									>Open live demo <ArrowUpRight size={14} weight="bold" /></a
 								>
 							{/if}
-							<a
-								href={project.repoUrl}
-								target="_blank"
-								rel="external noreferrer"
-								onclick={() => clientTelemetry?.recordPortfolioAction('featured_omg_open')}
-								><GithubLogo size={14} weight="fill" /> Source</a
-							>
+							{#if project.repoUrl}
+								<a
+									href={project.repoUrl}
+									target="_blank"
+									rel="external noreferrer"
+									onclick={() => clientTelemetry?.recordPortfolioAction('featured_omg_open')}
+									><GithubLogo size={14} weight="fill" /> Source</a
+								>
+							{/if}
 						</div>
 					</li>
 				{/each}

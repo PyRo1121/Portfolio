@@ -50,14 +50,3 @@ run('npx', [
 	'--tag',
 	`git-${shortSha}`
 ]);
-run('npx', [
-	'wrangler',
-	'deploy',
-	'--config',
-	'warm/wrangler.jsonc',
-	'--strict',
-	'--message',
-	`git:${sha}`,
-	'--tag',
-	`git-${shortSha}`
-]);

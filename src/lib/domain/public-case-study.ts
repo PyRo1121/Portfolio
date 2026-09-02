@@ -72,15 +72,15 @@ export const PUBLIC_CASE_STUDIES = [
 		difficulty:
 			'The difficult work was deciding what the data was allowed to mean. A local merge is not automatically a pull request. A Worker deployment does not always have a Workers Build record. Browser sessions are not the same measurement as Cloudflare unique visitors. The application has to preserve those distinctions all the way into the labels people read.',
 		result:
-			'Weeknote now runs publicly on latham.cloud with exact project mappings, deployment evidence, cookieless visitor telemetry, protected owner records, scheduled warming, and tested failure boundaries. The same site also records contact actions without storing message content or visitor identity.',
+			'Weeknote runs this portfolio on latham.cloud with Effect boundaries at every provider, tested failure paths, and private owner records that never appear in public payloads. The same site records contact actions without storing message content or visitor identity.',
 		reflection:
 			'Weeknote taught me that trustworthy software is often less about collecting more data and more about refusing to overstate the data you already have.',
 		tools: ['TypeScript', 'Svelte 5', 'Effect', 'Cloudflare Workers', 'D1', 'Durable Objects'],
 		evidence: [
 			{
-				label: 'Live dashboard',
-				href: 'https://latham.cloud/evidence',
-				note: 'The deployed public dashboard and current evidence.'
+				label: 'Live site',
+				href: 'https://latham.cloud',
+				note: 'The deployed application the case study describes.'
 			},
 			{
 				label: 'Source repository',
