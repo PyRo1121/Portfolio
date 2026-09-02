@@ -237,7 +237,7 @@ function githubFetch(
 	repositoryQueries: string[],
 	options: GitHubFetchOptions = {}
 ): typeof globalThis.fetch {
-	return (async (_input: RequestInfo | URL, init?: RequestInit) => {
+	return async (_input: RequestInfo | URL, init?: RequestInit) => {
 		const payload = parsePayload(init);
 		const authorization = new Headers(init?.headers).get('Authorization');
 		if (payload.query.includes('GitHubSignalAccount')) {
@@ -269,7 +269,7 @@ function githubFetch(
 				: Response.json(commitPageResponse(fullName));
 		}
 		throw new Error('Unexpected GraphQL operation.');
-	}) as typeof globalThis.fetch;
+	};
 }
 
 function cacheFixture() {

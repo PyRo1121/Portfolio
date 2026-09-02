@@ -244,6 +244,7 @@ export function isCloudflareDashboardUrl(url: string): boolean {
 		const hostname = new URL(url).hostname.replace(/\.+$/, '').toLocaleLowerCase();
 		return hostname === 'dash.cloudflare.com';
 	} catch {
+		// Fail closed: an unparseable stored URL is never treated as a public link.
 		return true;
 	}
 }

@@ -282,7 +282,7 @@ export function fetchWorkflowAnnotations(
 			detail: 'GitHub Checks authentication was unavailable; workflow totals remain current.'
 		});
 	}
-	return Effect.promise(() =>
+	return Effect.tryPromise(() =>
 		Promise.all(
 			targetedRuns.map((run) => {
 				const checksToken = checksTokens.get(run.repository);

@@ -11,10 +11,7 @@
 		XCircleIcon as XCircle
 	} from 'phosphor-svelte';
 	import type { DeliveryArtifact, GitHubDashboardSnapshot } from '$lib/domain/github-intelligence';
-	import { workflowAnnotationCoverage } from '$lib/domain/dashboard-workflow-annotations';
 	import { formatInteger, formatRelativeTime } from '$lib/presentation/dashboard-format';
-	import { deliveryIssueBreakdown } from '$lib/presentation/delivery-issue-breakdown';
-	import { deliveryMergeBreakdown } from '$lib/presentation/delivery-merge-breakdown';
 	import { formatGitHubArtifactTitle } from '$lib/presentation/github-artifact-title';
 
 	type Props = { readonly snapshot: GitHubDashboardSnapshot };
@@ -31,12 +28,22 @@
 		{ id: 'repos', label: 'By repository' }
 	];
 	const delivery = $derived(snapshot.intelligence.delivery);
-	const mergeBreakdown = $derived(deliveryMergeBreakdown(delivery));
-	const issueBreakdown = $derived(deliveryIssueBreakdown(delivery));
+	const mergeBreakdown = $derived({
+		authored: delivery.authoredMergedPullRequests,
+		maintainer: delivery.maintainerMergedPullRequests,
+		automated: delivery.automatedMergedPullRequests,
+		truncated: delivery.mergedPullRequestsTruncated
+	});
+	const issueBreakdown = $derived({
+		authored: delivery.authoredClosedIssues,
+		closedByYou: delivery.ownerClosedIssues,
+		viaPullRequest: delivery.pullRequestClosedIssues,
+		truncated: delivery.closedIssuesTruncated
+	});
 	const workflow = $derived(delivery.workflows.current);
 	const artifacts = $derived(delivery.artifacts.slice(0, 8));
 	const verificationTotal = $derived(workflow.successful + workflow.failed);
-	const annotationCoverage = $derived(workflowAnnotationCoverage(snapshot));
+	const annotationCoverage = $derived(delivery.workflows.current.annotations);
 	const latestAnnotation = $derived(annotationCoverage.evidence[0] ?? null);
 	const outcomeNoun = $derived(delivery.outcomes === 1 ? 'counted outcome' : 'counted outcomes');
 	const outcomeComparison = $derived(
@@ -79,7 +86,6 @@
 			alt=""
 			width="320"
 			height="320"
-			fetchpriority="high"
 			referrerpolicy="no-referrer"
 		/>
 		<header>

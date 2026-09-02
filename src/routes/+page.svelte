@@ -8,7 +8,6 @@
 		LinkedinLogoIcon as LinkedinLogo
 	} from 'phosphor-svelte';
 	import { publicCaseStudyFor } from '$lib/domain/public-case-study';
-	import { createPublicPortfolioEvidence } from '$lib/domain/public-portfolio-view';
 	import {
 		homeSeo,
 		jsonLdScriptTag,
@@ -23,7 +22,7 @@
 	import { getClientTelemetry } from '$lib/telemetry/client-telemetry';
 
 	let { data }: PageProps = $props();
-	const evidence = $derived(createPublicPortfolioEvidence(data.snapshot));
+	const evidence = $derived(data.evidence);
 	const omg = publicCaseStudyFor('omg');
 	const weeknote = publicCaseStudyFor('weeknote');
 	const clientTelemetry = getClientTelemetry();
@@ -104,14 +103,14 @@
 						href={PUBLIC_CONTACT_MAILTO}
 						rel="external"
 						onclick={() => clientTelemetry?.recordContact('email_summary')}
-						><EnvelopeSimple size={17} weight="fill" /> Start a conversation</a
+						><EnvelopeSimple size={17} weight="fill" aria-hidden="true" /> Start a conversation</a
 					>
 				</div>
 			</div>
 
 			<figure class="portrait">
 				<div class="portrait-frame">
-					<img src={profilePhotoUrl} alt="Olen Latham" width="640" height="640" />
+					<img src={profilePhotoUrl} alt="Olen Latham" width="640" height="642" />
 				</div>
 				<figcaption>
 					<p>{PUBLIC_AVAILABILITY_LINE}</p>

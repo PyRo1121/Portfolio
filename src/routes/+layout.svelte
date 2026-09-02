@@ -2,6 +2,7 @@
 	import { page } from '$app/state';
 	import type { LayoutProps } from './$types';
 	import { getClientTelemetry } from '$lib/telemetry/client-telemetry';
+	import { IconContext } from 'phosphor-svelte';
 	import '../app.css';
 	import '$lib/styles/desk.css';
 
@@ -19,4 +20,4 @@
 	<link rel="sitemap" type="application/xml" href="/sitemap.xml" />
 </svelte:head>
 
-{@render children()}
+<IconContext values={{ 'aria-hidden': true }}>{@render children()}</IconContext>

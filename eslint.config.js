@@ -24,6 +24,30 @@ export default defineConfig(
 		}
 	},
 	{
+		files: ['src/**/*.ts', '**/*.svelte.ts'],
+		extends: [ts.configs.recommendedTypeChecked],
+		languageOptions: {
+			parserOptions: {
+				projectService: true,
+				allowDefaultProject: ['coordinator/*.ts']
+			}
+		},
+		rules: {
+			'@typescript-eslint/require-await': 'off',
+			'@typescript-eslint/no-floating-promises': 'error'
+		}
+	},
+	{
+		files: ['**/*.test.ts'],
+		rules: {
+			// Test fakes stub storage methods synchronously, and expect matchers
+			// (expect.objectContaining) return any by design.
+			'@typescript-eslint/no-unsafe-assignment': 'off',
+			'@typescript-eslint/no-base-to-string': 'off',
+			'@typescript-eslint/prefer-promise-reject-errors': 'off'
+		}
+	},
+	{
 		files: ['**/*.svelte', '**/*.svelte.ts', '**/*.svelte.js'],
 		languageOptions: {
 			parserOptions: {

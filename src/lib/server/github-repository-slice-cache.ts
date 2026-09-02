@@ -111,6 +111,10 @@ function matchesKey(
 	);
 }
 
+function errorMessage(cause: unknown): string {
+	return cause instanceof Error ? cause.message : String(cause);
+}
+
 async function readSlice(
 	store: DashboardCacheStore,
 	key: GitHubRepositorySliceKey
@@ -124,7 +128,8 @@ async function readSlice(
 		return matchesKey(envelope, key)
 			? { slice: envelope.slice, cachedAt: envelope.cachedAt }
 			: null;
-	} catch {
+	} catch (cause) {
+		console.warn('Ignoring unreadable repository slice cache:', errorMessage(cause));
 		return null;
 	}
 }
@@ -141,7 +146,8 @@ async function writeSlice(
 			JSON.stringify({ version: CACHE_VERSION, ...key, cachedAt, slice })
 		);
 		return 'Persisted';
-	} catch {
+	} catch (cause) {
+		console.warn('Ignoring unwritable repository slice cache:', errorMessage(cause));
 		return 'Unavailable';
 	}
 }

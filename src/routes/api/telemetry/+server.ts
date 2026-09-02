@@ -1,4 +1,4 @@
-import { env } from '$env/dynamic/private';
+import { envBinding } from '$lib/server/env-binding';
 import { json } from '@sveltejs/kit';
 import { Effect, Either } from 'effect';
 import type { RequestHandler } from './$types';
@@ -24,9 +24,7 @@ export const POST: RequestHandler = async ({ platform, request, setHeaders }) =>
 		setHeaders({ 'retry-after': '60' });
 		return json({ ok: false, reason: 'Telemetry rate limit exceeded.' }, { status: 429 });
 	}
-	const ownerEmail = configuredOwnerEmail(
-		platform.env.CAREER_OWNER_EMAIL?.trim() || env['CAREER_OWNER_EMAIL']?.trim()
-	);
+	const ownerEmail = configuredOwnerEmail(envBinding(platform, 'CAREER_OWNER_EMAIL'));
 	if (ownerEmail === null) {
 		return json({ ok: false, reason: 'Owner telemetry scope is not configured.' }, { status: 503 });
 	}

@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { Cause, Effect, Exit } from 'effect';
+import type { D1Database } from '@cloudflare/workers-types';
 import { PUBLIC_SHIPPING_RESOURCE_KINDS } from '$lib/domain/owner-project';
 import {
+	addOwnerProjectResource,
+	OwnerProjectRecordNotFound,
 	ownerProjectResourceFromRow,
 	ownerProjectResourceQuery,
 	ownerProjectQuery
@@ -58,5 +62,37 @@ describe('owner project queries', () => {
 		expect(query.binds).not.toContain('D1Database');
 		expect(query.binds).not.toContain('KVNamespace');
 		expect(query.binds).not.toContain('R2Bucket');
+	});
+});
+
+describe('addOwnerProjectResource', () => {
+	const input = {
+		projectId: 'd53e32ac-34fc-4c14-a7a4-279d90426f4d',
+		kind: 'GitHubRepository' as const,
+		environment: 'Production' as const,
+		providerId: 'PyRo1121/omg',
+		displayName: 'omg',
+		canonicalUrl: 'https://github.com/PyRo1121/omg'
+	};
+
+	function fakeDatabase(meta: { changes: number }) {
+		return {
+			prepare: () => ({
+				bind: () => ({
+					run: async () => ({ meta })
+				})
+			})
+		} as unknown as D1Database;
+	}
+
+	it('fails with OwnerProjectRecordNotFound when the insert matches no row', async () => {
+		const exit = await Effect.runPromiseExit(
+			addOwnerProjectResource(fakeDatabase({ changes: 0 }), 'olen@latham.cloud', input, new Date())
+		);
+		expect(Exit.isFailure(exit)).toBe(true);
+		if (Exit.isFailure(exit)) {
+			const error = Cause.squash(exit.cause);
+			expect(error).toBeInstanceOf(OwnerProjectRecordNotFound);
+		}
 	});
 });

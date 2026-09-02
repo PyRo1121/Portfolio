@@ -1,9 +1,10 @@
-import { env } from '$env/dynamic/private';
+import { envBinding } from '$lib/server/env-binding';
 import {
 	PUBLIC_SHIPPING_RESOURCE_KINDS,
 	type OwnerProjectSnapshot
 } from '$lib/domain/owner-project';
 import { createPublicShippingProjection } from '$lib/domain/owner-project-view';
+import { createPublicPortfolioEvidence } from '$lib/domain/public-portfolio-view';
 import type { CloudflareDeploymentSnapshot } from '$lib/domain/cloudflare-deployments';
 import { Effect } from 'effect';
 import { cloudflareDeploymentCacheFor } from './cloudflare-deployment-cache';
@@ -81,10 +82,8 @@ async function loadPublicDeployments(
 	refreshLeaseClient: RefreshLeaseClient,
 	now: Date
 ): Promise<CloudflareDeploymentSnapshot | null> {
-	const cloudflareToken =
-		platform.env.CLOUDFLARE_API_TOKEN?.trim() || env['CLOUDFLARE_API_TOKEN']?.trim();
-	const cloudflareAccountId =
-		platform.env.CLOUDFLARE_ACCOUNT_ID?.trim() || env['CLOUDFLARE_ACCOUNT_ID']?.trim();
+	const cloudflareToken = envBinding(platform, 'CLOUDFLARE_API_TOKEN');
+	const cloudflareAccountId = envBinding(platform, 'CLOUDFLARE_ACCOUNT_ID');
 	const workerNames = deploymentWorkerNames(registry);
 	if (cloudflareAccountId === undefined || workerNames.length === 0) return null;
 
@@ -108,6 +107,13 @@ async function loadPublicDeployments(
 	return cached?.snapshot ?? null;
 }
 
+/** Load the portfolio landing summary. The landing uses five snapshot fields, so the server
+ * reduces the snapshot here instead of serializing the full evidence payload to the browser. */
+export async function loadPublicPortfolioPageData(event: PublicDashboardPageEvent) {
+	const { snapshot } = await loadPublicDashboardPageData(event);
+	return { evidence: createPublicPortfolioEvidence(snapshot) };
+}
+
 /** Load the verified public GitHub and shipping evidence shared by the portfolio and dashboard. */
 export async function loadPublicDashboardPageData({
 	platform,
@@ -123,9 +129,7 @@ export async function loadPublicDashboardPageData({
 
 	const refreshLeaseClient = refreshLeaseClientFor(platform.env.REFRESH_COORDINATOR);
 	const github = await loadGitHubDashboardPageSlice(platform, now);
-	const expectedOwnerEmail = configuredOwnerEmail(
-		platform.env.CAREER_OWNER_EMAIL?.trim() || env['CAREER_OWNER_EMAIL']?.trim()
-	);
+	const expectedOwnerEmail = configuredOwnerEmail(envBinding(platform, 'CAREER_OWNER_EMAIL'));
 	const { registry, access } = await loadPublicRegistry(platform, expectedOwnerEmail);
 	const deployments = await loadPublicDeployments(platform, registry, refreshLeaseClient, now);
 
