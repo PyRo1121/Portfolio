@@ -13,6 +13,7 @@
 		"dev": "vite dev",
 		"build": "vite build",
 		"deploy": "node scripts/deploy.mjs",
+		"seo:indexnow": "node scripts/submit-indexnow.mjs",
 		"deploy:dry-run": "npm run build && wrangler deploy --config coordinator/wrangler.jsonc --dry-run --strict && wrangler deploy --dry-run --strict",
 		"deploy:coordinator": "wrangler deploy --config coordinator/wrangler.jsonc --strict",
 		"db:migrate:local": "wrangler d1 migrations apply CAREER_DB --local && wrangler d1 migrations apply OWNER_DB --local",
