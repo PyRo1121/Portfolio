@@ -24,3 +24,6 @@ export const DEPLOYLINT_PROJECT: ShowcaseProject = {
 };
 
 export const SHOWCASE_PROJECTS: ReadonlyArray<ShowcaseProject> = [OMG_PROJECT, DEPLOYLINT_PROJECT];
+
+/** Live personal experiment, shown below the two featured case studies. */
+export const TOKEN_CONTROL_URL = 'https://tokens.latham.cloud/';

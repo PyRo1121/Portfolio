@@ -7,7 +7,7 @@
 		LinkedinLogoIcon as LinkedinLogo
 	} from 'phosphor-svelte';
 	import { publicCaseStudyFor } from '$lib/domain/public-case-study';
-	import { DEPLOYLINT_PROJECT, OMG_PROJECT } from '$lib/domain/showcase';
+	import { DEPLOYLINT_PROJECT, OMG_PROJECT, TOKEN_CONTROL_URL } from '$lib/domain/showcase';
 	import {
 		homeSeo,
 		jsonLdScriptTag,
@@ -203,6 +203,20 @@
 					</div>
 				</div>
 			</article>
+
+			<aside class="side-project" aria-labelledby="tokens-heading">
+				<div>
+					<p class="section-label">Personal experiment / live dashboard</p>
+					<h3 id="tokens-heading">Token Control</h3>
+					<p>
+						I built this to make my AI-assisted coding activity visible. It tracks token volume,
+						model and provider mix, cache use, and estimated API-equivalent spend across my tools.
+					</p>
+				</div>
+				<a href={TOKEN_CONTROL_URL} target="_blank" rel="external noopener"
+					>Explore the live dashboard <ArrowUpRight size={15} weight="bold" /></a
+				>
+			</aside>
 		</section>
 
 		<section class="capabilities" aria-labelledby="capabilities-heading">
@@ -467,6 +481,7 @@
 		line-height: 1.5;
 	}
 	.project-links a,
+	.side-project a,
 	.capabilities a {
 		display: inline-flex;
 		align-items: center;
@@ -563,6 +578,31 @@
 		flex-wrap: wrap;
 		gap: 0.8rem 1.25rem;
 		margin-top: 1.5rem;
+	}
+	.side-project {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 2rem;
+		margin-top: 2.5rem;
+		padding: 2rem;
+		border-left: 2px solid var(--accent);
+		background: var(--surface);
+	}
+	.side-project h3 {
+		margin: 0.65rem 0 0;
+		font-size: clamp(1.5rem, 2.5vw, 2rem);
+		letter-spacing: -0.04em;
+	}
+	.side-project p:not(.section-label) {
+		max-width: 44rem;
+		margin: 0.65rem 0 0;
+		color: var(--muted);
+		font-size: 0.88rem;
+		line-height: 1.6;
+	}
+	.side-project a {
+		flex-shrink: 0;
 	}
 	.capabilities {
 		display: grid;
@@ -695,6 +735,11 @@
 		}
 		.project-deploylint .project-image {
 			order: 0;
+		}
+		.side-project {
+			align-items: flex-start;
+			flex-direction: column;
+			gap: 1.25rem;
 		}
 		.capabilities,
 		.closing {
