@@ -36,6 +36,17 @@ describe('TelemetryPayloadSchema', () => {
 		expect(decodes({ ...common, eventType: 'portfolio_action', action: 'featured_omg_open' })).toBe(
 			true
 		);
+		for (const action of [
+			'featured_deploylint_open',
+			'omg_site_open',
+			'deploylint_site_open',
+			'resume_download'
+		]) {
+			expect(decodes({ ...common, eventType: 'portfolio_action', action })).toBe(true);
+		}
+		expect(decodes({ ...common, eventType: 'contact_action', action: 'email_case_study' })).toBe(
+			true
+		);
 	});
 
 	it('rejects missing event-specific evidence and invalid paths', () => {

@@ -28,6 +28,7 @@
 	const profilePhotoUrl = asset('/portrait.webp');
 	const omgImage = asset('/portfolio/omg-landing.webp');
 	const deploylintImage = asset('/portfolio/deploylint-preview.png');
+	const resumeUrl = asset('/olen-latham-resume.pdf');
 </script>
 
 <svelte:head>
@@ -98,6 +99,11 @@
 						onclick={() => clientTelemetry?.recordContact('email_summary')}
 						><EnvelopeSimple size={17} weight="fill" aria-hidden="true" /> Start a conversation</a
 					>
+					<a
+						href={resumeUrl}
+						download
+						onclick={() => clientTelemetry?.recordPortfolioAction('resume_download')}>Résumé PDF</a
+					>
 				</div>
 			</div>
 
@@ -147,7 +153,11 @@
 							onclick={() => clientTelemetry?.recordPortfolioAction('featured_omg_open')}
 							>Read the case study <ArrowUpRight size={15} weight="bold" /></a
 						>
-						<a href={OMG_PROJECT.demoUrl} target="_blank" rel="external noopener"
+						<a
+							href={OMG_PROJECT.demoUrl}
+							target="_blank"
+							rel="external noopener"
+							onclick={() => clientTelemetry?.recordPortfolioAction('omg_site_open')}
 							>Visit OMG <ArrowUpRight size={15} weight="bold" /></a
 						>
 						<a href={OMG_PROJECT.repoUrl} target="_blank" rel="external noopener"
@@ -161,6 +171,7 @@
 				<a
 					class="project-image"
 					href={resolve('/work/deploylint')}
+					onclick={() => clientTelemetry?.recordPortfolioAction('featured_deploylint_open')}
 					aria-label="Read the DeployLint case study"
 				>
 					<img
@@ -177,10 +188,16 @@
 					<h4>{deploylint.title}</h4>
 					<p>{DEPLOYLINT_PROJECT.tagline}</p>
 					<div class="project-links">
-						<a href={resolve('/work/deploylint')}
+						<a
+							href={resolve('/work/deploylint')}
+							onclick={() => clientTelemetry?.recordPortfolioAction('featured_deploylint_open')}
 							>Read the case study <ArrowUpRight size={15} weight="bold" /></a
 						>
-						<a href={DEPLOYLINT_PROJECT.demoUrl} target="_blank" rel="external noopener"
+						<a
+							href={DEPLOYLINT_PROJECT.demoUrl}
+							target="_blank"
+							rel="external noopener"
+							onclick={() => clientTelemetry?.recordPortfolioAction('deploylint_site_open')}
 							>Visit DeployLint <ArrowUpRight size={15} weight="bold" /></a
 						>
 					</div>
@@ -246,7 +263,14 @@
 					onclick={() => clientTelemetry?.recordContact('linkedin_summary')}
 					><LinkedinLogo size={17} weight="fill" /> LinkedIn</a
 				>
-				<p>{PUBLIC_CONTACT_EMAIL}<br />{PUBLIC_RESUME_LINE}</p>
+				<p>
+					{PUBLIC_CONTACT_EMAIL}<br /><a
+						href={resumeUrl}
+						download
+						onclick={() => clientTelemetry?.recordPortfolioAction('resume_download')}
+						>{PUBLIC_RESUME_LINE}</a
+					>
+				</p>
 			</div>
 		</section>
 	</main>

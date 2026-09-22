@@ -238,6 +238,7 @@
 				<div class="boundary-metrics">
 					<div><span>Email clicks</span><strong>{view.emailClicks}</strong></div>
 					<div><span>LinkedIn clicks</span><strong>{view.linkedinClicks}</strong></div>
+					<div><span>Résumé downloads</span><strong>{view.resumeDownloads}</strong></div>
 					<div><span>Contact sessions</span><strong>{view.contactSessions}</strong></div>
 					<div>
 						<span>Session action rate</span>
@@ -257,7 +258,9 @@
 				</header>
 				<div class="boundary-metrics">
 					<div><span>OMG opens</span><strong>{view.featuredOmgOpens}</strong></div>
-					<div><span>Weeknote opens</span><strong>{view.featuredWeeknoteOpens}</strong></div>
+					<div><span>DeployLint opens</span><strong>{view.featuredDeploylintOpens}</strong></div>
+					<div><span>OMG site visits</span><strong>{view.omgSiteOpens}</strong></div>
+					<div><span>DeployLint site visits</span><strong>{view.deploylintSiteOpens}</strong></div>
 					<div><span>Evidence opens</span><strong>{view.liveEvidenceOpens}</strong></div>
 					<div><span>Action sessions</span><strong>{view.portfolioSessions}</strong></div>
 				</div>

@@ -4,6 +4,12 @@ export type PublicCaseStudyEvidence = {
 	readonly note: string;
 };
 
+export type PublicCaseStudyWorkflowStep = {
+	readonly label: string;
+	readonly action: string;
+	readonly outcome: string;
+};
+
 export type PublicCaseStudy = {
 	readonly slug: 'omg' | 'deploylint';
 	readonly eyebrow: string;
@@ -15,6 +21,8 @@ export type PublicCaseStudy = {
 	readonly difficulty: string;
 	readonly result: string;
 	readonly reflection: string;
+	readonly workflowIntro: string;
+	readonly workflowSteps: readonly [PublicCaseStudyWorkflowStep, ...PublicCaseStudyWorkflowStep[]];
 	readonly tools: ReadonlyArray<string>;
 	readonly evidence: readonly [PublicCaseStudyEvidence, ...PublicCaseStudyEvidence[]];
 };
@@ -36,6 +44,30 @@ export const PUBLIC_CASE_STUDIES = [
 			'OMG is a public beta with tagged releases, downloadable artifacts, a live documentation site, and inspectable source. Support differs by platform, so the release notes and platform table are the best way to check a specific workflow.',
 		reflection:
 			'OMG taught me that ambitious tooling becomes credible through boundaries, tests, release discipline, and accurate documentation—not through a longer feature list.',
+		workflowIntro:
+			'A real CLI path, using commands documented in the public repository. Exact backend behavior depends on platform and package availability.',
+		workflowSteps: [
+			{
+				label: '01 / inspect',
+				action: 'omg install ripgrep --dry-run',
+				outcome: 'Preview the native package operation before changing the machine.'
+			},
+			{
+				label: '02 / install',
+				action: 'omg install ripgrep',
+				outcome: 'Let OMG route the package request through the supported system backend.'
+			},
+			{
+				label: '03 / verify',
+				action: 'omg run test',
+				outcome: 'Run a task discovered from the current project through the same CLI.'
+			},
+			{
+				label: '04 / audit',
+				action: 'omg audit scan',
+				outcome: 'Inspect dependency vulnerability evidence without leaving the workflow.'
+			}
+		],
 		tools: [
 			'Rust',
 			'CLI design',
@@ -83,6 +115,31 @@ export const PUBLIC_CASE_STUDIES = [
 			'The public product offers a repository scan and setup flow, explains its deployment protection model, and publishes practical CI/CD guides. The implementation repository is private; the links below show the live product and its public behavior rather than claiming public source access.',
 		reflection:
 			'DeployLint made me treat the generated pull request as an explanation and review record, not just a YAML delivery mechanism.',
+		workflowIntro:
+			'The public setup journey, from a repository scan to a reviewable pull request. Generation depends on supported evidence and plan eligibility.',
+		workflowSteps: [
+			{
+				label: '01 / assess',
+				action: 'Connect a GitHub repository',
+				outcome: 'Inspect application roots, lockfiles, package-manager evidence, and current CI.'
+			},
+			{
+				label: '02 / preview',
+				action: 'Review the proposed pipeline',
+				outcome:
+					'See generated workflow files, missing credentials, and unsupported or ambiguous evidence.'
+			},
+			{
+				label: '03 / decide',
+				action: 'Choose supported destinations',
+				outcome: 'Keep production credentials and deployment rules as explicit human decisions.'
+			},
+			{
+				label: '04 / review',
+				action: 'Open a setup pull request',
+				outcome: 'Inspect the isolated branch and workflow changes before merging.'
+			}
+		],
 		tools: ['TypeScript', 'SvelteKit', 'GitHub Apps', 'GitHub Actions', 'Cloudflare Workers'],
 		evidence: [
 			{

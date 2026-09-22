@@ -41,8 +41,12 @@ function totals(overrides: Partial<TelemetryTotals> = {}): TelemetryTotals {
 		portfolioActions: 0,
 		portfolioSessions: 0,
 		featuredOmgOpens: 0,
+		featuredDeploylintOpens: 0,
 		featuredWeeknoteOpens: 0,
 		liveEvidenceOpens: 0,
+		omgSiteOpens: 0,
+		deploylintSiteOpens: 0,
+		resumeDownloads: 0,
 		errorCount: 0,
 		lastRecordedAt: null,
 		...overrides
@@ -162,8 +166,12 @@ describe('createTelemetryView', () => {
 				portfolioActions: 25,
 				portfolioSessions: 16,
 				featuredOmgOpens: 8,
+				featuredDeploylintOpens: 3,
 				featuredWeeknoteOpens: 9,
 				liveEvidenceOpens: 8,
+				omgSiteOpens: 4,
+				deploylintSiteOpens: 2,
+				resumeDownloads: 1,
 				errorCount: 12,
 				lastRecordedAt: '2026-08-17T05:00:00.000Z'
 			},
@@ -208,15 +216,23 @@ describe('createTelemetryView', () => {
 				portfolioActions: 18,
 				portfolioSessions: 11,
 				featuredOmgOpens: 5,
+				featuredDeploylintOpens: 4,
 				featuredWeeknoteOpens: 7,
-				liveEvidenceOpens: 6
+				liveEvidenceOpens: 6,
+				omgSiteOpens: 2,
+				deploylintSiteOpens: 1,
+				resumeDownloads: 3
 			})
 		);
 		expect(view.portfolioActions).toBe(18);
 		expect(view.portfolioSessions).toBe(11);
 		expect(view.featuredOmgOpens).toBe(5);
+		expect(view.featuredDeploylintOpens).toBe(4);
 		expect(view.featuredWeeknoteOpens).toBe(7);
 		expect(view.liveEvidenceOpens).toBe(6);
+		expect(view.omgSiteOpens).toBe(2);
+		expect(view.deploylintSiteOpens).toBe(1);
+		expect(view.resumeDownloads).toBe(3);
 	});
 
 	it('returns empty aggregates for no events', () => {

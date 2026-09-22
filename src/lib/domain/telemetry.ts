@@ -14,12 +14,20 @@ export type ContactAction =
 	| 'email_social'
 	| 'email_summary'
 	| 'email_about'
+	| 'email_case_study'
 	| 'linkedin_social'
 	| 'linkedin_summary'
 	| 'linkedin_about';
 
 /** Exact portfolio navigation action recorded without visitor identity or content. */
-export type PortfolioAction = 'featured_omg_open' | 'featured_weeknote_open' | 'live_evidence_open';
+export type PortfolioAction =
+	| 'featured_omg_open'
+	| 'featured_deploylint_open'
+	| 'featured_weeknote_open'
+	| 'live_evidence_open'
+	| 'omg_site_open'
+	| 'deploylint_site_open'
+	| 'resume_download';
 
 /** Exclude Access-protected owner pages from public visitor analytics. */
 export function shouldCollectTelemetryPath(path: string): boolean {

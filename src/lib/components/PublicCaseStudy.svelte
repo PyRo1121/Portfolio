@@ -1,8 +1,15 @@
 <script lang="ts">
-	import { resolve } from '$app/paths';
+	import { asset, resolve } from '$app/paths';
 	import { ArrowUpRightIcon as ArrowUpRight } from 'phosphor-svelte';
 	import type { PublicCaseStudy } from '$lib/domain/public-case-study';
-	import { PUBLIC_SITE_ORIGIN, caseStudySeo, jsonLdScriptTag } from '$lib/domain/public-seo';
+	import {
+		PUBLIC_CONTACT_MAILTO,
+		PUBLIC_SITE_ORIGIN,
+		caseStudySeo,
+		jsonLdScriptTag
+	} from '$lib/domain/public-seo';
+	import { loadClientTelemetry } from '$lib/telemetry/telemetry-gate';
+	import type { ClientTelemetry } from '$lib/telemetry/client-telemetry';
 
 	type Props = {
 		readonly study: PublicCaseStudy;
@@ -12,6 +19,10 @@
 	const canonical = $derived(`${PUBLIC_SITE_ORIGIN}/work/${study.slug}`);
 	const seo = $derived(caseStudySeo(study));
 	const pageTitle = $derived(seo.title);
+	const resumeUrl = asset('/olen-latham-resume.pdf');
+	let clientTelemetry = $state<ClientTelemetry | null>(null);
+	loadClientTelemetry().then((loaded) => (clientTelemetry = loaded));
+	const productAction = $derived(study.slug === 'omg' ? 'omg_site_open' : 'deploylint_site_open');
 </script>
 
 <svelte:head>
@@ -61,7 +72,13 @@
 			</ul>
 		</div>
 		<div class="hero-links">
-			<a class="primary-link" href={study.websiteUrl} target="_blank" rel="external noopener">
+			<a
+				class="primary-link"
+				href={study.websiteUrl}
+				target="_blank"
+				rel="external noopener"
+				onclick={() => clientTelemetry?.recordPortfolioAction(productAction)}
+			>
 				Visit {study.slug === 'omg' ? 'OMG' : 'DeployLint'}
 				<ArrowUpRight size={16} weight="bold" />
 			</a>
@@ -94,6 +111,34 @@
 		</div>
 	</article>
 
+	<section class="workflow" aria-labelledby={`${study.slug}-workflow`}>
+		<header>
+			<p>Product workflow</p>
+			<h2 id={`${study.slug}-workflow`}>
+				What using {study.slug === 'omg' ? 'OMG' : 'DeployLint'} looks like
+			</h2>
+			<span>{study.workflowIntro}</span>
+		</header>
+		<ol>
+			{#each study.workflowSteps as step (step.label)}
+				<li>
+					<span>{step.label}</span>
+					<strong class:command={study.slug === 'omg'}>{step.action}</strong>
+					<p>{step.outcome}</p>
+				</li>
+			{/each}
+		</ol>
+		<a
+			href={study.slug === 'omg' ? 'https://getomg.xyz/docs/cli' : 'https://deploylint.com/start'}
+			target="_blank"
+			rel="external noopener"
+			onclick={() => clientTelemetry?.recordPortfolioAction(productAction)}
+		>
+			{study.slug === 'omg' ? 'Explore the OMG CLI docs' : 'Try a repository assessment'}
+			<ArrowUpRight size={15} weight="bold" />
+		</a>
+	</section>
+
 	<blockquote>
 		<p>{study.reflection}</p>
 	</blockquote>
@@ -105,7 +150,12 @@
 		</header>
 		<div class="evidence-list">
 			{#each study.evidence as item (item.href)}
-				<a href={item.href} target="_blank" rel="external noopener">
+				<a
+					href={item.href}
+					target="_blank"
+					rel="external noopener"
+					onclick={() => clientTelemetry?.recordPortfolioAction('live_evidence_open')}
+				>
 					<span>{item.label}<ArrowUpRight size={15} weight="bold" /></span>
 					<small>{item.note}</small>
 				</a>
@@ -126,7 +176,20 @@
 			<p>Looking for someone who brings customer-service follow-through to technical work?</p>
 			<strong>I’m open to IT support, cloud operations, junior systems, and software roles.</strong>
 		</div>
-		<a href={resolve('/about#contact')}>Contact Olen <ArrowUpRight size={15} weight="bold" /></a>
+		<div class="footer-actions">
+			<a
+				href={PUBLIC_CONTACT_MAILTO}
+				rel="external"
+				onclick={() => clientTelemetry?.recordContact('email_case_study')}
+				>Email Olen <ArrowUpRight size={15} weight="bold" /></a
+			>
+			<a
+				href={resumeUrl}
+				download
+				onclick={() => clientTelemetry?.recordPortfolioAction('resume_download')}
+				>Download résumé <ArrowUpRight size={15} weight="bold" /></a
+			>
+		</div>
 	</footer>
 </main>
 
@@ -289,6 +352,69 @@
 	.story-sections p {
 		margin: 0;
 	}
+	.workflow {
+		padding: clamp(3rem, 6vw, 5rem) 0;
+		border-top: 1px solid rgb(231 232 225 / 16%);
+	}
+	.workflow header {
+		max-width: 48rem;
+	}
+	.workflow header > p,
+	.workflow li > span {
+		color: #d8a54a;
+		font:
+			650 0.65rem/1.3 'JetBrains Mono Variable',
+			monospace;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+	}
+	.workflow header h2 {
+		margin: 0.8rem 0 1rem;
+		font-size: clamp(1.8rem, 3.2vw, 3rem);
+	}
+	.workflow header > span {
+		color: #b2b6b1;
+		line-height: 1.6;
+	}
+	.workflow ol {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 1px;
+		margin: 2.5rem 0 1.5rem;
+		padding: 1px;
+		background: rgb(231 232 225 / 16%);
+		list-style: none;
+	}
+	.workflow li {
+		min-width: 0;
+		padding: clamp(1.3rem, 3vw, 2rem);
+		background: #111516;
+	}
+	.workflow li strong {
+		display: block;
+		margin: 0.9rem 0;
+		font-size: 1rem;
+	}
+	.workflow li strong.command {
+		font-family: 'JetBrains Mono Variable', monospace;
+		font-size: 0.88rem;
+		overflow-wrap: anywhere;
+	}
+	.workflow li p {
+		margin: 0;
+		color: #b2b6b1;
+		font-size: 0.85rem;
+		line-height: 1.55;
+	}
+	.workflow > a {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		color: #d8a54a;
+		font-size: 0.82rem;
+		font-weight: 650;
+		text-decoration: none;
+	}
 	h2 {
 		font-size: clamp(1.35rem, 2.3vw, 2rem);
 		line-height: 1;
@@ -404,6 +530,11 @@
 		font-size: 0.82rem;
 		font-weight: 650;
 	}
+	.footer-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.8rem 1.5rem;
+	}
 	a:hover {
 		color: #d8a54a;
 	}
@@ -438,6 +569,9 @@
 		}
 		.story > aside {
 			position: static;
+		}
+		.workflow ol {
+			grid-template-columns: 1fr;
 		}
 		.story-sections section {
 			gap: 0.9rem;

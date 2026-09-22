@@ -22,6 +22,7 @@
 	let clientTelemetry = $state<ClientTelemetry | null>(null);
 	loadClientTelemetry().then((loaded) => (clientTelemetry = loaded));
 	const profilePhotoUrl = asset('/portrait.webp');
+	const resumeUrl = asset('/olen-latham-resume.pdf');
 </script>
 
 <svelte:head>
@@ -87,8 +88,14 @@
 				>
 					<LinkedinLogo size={17} weight="fill" /> LinkedIn
 				</a>
+				<a
+					href={resumeUrl}
+					download
+					onclick={() => clientTelemetry?.recordPortfolioAction('resume_download')}
+					>{PUBLIC_RESUME_LINE}</a
+				>
 			</div>
-			<p class="contact-note">{PUBLIC_CONTACT_EMAIL} · {PUBLIC_RESUME_LINE}</p>
+			<p class="contact-note">{PUBLIC_CONTACT_EMAIL} · McKinney, TX</p>
 			<p class="next-step">
 				Outside work, I build developer tools and cloud applications. I’m working toward a role
 				where I can bring the same patience and troubleshooting instinct to software, systems, and

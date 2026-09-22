@@ -34,8 +34,12 @@ describe('telemetry D1 row mapping', () => {
 				portfolio_actions: 21,
 				portfolio_sessions: 13,
 				featured_omg_opens: 7,
+				featured_deploylint_opens: 4,
 				featured_weeknote_opens: 8,
 				live_evidence_opens: 6,
+				omg_site_opens: 3,
+				deploylint_site_opens: 2,
+				resume_downloads: 1,
 				error_count: 12,
 				last_recorded_at: '2026-08-17T05:00:00.000Z'
 			})
@@ -53,8 +57,12 @@ describe('telemetry D1 row mapping', () => {
 			portfolioActions: 21,
 			portfolioSessions: 13,
 			featuredOmgOpens: 7,
+			featuredDeploylintOpens: 4,
 			featuredWeeknoteOpens: 8,
 			liveEvidenceOpens: 6,
+			omgSiteOpens: 3,
+			deploylintSiteOpens: 2,
+			resumeDownloads: 1,
 			errorCount: 12,
 			lastRecordedAt: '2026-08-17T05:00:00.000Z'
 		});

@@ -18,7 +18,7 @@ export const PUBLIC_CONTACT_MAILTO =
 /** Truthful role categories currently invited by the public portfolio. */
 export const PUBLIC_AVAILABILITY_LINE =
 	'Open to IT support, cloud operations, junior systems, and software opportunities.';
-export const PUBLIC_RESUME_LINE = 'Résumé available on request.';
+export const PUBLIC_RESUME_LINE = 'Download one-page résumé (PDF)';
 
 /** Raster social card used by Open Graph, Twitter, and structured profile data. */
 export const PUBLIC_SOCIAL_IMAGE_URL = `${PUBLIC_SITE_ORIGIN}/og-image.png`;

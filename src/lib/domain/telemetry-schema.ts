@@ -64,6 +64,7 @@ export const ContactActionSchema = Schema.Union(
 	Schema.Literal('email_social'),
 	Schema.Literal('email_summary'),
 	Schema.Literal('email_about'),
+	Schema.Literal('email_case_study'),
 	Schema.Literal('linkedin_social'),
 	Schema.Literal('linkedin_summary'),
 	Schema.Literal('linkedin_about')
@@ -72,8 +73,12 @@ export const ContactActionSchema = Schema.Union(
 /** Exact portfolio navigation action recorded without visitor identity or content. */
 export const PortfolioActionSchema = Schema.Union(
 	Schema.Literal('featured_omg_open'),
+	Schema.Literal('featured_deploylint_open'),
 	Schema.Literal('featured_weeknote_open'),
-	Schema.Literal('live_evidence_open')
+	Schema.Literal('live_evidence_open'),
+	Schema.Literal('omg_site_open'),
+	Schema.Literal('deploylint_site_open'),
+	Schema.Literal('resume_download')
 );
 
 const NonEmptyTrimmedString = Schema.Trim.pipe(Schema.minLength(1));

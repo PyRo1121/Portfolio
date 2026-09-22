@@ -36,8 +36,12 @@ export type TelemetryTotals = {
 	readonly portfolioActions: number;
 	readonly portfolioSessions: number;
 	readonly featuredOmgOpens: number;
+	readonly featuredDeploylintOpens: number;
 	readonly featuredWeeknoteOpens: number;
 	readonly liveEvidenceOpens: number;
+	readonly omgSiteOpens: number;
+	readonly deploylintSiteOpens: number;
+	readonly resumeDownloads: number;
 	readonly errorCount: number;
 	readonly lastRecordedAt: string | null;
 };
@@ -58,8 +62,12 @@ export type TelemetryView = {
 	readonly portfolioActions: number;
 	readonly portfolioSessions: number;
 	readonly featuredOmgOpens: number;
+	readonly featuredDeploylintOpens: number;
 	readonly featuredWeeknoteOpens: number;
 	readonly liveEvidenceOpens: number;
+	readonly omgSiteOpens: number;
+	readonly deploylintSiteOpens: number;
+	readonly resumeDownloads: number;
 	readonly errorCount: number;
 	readonly paths: ReadonlyArray<TelemetryBar>;
 	readonly workspaces: ReadonlyArray<TelemetryBar>;
@@ -164,8 +172,12 @@ export function createTelemetryView(
 		portfolioActions: totals.portfolioActions,
 		portfolioSessions: totals.portfolioSessions,
 		featuredOmgOpens: totals.featuredOmgOpens,
+		featuredDeploylintOpens: totals.featuredDeploylintOpens,
 		featuredWeeknoteOpens: totals.featuredWeeknoteOpens,
 		liveEvidenceOpens: totals.liveEvidenceOpens,
+		omgSiteOpens: totals.omgSiteOpens,
+		deploylintSiteOpens: totals.deploylintSiteOpens,
+		resumeDownloads: totals.resumeDownloads,
 		errorCount: totals.errorCount,
 		paths: top(paths, 8),
 		workspaces: top(workspaces, 8),

@@ -69,7 +69,7 @@ describe('public SEO copy', () => {
 		expect(PUBLIC_AVAILABILITY_LINE).toBe(
 			'Open to IT support, cloud operations, junior systems, and software opportunities.'
 		);
-		expect(PUBLIC_RESUME_LINE).toBe('Résumé available on request.');
+		expect(PUBLIC_RESUME_LINE).toBe('Download one-page résumé (PDF)');
 	});
 
 	it('keeps the public sitemap on crawlable URLs only', () => {

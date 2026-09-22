@@ -34,8 +34,12 @@ const TelemetryTotalsRowSchema = Schema.Struct({
 	portfolio_actions: Schema.Number,
 	portfolio_sessions: Schema.Number,
 	featured_omg_opens: Schema.Number,
+	featured_deploylint_opens: Schema.Number,
 	featured_weeknote_opens: Schema.Number,
 	live_evidence_opens: Schema.Number,
+	omg_site_opens: Schema.Number,
+	deploylint_site_opens: Schema.Number,
+	resume_downloads: Schema.Number,
 	error_count: Schema.Number,
 	last_recorded_at: Schema.NullOr(Schema.String)
 });
@@ -78,8 +82,12 @@ export function telemetryTotalsFromRow(
 		portfolioActions: row.portfolio_actions,
 		portfolioSessions: row.portfolio_sessions,
 		featuredOmgOpens: row.featured_omg_opens,
+		featuredDeploylintOpens: row.featured_deploylint_opens,
 		featuredWeeknoteOpens: row.featured_weeknote_opens,
 		liveEvidenceOpens: row.live_evidence_opens,
+		omgSiteOpens: row.omg_site_opens,
+		deploylintSiteOpens: row.deploylint_site_opens,
+		resumeDownloads: row.resume_downloads,
 		errorCount: row.error_count,
 		lastRecordedAt: row.last_recorded_at
 	};
@@ -264,8 +272,12 @@ export function loadTelemetryEvents(
 						COALESCE(SUM(CASE WHEN event_type = 'portfolio_action' THEN 1 ELSE 0 END), 0) AS portfolio_actions,
 						COUNT(DISTINCT CASE WHEN event_type = 'portfolio_action' THEN session_hash END) AS portfolio_sessions,
 						COALESCE(SUM(CASE WHEN event_type = 'portfolio_action' AND metric_name = 'featured_omg_open' THEN 1 ELSE 0 END), 0) AS featured_omg_opens,
+						COALESCE(SUM(CASE WHEN event_type = 'portfolio_action' AND metric_name = 'featured_deploylint_open' THEN 1 ELSE 0 END), 0) AS featured_deploylint_opens,
 						COALESCE(SUM(CASE WHEN event_type = 'portfolio_action' AND metric_name = 'featured_weeknote_open' THEN 1 ELSE 0 END), 0) AS featured_weeknote_opens,
 						COALESCE(SUM(CASE WHEN event_type = 'portfolio_action' AND metric_name = 'live_evidence_open' THEN 1 ELSE 0 END), 0) AS live_evidence_opens,
+						COALESCE(SUM(CASE WHEN event_type = 'portfolio_action' AND metric_name = 'omg_site_open' THEN 1 ELSE 0 END), 0) AS omg_site_opens,
+						COALESCE(SUM(CASE WHEN event_type = 'portfolio_action' AND metric_name = 'deploylint_site_open' THEN 1 ELSE 0 END), 0) AS deploylint_site_opens,
+						COALESCE(SUM(CASE WHEN event_type = 'portfolio_action' AND metric_name = 'resume_download' THEN 1 ELSE 0 END), 0) AS resume_downloads,
 						COALESCE(SUM(CASE WHEN event_type = 'error' THEN 1 ELSE 0 END), 0) AS error_count,
 						MAX(recorded_at) AS last_recorded_at
 					 FROM telemetry_events
