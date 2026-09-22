@@ -5,9 +5,10 @@ export type PublicCaseStudyEvidence = {
 };
 
 export type PublicCaseStudy = {
-	readonly slug: 'omg';
+	readonly slug: 'omg' | 'deploylint';
 	readonly eyebrow: string;
 	readonly title: string;
+	readonly websiteUrl: string;
 	readonly summary: string;
 	readonly problem: string;
 	readonly work: string;
@@ -15,23 +16,24 @@ export type PublicCaseStudy = {
 	readonly result: string;
 	readonly reflection: string;
 	readonly tools: ReadonlyArray<string>;
-	readonly evidence: ReadonlyArray<PublicCaseStudyEvidence>;
+	readonly evidence: readonly [PublicCaseStudyEvidence, ...PublicCaseStudyEvidence[]];
 };
 
 export const PUBLIC_CASE_STUDIES = [
 	{
 		slug: 'omg',
 		eyebrow: 'Case study · OMG',
-		title: 'One interface for tools that don’t agree.',
+		title: 'One command for the whole development environment.',
+		websiteUrl: 'https://getomg.xyz/',
 		summary:
-			'OMG is a Rust CLI I started after getting tired of switching commands and mental models every time a project crossed from system packages into language runtimes.',
+			'OMG is a Rust CLI that brings system packages, language runtimes, developer tools, project tasks, and security evidence into one workflow across Linux and Apple silicon macOS.',
 		problem:
 			'A normal development setup can involve a system package manager, an AUR helper, and separate tools for Node, Python, Rust, Ruby, or Java. Each one has its own commands, configuration, and update path. I wanted to see how far one honest interface could reduce that friction without hiding the platform underneath.',
-		work: 'I built the core in Rust and separated the command-line interface, package backends, runtime handling, daemon, and release tooling. The repository also contains benchmark harnesses, integration tests, architecture notes, security documentation, and installers. I kept the native package managers in the loop rather than inventing a new package format.',
+		work: 'I built the CLI in Rust around native package backends, runtime management, task discovery, and vulnerability evidence. An optional daemon keeps derived indexes warm, while ordinary commands still work directly. The repository includes integration tests, security boundaries, release tooling, and documentation. OMG keeps the platform’s package manager in the loop rather than inventing a new package format.',
 		difficulty:
 			'The hard part is not parsing another command. Package managers disagree about names, privileges, dependency behavior, transactions, and what a successful operation means. Supporting more than one platform forced me to make those differences explicit and to learn where a shared abstraction helps—and where it starts lying.',
 		result:
-			'The public repository now has a tagged release, downloadable artifacts, documented architecture, and code that a reviewer can inspect. Some surfaces are still evolving, so I would rather point to the implementation and release records than claim every platform or workflow is equally complete.',
+			'OMG is a public beta with tagged releases, downloadable artifacts, a live documentation site, and inspectable source. Support differs by platform, so the release notes and platform table are the best way to check a specific workflow.',
 		reflection:
 			'OMG taught me that ambitious tooling becomes credible through boundaries, tests, release discipline, and accurate documentation—not through a longer feature list.',
 		tools: [
@@ -45,24 +47,64 @@ export const PUBLIC_CASE_STUDIES = [
 		evidence: [
 			{
 				label: 'Source repository',
-				href: 'https://github.com/PyRo1121/omg',
+				href: 'https://github.com/omg-cli/omg',
 				note: 'Rust source, tests, documentation, and commit history.'
 			},
 			{
 				label: 'Current release',
-				href: 'https://github.com/PyRo1121/omg/releases/latest',
+				href: 'https://github.com/omg-cli/omg/releases/latest',
 				note: 'Tagged release and published platform artifacts.'
 			},
 			{
 				label: 'Architecture notes',
-				href: 'https://github.com/PyRo1121/omg/blob/main/docs/architecture.md',
+				href: 'https://github.com/omg-cli/omg/blob/main/docs/architecture.md',
 				note: 'The current repository architecture and subsystem boundaries.'
+			},
+			{
+				label: 'Product and documentation',
+				href: 'https://getomg.xyz/',
+				note: 'Public overview, installation path, and platform documentation.'
+			}
+		]
+	},
+	{
+		slug: 'deploylint',
+		eyebrow: 'Case study · DeployLint',
+		title: 'CI/CD setup that begins with the repository.',
+		websiteUrl: 'https://deploylint.com/',
+		summary:
+			'DeployLint inspects a GitHub repository, previews a tailored GitHub Actions pipeline, and opens a setup pull request for human review. It also makes production deployment decisions traceable.',
+		problem:
+			'A developer can ship an application before they know how to choose CI checks, lockfile installs, permissions, secrets, environments, and deployment gates. Copying a generic workflow can leave critical assumptions invisible. I wanted the setup to start from what the repository actually contains and explain what still needs a human decision.',
+		work: 'I built a repository inspection and planning flow that derives a versioned pipeline from detected project evidence and explicit preferences. It previews generated workflow files and credential requirements, then writes an isolated setup branch and opens a pull request. The product also evaluates protected deployments and records decisions tied to repository, commit, and policy evidence.',
+		difficulty:
+			'The difficult part is refusing to guess. A repository can contain several applications, ambiguous lockfiles, or unsupported deployment targets. DeployLint must explain those boundaries, keep pull request jobs away from production credentials, and never let an automated author approve its own deployment.',
+		result:
+			'The public product offers a repository scan and setup flow, explains its deployment protection model, and publishes practical CI/CD guides. The implementation repository is private; the links below show the live product and its public behavior rather than claiming public source access.',
+		reflection:
+			'DeployLint made me treat the generated pull request as an explanation and review record, not just a YAML delivery mechanism.',
+		tools: ['TypeScript', 'SvelteKit', 'GitHub Apps', 'GitHub Actions', 'Cloudflare Workers'],
+		evidence: [
+			{
+				label: 'Live product',
+				href: 'https://deploylint.com/',
+				note: 'Public setup journey and deployment protection model.'
+			},
+			{
+				label: 'GitHub Actions guide',
+				href: 'https://deploylint.com/guides/github-actions-setup',
+				note: 'The concrete checks and boundaries behind the generated setup.'
+			},
+			{
+				label: 'GitHub App',
+				href: 'https://github.com/apps/deploylint',
+				note: 'Public GitHub integration entry point.'
 			}
 		]
 	}
 ] as const satisfies ReadonlyArray<PublicCaseStudy>;
 
-export const publicCaseStudyPaths = ['/work/omg'] as const;
+export const publicCaseStudyPaths = ['/work/omg', '/work/deploylint'] as const;
 
 export function publicCaseStudyFor(slug: PublicCaseStudy['slug']): PublicCaseStudy {
 	const study = PUBLIC_CASE_STUDIES.find((candidate) => candidate.slug === slug);

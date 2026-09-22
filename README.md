@@ -1,18 +1,17 @@
 # Weeknote
 
-Weeknote is Olen Latham’s public engineering portfolio and evidence dashboard. It connects GitHub activity to delivery records, deployments, Cloudflare infrastructure, and explicit data limits instead of reducing the work to a contribution count or synthetic score.
+Weeknote powers Olen Latham’s public portfolio and a separate owner-only engineering evidence workspace. The public site highlights OMG and DeployLint through project stories and verified destinations. The owner workspace connects GitHub activity to delivery records, deployments, and Cloudflare infrastructure.
 
 Live at **[latham.cloud](https://latham.cloud)**.
 
 ## Public portfolio
 
 - **[Portfolio](https://latham.cloud)** — Olen’s customer-service-to-technology story, selected work, live evidence summary, and direct contact paths.
-- **[Live evidence](https://latham.cloud/evidence)** — current GitHub activity, delivery outcomes, workflow runs, repositories, and verified project mappings.
 - **[About Olen](https://latham.cloud/about)** — the complete career-transition story and current role interests.
-- **[OMG case study](https://latham.cloud/work/omg)** — the motivation, boundaries, and public evidence behind a Rust package and runtime management CLI.
-- **[Weeknote case study](https://latham.cloud/work/weeknote)** — why the evidence dashboard exists and how its model was designed.
+- **[OMG case study](https://latham.cloud/work/omg)** — the design and public evidence behind a Rust development-environment CLI; [product site](https://getomg.xyz/) and [source](https://github.com/omg-cli/omg).
+- **[DeployLint case study](https://latham.cloud/work/deploylint)** — repository-aware GitHub Actions setup and deployment controls; [live product](https://deploylint.com/). The implementation repository is private.
 
-The public evidence dashboard includes:
+The owner evidence workspace includes:
 
 - **Today / Week** — commits, additions, deletions, and activity rhythm presented in the viewer’s local timezone.
 - **Delivery** — authored and maintainer outcomes, automated updates, releases, and GitHub Actions workflow runs with distinct attribution.

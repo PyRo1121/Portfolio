@@ -7,7 +7,7 @@
 		LinkedinLogoIcon as LinkedinLogo
 	} from 'phosphor-svelte';
 	import { publicCaseStudyFor } from '$lib/domain/public-case-study';
-	import { SHOWCASE_PROJECTS } from '$lib/domain/showcase';
+	import { DEPLOYLINT_PROJECT, OMG_PROJECT } from '$lib/domain/showcase';
 	import {
 		homeSeo,
 		jsonLdScriptTag,
@@ -16,17 +16,18 @@
 		PUBLIC_CONTACT_MAILTO,
 		PUBLIC_GITHUB_URL,
 		PUBLIC_LINKEDIN_URL,
-		PUBLIC_RESUME_LINE,
-		PUBLIC_SOCIAL_IMAGE_URL
+		PUBLIC_RESUME_LINE
 	} from '$lib/domain/public-seo';
 	import { loadClientTelemetry } from '$lib/telemetry/telemetry-gate';
 	import type { ClientTelemetry } from '$lib/telemetry/client-telemetry';
 
 	const omg = publicCaseStudyFor('omg');
+	const deploylint = publicCaseStudyFor('deploylint');
 	let clientTelemetry = $state<ClientTelemetry | null>(null);
 	loadClientTelemetry().then((loaded) => (clientTelemetry = loaded));
 	const profilePhotoUrl = asset('/portrait.webp');
 	const omgImage = asset('/portfolio/omg-landing.webp');
+	const deploylintImage = asset('/portfolio/deploylint-preview.png');
 </script>
 
 <svelte:head>
@@ -41,22 +42,16 @@
 	<meta property="og:title" content={homeSeo.title} />
 	<meta property="og:description" content={homeSeo.description} />
 	<meta property="og:url" content={homeSeo.canonical} />
-	<meta property="og:image" content={PUBLIC_SOCIAL_IMAGE_URL} />
-	<meta property="og:image:type" content="image/png" />
-	<meta property="og:image:width" content="1200" />
-	<meta property="og:image:height" content="630" />
-	<meta
-		property="og:image:alt"
-		content="Olen Latham - developer tools, cloud systems, and technical support"
-	/>
+	<meta property="og:image" content={homeSeo.image.url} />
+	<meta property="og:image:type" content={homeSeo.image.type} />
+	<meta property="og:image:width" content={homeSeo.image.width.toString()} />
+	<meta property="og:image:height" content={homeSeo.image.height.toString()} />
+	<meta property="og:image:alt" content={homeSeo.image.alt} />
 	<meta name="twitter:card" content="summary_large_image" />
 	<meta name="twitter:title" content={homeSeo.title} />
 	<meta name="twitter:description" content={homeSeo.description} />
-	<meta name="twitter:image" content={PUBLIC_SOCIAL_IMAGE_URL} />
-	<meta
-		name="twitter:image:alt"
-		content="Olen Latham - developer tools, cloud systems, and technical support"
-	/>
+	<meta name="twitter:image" content={homeSeo.image.url} />
+	<meta name="twitter:image:alt" content={homeSeo.image.alt} />
 	<!-- JSON-LD is serialized from local constants, not untrusted input. -->
 	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 	{@html jsonLdScriptTag(homeSeo.jsonLd)}
@@ -88,14 +83,15 @@
 	<main id="portfolio-content" tabindex="-1">
 		<section class="hero" aria-labelledby="portfolio-heading">
 			<div class="hero-copy">
-				<p class="hello">Support-minded software and systems</p>
-				<h1 id="portfolio-heading">I turn technical friction into a clear next step.</h1>
+				<p class="hello">Developer tools / CI/CD systems</p>
+				<h1 id="portfolio-heading">I build tools that make complex work clearer.</h1>
 				<p class="hero-summary">
-					Rust tools, Svelte applications, Cloudflare infrastructure, and the debugging work between
-					them—built to be understandable, testable, and useful in production.
+					OMG brings packages and runtimes into one workflow. DeployLint turns a repository into a
+					reviewed CI/CD setup. Both make the path from an idea to production easier to inspect and
+					trust.
 				</p>
 				<div class="hero-actions">
-					<a class="primary-action" href="#work">See what I’ve built</a>
+					<a class="primary-action" href="#work">Explore OMG and DeployLint</a>
 					<a
 						href={PUBLIC_CONTACT_MAILTO}
 						rel="external"
@@ -115,54 +111,13 @@
 			</figure>
 		</section>
 
-		<section id="work" class="showcase" aria-labelledby="showcase-heading">
-			<div>
-				<span>Selected projects</span>
-				<h2 id="showcase-heading">Working software, with the source one click away.</h2>
-			</div>
-			<ul class="showcase-grid">
-				{#each SHOWCASE_PROJECTS as project (project.name)}
-					<li class="showcase-card">
-						<div class="showcase-head">
-							<strong>{project.name}</strong>
-							<span class="showcase-topics"
-								>{#each project.topics as topic, index (topic)}{#if index > 0}
-										·
-									{/if}{topic}{/each}</span
-							>
-						</div>
-						<p>{project.tagline}</p>
-						<div class="showcase-links">
-							{#if project.demoUrl}
-								<a
-									href={project.demoUrl}
-									target="_blank"
-									rel="external noreferrer"
-									onclick={() => clientTelemetry?.recordPortfolioAction('live_evidence_open')}
-									>Open live demo <ArrowUpRight size={14} weight="bold" /></a
-								>
-							{/if}
-							{#if project.repoUrl}
-								<a
-									href={project.repoUrl}
-									target="_blank"
-									rel="external noreferrer"
-									onclick={() => clientTelemetry?.recordPortfolioAction('featured_omg_open')}
-									><GithubLogo size={14} weight="fill" /> Source</a
-								>
-							{/if}
-						</div>
-					</li>
-				{/each}
-			</ul>
-		</section>
-
 		<section id="work" class="selected-work" aria-labelledby="work-heading">
 			<header>
-				<h2 id="work-heading">One operating principle: remove the friction.</h2>
+				<p class="section-label">Selected work</p>
+				<h2 id="work-heading">Built for the places where development gets stuck.</h2>
 				<p>
-					OMG simplifies fragmented tooling. The case study shows the problem, the decisions, and
-					the evidence.
+					Two different products, each with a working site and a deeper account of the decisions
+					behind it.
 				</p>
 			</header>
 
@@ -182,17 +137,53 @@
 					/>
 				</a>
 				<div class="project-copy">
-					<p class="project-kind">OMG / Rust CLI</p>
-					<h3>{omg.title}</h3>
-					<p>
-						A Rust CLI that gives package managers and language runtimes one predictable command
-						surface—without hiding platform-specific behavior.
-					</p>
-					<a
-						href={resolve('/work/omg')}
-						onclick={() => clientTelemetry?.recordPortfolioAction('featured_omg_open')}
-						>Read the OMG case study <ArrowUpRight size={15} weight="bold" /></a
-					>
+					<p class="project-kind">01 / Rust CLI / public beta</p>
+					<h3>OMG</h3>
+					<h4>{omg.title}</h4>
+					<p>{OMG_PROJECT.tagline}</p>
+					<div class="project-links">
+						<a
+							href={resolve('/work/omg')}
+							onclick={() => clientTelemetry?.recordPortfolioAction('featured_omg_open')}
+							>Read the case study <ArrowUpRight size={15} weight="bold" /></a
+						>
+						<a href={OMG_PROJECT.demoUrl} target="_blank" rel="external noopener"
+							>Visit OMG <ArrowUpRight size={15} weight="bold" /></a
+						>
+						<a href={OMG_PROJECT.repoUrl} target="_blank" rel="external noopener"
+							><GithubLogo size={15} weight="fill" /> Source</a
+						>
+					</div>
+				</div>
+			</article>
+
+			<article class="project project-deploylint">
+				<a
+					class="project-image"
+					href={resolve('/work/deploylint')}
+					aria-label="Read the DeployLint case study"
+				>
+					<img
+						src={deploylintImage}
+						alt="DeployLint preview showing its repository-specific GitHub Actions setup"
+						width="1440"
+						height="900"
+						loading="lazy"
+					/>
+				</a>
+				<div class="project-copy">
+					<p class="project-kind">02 / TypeScript / CI/CD</p>
+					<h3>DeployLint</h3>
+					<h4>{deploylint.title}</h4>
+					<p>{DEPLOYLINT_PROJECT.tagline}</p>
+					<div class="project-links">
+						<a href={resolve('/work/deploylint')}
+							>Read the case study <ArrowUpRight size={15} weight="bold" /></a
+						>
+						<a href={DEPLOYLINT_PROJECT.demoUrl} target="_blank" rel="external noopener"
+							>Visit DeployLint <ArrowUpRight size={15} weight="bold" /></a
+						>
+					</div>
 				</div>
 			</article>
 		</section>
@@ -348,8 +339,7 @@
 	}
 	.hello,
 	.project-kind,
-	.section-label,
-	.showcase > div:first-child > span {
+	.section-label {
 		margin: 0;
 		color: var(--accent);
 		font:
@@ -452,73 +442,7 @@
 		font-size: 0.72rem;
 		line-height: 1.5;
 	}
-	.showcase {
-		padding: 1.35rem 0;
-		border-top: 1px solid var(--line);
-		border-bottom: 1px solid var(--line);
-	}
-	.showcase h2 {
-		margin: 0.4rem 0 0;
-		font-size: 1.15rem;
-		letter-spacing: -0.03em;
-	}
-	.showcase-grid {
-		display: grid;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-		gap: 1rem;
-		margin: 1.6rem 0 0;
-		padding: 0;
-		list-style: none;
-	}
-	.showcase-card {
-		display: grid;
-		gap: 0.55rem;
-		padding: 1rem 1.1rem;
-		border: 1px solid var(--line);
-		background: var(--surface);
-	}
-	.showcase-head {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: baseline;
-		justify-content: space-between;
-		gap: 0.45rem;
-	}
-	.showcase-head strong {
-		font-size: 0.95rem;
-		font-weight: 680;
-		letter-spacing: -0.02em;
-	}
-	.showcase-topics {
-		color: var(--faint);
-		font:
-			500 0.55rem/1.4 'JetBrains Mono Variable',
-			monospace;
-		letter-spacing: 0.05em;
-		text-transform: uppercase;
-	}
-	.showcase-card > p {
-		margin: 0;
-		color: var(--muted);
-		font-size: 0.78rem;
-		line-height: 1.55;
-	}
-	.showcase-links {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 1.1rem;
-	}
-	.showcase-links a {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.4rem;
-		color: var(--accent);
-		font-size: 0.72rem;
-		font-weight: 650;
-		text-decoration: none;
-		white-space: nowrap;
-	}
-	.project-copy > a,
+	.project-links a,
 	.capabilities a {
 		display: inline-flex;
 		align-items: center;
@@ -531,6 +455,7 @@
 	}
 	.selected-work {
 		padding: clamp(5rem, 9vw, 8rem) 0;
+		border-top: 1px solid var(--line);
 	}
 	.selected-work > header {
 		max-width: 46rem;
@@ -545,7 +470,7 @@
 		letter-spacing: -0.055em;
 		text-wrap: balance;
 	}
-	.selected-work > header p {
+	.selected-work > header p:not(.section-label) {
 		max-width: 42rem;
 		margin: 1.25rem 0 0;
 		color: var(--muted);
@@ -559,6 +484,10 @@
 		gap: clamp(2.5rem, 6vw, 6rem);
 		padding: clamp(3.8rem, 7vw, 6rem) 0;
 		border-bottom: 1px solid var(--line);
+	}
+	.project-deploylint .project-image {
+		order: 2;
+		border-top-color: #c9f470;
 	}
 	.project-image {
 		display: block;
@@ -591,6 +520,13 @@
 		letter-spacing: -0.05em;
 		text-wrap: balance;
 	}
+	.project-copy h4 {
+		margin: 0.85rem 0 0;
+		font-size: clamp(1.15rem, 1.8vw, 1.5rem);
+		font-weight: 580;
+		line-height: 1.25;
+		letter-spacing: -0.025em;
+	}
 	.project-copy > p:not(.project-kind) {
 		margin: 1.25rem 0 0;
 		color: var(--muted);
@@ -598,7 +534,10 @@
 		line-height: 1.6;
 		text-wrap: pretty;
 	}
-	.project-copy > a {
+	.project-links {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.8rem 1.25rem;
 		margin-top: 1.5rem;
 	}
 	.capabilities {
@@ -696,11 +635,6 @@
 		outline: 2px solid var(--accent);
 		outline-offset: 4px;
 	}
-	@media (max-width: 900px) {
-		.showcase-grid {
-			grid-template-columns: 1fr;
-		}
-	}
 	@media (max-width: 760px) {
 		.portfolio-page {
 			width: min(100% - 2rem, 40rem);
@@ -723,13 +657,9 @@
 			width: min(100%, 20rem);
 			justify-self: start;
 		}
-		.showcase,
 		.project,
 		.capabilities,
 		.closing {
-			grid-template-columns: 1fr;
-		}
-		.showcase-grid {
 			grid-template-columns: 1fr;
 		}
 		.selected-work {
@@ -738,6 +668,9 @@
 		.project {
 			gap: 2.25rem;
 			padding: 3.5rem 0;
+		}
+		.project-deploylint .project-image {
+			order: 0;
 		}
 		.capabilities,
 		.closing {
@@ -761,7 +694,7 @@
 		}
 		.hero-actions {
 			display: grid;
-			grid-template-columns: 1fr 1fr;
+			grid-template-columns: 1fr;
 		}
 		.hero-actions a {
 			padding: 0 0.6rem;

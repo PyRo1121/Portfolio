@@ -6,16 +6,28 @@ import {
 } from './public-case-study';
 
 describe('public recruiter case studies', () => {
-	it('publishes stable routes for OMG', () => {
-		expect(publicCaseStudyPaths).toEqual(['/work/omg']);
-		expect(PUBLIC_CASE_STUDIES.map((study: PublicCaseStudy) => study.slug)).toEqual(['omg']);
+	it('publishes stable routes for both featured projects', () => {
+		expect(publicCaseStudyPaths).toEqual(['/work/omg', '/work/deploylint']);
+		expect(PUBLIC_CASE_STUDIES.map((study: PublicCaseStudy) => study.slug)).toEqual([
+			'omg',
+			'deploylint'
+		]);
 	});
 
 	it('keeps release evidence on a stable canonical URL', () => {
 		const omg = PUBLIC_CASE_STUDIES.find((study) => study.slug === 'omg');
 		expect(omg?.evidence).toContainEqual(
-			expect.objectContaining({ href: 'https://github.com/PyRo1121/omg/releases/latest' })
+			expect.objectContaining({ href: 'https://github.com/omg-cli/omg/releases/latest' })
 		);
+	});
+
+	it('points DeployLint readers to public product evidence without a private source link', () => {
+		const deploylint = PUBLIC_CASE_STUDIES.find((study) => study.slug === 'deploylint');
+		expect(deploylint?.evidence.map((item) => item.href)).toEqual([
+			'https://deploylint.com/',
+			'https://deploylint.com/guides/github-actions-setup',
+			'https://github.com/apps/deploylint'
+		]);
 	});
 
 	it('uses specific problem, work, difficulty, result, and evidence sections', () => {

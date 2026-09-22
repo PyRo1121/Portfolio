@@ -38,7 +38,22 @@ export type PublicSeoPage = {
 	readonly title: string;
 	readonly description: string;
 	readonly canonical: string;
+	readonly image: {
+		readonly url: string;
+		readonly type: 'image/png';
+		readonly width: number;
+		readonly height: number;
+		readonly alt: string;
+	};
 	readonly jsonLd: string;
+};
+
+const portfolioImage: PublicSeoPage['image'] = {
+	url: PUBLIC_SOCIAL_IMAGE_URL,
+	type: 'image/png',
+	width: 1200,
+	height: 630,
+	alt: 'Olen Latham — creator of OMG and DeployLint'
 };
 
 function personNode(): Record<string, unknown> {
@@ -51,7 +66,10 @@ function personNode(): Record<string, unknown> {
 		jobTitle: 'Software developer',
 		email: 'mailto:olen@latham.cloud',
 		knowsAbout: [...PUBLIC_SEO_SKILLS],
-		sameAs: [PUBLIC_GITHUB_URL, PUBLIC_LINKEDIN_URL]
+		sameAs: [PUBLIC_GITHUB_URL, PUBLIC_LINKEDIN_URL],
+		subjectOf: publicCaseStudyPaths.map((path) => ({
+			'@id': `${PUBLIC_SITE_ORIGIN}${path}#article`
+		}))
 	};
 }
 
@@ -64,10 +82,11 @@ function serializeJsonLd(graph: ReadonlyArray<Record<string, unknown>>): string 
 
 /** Home and about copy for search results. Finance is intentionally absent. */
 export const homeSeo: PublicSeoPage = {
-	title: 'Olen Latham — Developer tools, cloud systems, and technical support',
+	title: 'Olen Latham — Developer behind OMG and DeployLint',
 	description:
-		'Olen Latham builds support-minded developer tools and cloud systems with Rust, TypeScript, Svelte, and Cloudflare. Explore OMG, DeployLint, and the projects behind them.',
+		'Olen Latham builds OMG, a Rust CLI for packages and runtimes, and DeployLint, a GitHub Actions CI/CD setup and deployment protection product. Explore both projects.',
 	canonical: `${PUBLIC_SITE_ORIGIN}/`,
+	image: portfolioImage,
 	jsonLd: serializeJsonLd([
 		{
 			'@type': 'WebSite',
@@ -75,7 +94,7 @@ export const homeSeo: PublicSeoPage = {
 			url: `${PUBLIC_SITE_ORIGIN}/`,
 			name: 'Olen Latham — Portfolio',
 			description:
-				'Portfolio for Olen Latham: support-minded developer tools, cloud systems, selected work, and live engineering evidence.',
+				'Portfolio for Olen Latham, creator of OMG and DeployLint: developer tools, CI/CD systems, and project case studies.',
 			inLanguage: 'en',
 			publisher: { '@id': PUBLIC_PERSON_ID }
 		},
@@ -88,7 +107,17 @@ export const homeSeo: PublicSeoPage = {
 			about: { '@id': PUBLIC_PERSON_ID },
 			mainEntity: { '@id': PUBLIC_PERSON_ID }
 		},
-		personNode()
+		personNode(),
+		{
+			'@type': 'ItemList',
+			'@id': `${PUBLIC_SITE_ORIGIN}/#selected-work`,
+			name: 'Selected projects',
+			itemListElement: publicCaseStudyPaths.map((path, index) => ({
+				'@type': 'ListItem',
+				position: index + 1,
+				url: `${PUBLIC_SITE_ORIGIN}${path}`
+			}))
+		}
 	])
 };
 
@@ -97,6 +126,7 @@ export const aboutSeo: PublicSeoPage = {
 	description:
 		'Olen Latham works in customer service and builds developer tools with Rust, TypeScript, Svelte, and Cloudflare. Read the story behind OMG and DeployLint.',
 	canonical: `${PUBLIC_SITE_ORIGIN}/about`,
+	image: portfolioImage,
 	jsonLd: serializeJsonLd([
 		{
 			'@type': 'AboutPage',
@@ -115,10 +145,24 @@ export const aboutSeo: PublicSeoPage = {
 export function caseStudySeo(study: PublicCaseStudy): PublicSeoPage {
 	const canonical = `${PUBLIC_SITE_ORIGIN}/work/${study.slug}`;
 	const section = study.eyebrow.replace('Case study · ', '');
+	const isOmg = study.slug === 'omg';
 	return {
-		title: `${section} case study — Olen Latham`,
-		description: study.summary,
+		title: isOmg
+			? 'OMG: Rust package and runtime CLI — Olen Latham'
+			: 'DeployLint: GitHub Actions CI/CD setup — Olen Latham',
+		description: isOmg
+			? 'How I built OMG, a Rust CLI for packages, language runtimes, and security evidence. Explore the design, platform tradeoffs, live site, and source.'
+			: 'How I built DeployLint to inspect repositories, preview GitHub Actions workflows, and open reviewed setup pull requests. Explore the live product.',
 		canonical,
+		image: {
+			url: `${PUBLIC_SITE_ORIGIN}/portfolio/${isOmg ? 'omg' : 'deploylint'}-social.png`,
+			type: 'image/png',
+			width: 1200,
+			height: 630,
+			alt: isOmg
+				? 'OMG — Rust package and runtime management CLI'
+				: 'DeployLint — GitHub Actions CI/CD setup and deployment protection'
+		},
 		jsonLd: serializeJsonLd([
 			{
 				'@type': 'Article',
@@ -129,9 +173,30 @@ export function caseStudySeo(study: PublicCaseStudy): PublicSeoPage {
 				inLanguage: 'en',
 				articleSection: section,
 				keywords: [...study.tools],
+				image: `${PUBLIC_SITE_ORIGIN}/portfolio/${isOmg ? 'omg' : 'deploylint'}-social.png`,
 				isPartOf: { '@id': `${PUBLIC_SITE_ORIGIN}/#website` },
 				author: { '@id': PUBLIC_PERSON_ID },
+				about: { '@id': `${canonical}#project` },
 				mainEntityOfPage: canonical
+			},
+			{
+				'@type': 'SoftwareApplication',
+				'@id': `${canonical}#project`,
+				name: section,
+				description: study.summary,
+				url: study.websiteUrl,
+				applicationCategory: 'DeveloperApplication',
+				operatingSystem: isOmg ? 'Linux, macOS' : 'Web',
+				creator: { '@id': PUBLIC_PERSON_ID },
+				...(isOmg ? { codeRepository: 'https://github.com/omg-cli/omg' } : {})
+			},
+			{
+				'@type': 'BreadcrumbList',
+				'@id': `${canonical}#breadcrumb`,
+				itemListElement: [
+					{ '@type': 'ListItem', position: 1, name: 'Portfolio', item: `${PUBLIC_SITE_ORIGIN}/` },
+					{ '@type': 'ListItem', position: 2, name: section, item: canonical }
+				]
 			},
 			personNode()
 		])
@@ -146,14 +211,12 @@ function locFor(path: (typeof publicSitemapPaths)[number]): string {
 
 /** XML sitemap for public URLs only. */
 export function renderPublicSitemapXml(): string {
-	const lastmod = new Date().toISOString().slice(0, 10);
 	return [
 		'<?xml version="1.0" encoding="UTF-8"?>',
 		'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
 		...publicSitemapPaths.flatMap((path) => [
 			'  <url>',
 			`    <loc>${locFor(path)}</loc>`,
-			`    <lastmod>${lastmod}</lastmod>`,
 			'  </url>'
 		]),
 		'</urlset>',

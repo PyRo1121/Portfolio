@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import { publicCaseStudyFor } from './public-case-study';
 import {
 	aboutSeo,
+	caseStudySeo,
 	homeSeo,
 	PUBLIC_AVAILABILITY_LINE,
 	PUBLIC_CONTACT_EMAIL,
@@ -40,12 +42,23 @@ describe('public SEO copy', () => {
 	});
 
 	it('uses the landing page to sell capability and the About page to explain the transition', () => {
-		expect(homeSeo.description).toContain(
-			'builds support-minded developer tools and cloud systems'
-		);
+		expect(homeSeo.title).toContain('OMG and DeployLint');
+		expect(homeSeo.description).toContain('GitHub Actions');
 		expect(homeSeo.description).not.toContain('customer-service');
 		expect(aboutSeo.title).toContain('From customer support to software and cloud systems');
 		expect(aboutSeo.description).toContain('OMG and DeployLint');
+	});
+
+	it('describes each project with a distinct search title and public product identity', () => {
+		const omg = caseStudySeo(publicCaseStudyFor('omg'));
+		const deploylint = caseStudySeo(publicCaseStudyFor('deploylint'));
+		expect(omg.title).toContain('Rust package and runtime CLI');
+		expect(deploylint.title).toContain('GitHub Actions CI/CD setup');
+		expect(omg.image.url).toBe('https://latham.cloud/portfolio/omg-social.png');
+		expect(deploylint.image.url).toBe('https://latham.cloud/portfolio/deploylint-social.png');
+		expect(omg.jsonLd).toContain('https://getomg.xyz/');
+		expect(deploylint.jsonLd).toContain('https://deploylint.com/');
+		expect(deploylint.jsonLd).not.toContain('https://github.com/PyRo1121/deploylint');
 	});
 
 	it('publishes one direct recruiter contact path and exact availability statement', () => {
@@ -60,14 +73,16 @@ describe('public SEO copy', () => {
 	});
 
 	it('keeps the public sitemap on crawlable URLs only', () => {
-		expect(publicSitemapPaths).toEqual(['/', '/about', '/work/omg']);
+		expect(publicSitemapPaths).toEqual(['/', '/about', '/work/omg', '/work/deploylint']);
 		const xml = renderPublicSitemapXml();
 		expect(xml).toContain('<loc>https://latham.cloud/</loc>');
 		expect(xml).toContain('<loc>https://latham.cloud/about</loc>');
 		expect(xml).toContain('<loc>https://latham.cloud/work/omg</loc>');
+		expect(xml).toContain('<loc>https://latham.cloud/work/deploylint</loc>');
 		expect(xml).not.toContain('/career/portfolio.md');
 		expect(xml).not.toContain('/owner');
 		expect(xml).not.toContain('/__warm');
+		expect(xml).not.toContain('<lastmod>');
 	});
 
 	it('points Person JSON-LD at the retained GitHub and LinkedIn identities only', () => {

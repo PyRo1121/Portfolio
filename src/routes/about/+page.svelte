@@ -14,8 +14,7 @@
 		PUBLIC_CONTACT_MAILTO,
 		PUBLIC_GITHUB_URL,
 		PUBLIC_LINKEDIN_URL,
-		PUBLIC_RESUME_LINE,
-		PUBLIC_SOCIAL_IMAGE_URL
+		PUBLIC_RESUME_LINE
 	} from '$lib/domain/public-seo';
 	import { loadClientTelemetry } from '$lib/telemetry/telemetry-gate';
 	import type { ClientTelemetry } from '$lib/telemetry/client-telemetry';
@@ -37,16 +36,16 @@
 	<meta property="og:title" content={aboutSeo.title} />
 	<meta property="og:description" content={aboutSeo.description} />
 	<meta property="og:url" content={aboutSeo.canonical} />
-	<meta property="og:image" content={PUBLIC_SOCIAL_IMAGE_URL} />
-	<meta property="og:image:type" content="image/png" />
-	<meta property="og:image:width" content="1200" />
-	<meta property="og:image:height" content="630" />
-	<meta property="og:image:alt" content="Olen Latham — software, systems, and cloud work" />
+	<meta property="og:image" content={aboutSeo.image.url} />
+	<meta property="og:image:type" content={aboutSeo.image.type} />
+	<meta property="og:image:width" content={aboutSeo.image.width.toString()} />
+	<meta property="og:image:height" content={aboutSeo.image.height.toString()} />
+	<meta property="og:image:alt" content={aboutSeo.image.alt} />
 	<meta name="twitter:card" content="summary_large_image" />
 	<meta name="twitter:title" content={aboutSeo.title} />
 	<meta name="twitter:description" content={aboutSeo.description} />
-	<meta name="twitter:image" content={PUBLIC_SOCIAL_IMAGE_URL} />
-	<meta name="twitter:image:alt" content="Olen Latham — software, systems, and cloud work" />
+	<meta name="twitter:image" content={aboutSeo.image.url} />
+	<meta name="twitter:image:alt" content={aboutSeo.image.alt} />
 	<!-- JSON-LD is serialized from local constants, not untrusted input. -->
 	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 	{@html jsonLdScriptTag(aboutSeo.jsonLd)}
@@ -110,7 +109,7 @@
 
 		<div class="project-grid">
 			<article>
-				<h3>Too many package managers</h3>
+				<h3>OMG: one development workflow</h3>
 				<p>
 					OMG started with a problem I kept running into: system packages and language runtimes all
 					came with different commands, configuration, and update paths. I wanted one tool I could
@@ -123,6 +122,21 @@
 				</p>
 				<a href={resolve('/work/omg')}>
 					Read the OMG case study <ArrowUpRight size={15} weight="bold" />
+				</a>
+			</article>
+			<article>
+				<h3>DeployLint: safer CI/CD setup</h3>
+				<p>
+					DeployLint started with another recurring problem: a working application does not mean its
+					GitHub Actions pipeline is ready for production. Permissions, lockfiles, secrets, and
+					review rules are easy to get wrong when they are copied from a generic example.
+				</p>
+				<p>
+					I built a repository-aware setup flow that previews the workflow and opens a pull request
+					for review. The product also makes protected deployment decisions traceable.
+				</p>
+				<a href={resolve('/work/deploylint')}>
+					Read the DeployLint case study <ArrowUpRight size={15} weight="bold" />
 				</a>
 			</article>
 		</div>
@@ -147,7 +161,7 @@
 	</section>
 
 	<footer>
-		<p>If you want to see how I work, start with the code and the live dashboard.</p>
+		<p>If you want to see how I work, start with the projects and case studies.</p>
 		<nav aria-label="Work links">
 			<a href={PUBLIC_GITHUB_URL} target="_blank" rel="external noreferrer">
 				<GithubLogo size={16} weight="fill" /> GitHub

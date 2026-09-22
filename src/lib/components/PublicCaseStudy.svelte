@@ -2,13 +2,7 @@
 	import { resolve } from '$app/paths';
 	import { ArrowUpRightIcon as ArrowUpRight } from 'phosphor-svelte';
 	import type { PublicCaseStudy } from '$lib/domain/public-case-study';
-	import {
-		PUBLIC_GITHUB_URL,
-		PUBLIC_SITE_ORIGIN,
-		PUBLIC_SOCIAL_IMAGE_URL,
-		caseStudySeo,
-		jsonLdScriptTag
-	} from '$lib/domain/public-seo';
+	import { PUBLIC_SITE_ORIGIN, caseStudySeo, jsonLdScriptTag } from '$lib/domain/public-seo';
 
 	type Props = {
 		readonly study: PublicCaseStudy;
@@ -22,23 +16,24 @@
 
 <svelte:head>
 	<title>{pageTitle}</title>
-	<meta name="description" content={study.summary} />
+	<meta name="description" content={seo.description} />
 	<link rel="canonical" href={canonical} />
 	<meta property="og:type" content="article" />
 	<meta property="og:site_name" content="latham.cloud" />
+	<meta property="og:locale" content="en_US" />
 	<meta property="og:title" content={pageTitle} />
-	<meta property="og:description" content={study.summary} />
+	<meta property="og:description" content={seo.description} />
 	<meta property="og:url" content={canonical} />
-	<meta property="og:image" content={PUBLIC_SOCIAL_IMAGE_URL} />
-	<meta property="og:image:type" content="image/png" />
-	<meta property="og:image:width" content="1200" />
-	<meta property="og:image:height" content="630" />
-	<meta property="og:image:alt" content="Olen Latham — software, systems, and cloud work" />
+	<meta property="og:image" content={seo.image.url} />
+	<meta property="og:image:type" content={seo.image.type} />
+	<meta property="og:image:width" content={seo.image.width.toString()} />
+	<meta property="og:image:height" content={seo.image.height.toString()} />
+	<meta property="og:image:alt" content={seo.image.alt} />
 	<meta name="twitter:card" content="summary_large_image" />
 	<meta name="twitter:title" content={pageTitle} />
-	<meta name="twitter:description" content={study.summary} />
-	<meta name="twitter:image" content={PUBLIC_SOCIAL_IMAGE_URL} />
-	<meta name="twitter:image:alt" content="Olen Latham — software, systems, and cloud work" />
+	<meta name="twitter:description" content={seo.description} />
+	<meta name="twitter:image" content={seo.image.url} />
+	<meta name="twitter:image:alt" content={seo.image.alt} />
 	<!-- JSON-LD is serialized from local constants, not untrusted input. -->
 	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 	{@html jsonLdScriptTag(seo.jsonLd)}
@@ -49,7 +44,9 @@
 <main id="case-study-content" class="case-study" tabindex="-1">
 	<nav class="topline" aria-label="Page navigation">
 		<a href={resolve('/')}><span aria-hidden="true">←</span> Portfolio</a>
-		<a href={`${PUBLIC_GITHUB_URL}/Portfolio`} target="_blank" rel="external noreferrer">Source</a>
+		<a href={study.evidence[0].href} target="_blank" rel="external noopener">
+			{study.slug === 'omg' ? 'Source' : 'Live product'}
+		</a>
 	</nav>
 
 	<header class="hero">
@@ -63,11 +60,18 @@
 				{/each}
 			</ul>
 		</div>
+		<div class="hero-links">
+			<a class="primary-link" href={study.websiteUrl} target="_blank" rel="external noopener">
+				Visit {study.slug === 'omg' ? 'OMG' : 'DeployLint'}
+				<ArrowUpRight size={16} weight="bold" />
+			</a>
+			<a href={`#${study.slug}-evidence`}>See the evidence ↓</a>
+		</div>
 	</header>
 
 	<article class="story">
 		<aside aria-label="Case study sections">
-			<span>{study.slug === 'omg' ? 'Developer tooling' : 'Public portfolio'}</span>
+			<span>{study.slug === 'omg' ? 'Developer tooling' : 'CI/CD product'}</span>
 			<p>A problem, the work, the difficult parts, and what exists today.</p>
 		</aside>
 		<div class="story-sections">
@@ -101,13 +105,21 @@
 		</header>
 		<div class="evidence-list">
 			{#each study.evidence as item (item.href)}
-				<a href={item.href} target="_blank" rel="external noreferrer">
+				<a href={item.href} target="_blank" rel="external noopener">
 					<span>{item.label}<ArrowUpRight size={15} weight="bold" /></span>
 					<small>{item.note}</small>
 				</a>
 			{/each}
 		</div>
 	</section>
+
+	<nav class="more-work" aria-label="More selected work">
+		<span>More selected work</span>
+		<a href={resolve(study.slug === 'omg' ? '/work/deploylint' : '/work/omg')}>
+			Explore the {study.slug === 'omg' ? 'DeployLint' : 'OMG'} case study
+			<ArrowUpRight size={15} weight="bold" />
+		</a>
+	</nav>
 
 	<footer>
 		<div>
@@ -151,6 +163,7 @@
 	}
 	.topline a,
 	.evidence a,
+	.more-work a,
 	footer a {
 		color: inherit;
 		text-decoration: none;
@@ -208,6 +221,31 @@
 			500 0.62rem/1.4 'JetBrains Mono Variable',
 			monospace;
 		list-style: none;
+	}
+	.hero-links {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.8rem 1.5rem;
+		margin-top: 2rem;
+	}
+	.hero-links a {
+		display: inline-flex;
+		min-height: 2.9rem;
+		align-items: center;
+		gap: 0.45rem;
+		color: #d8a54a;
+		font-size: 0.8rem;
+		font-weight: 650;
+		text-decoration: none;
+	}
+	.hero-links .primary-link {
+		padding: 0 1rem;
+		background: #d8a54a;
+		color: #0b0d0e;
+	}
+	.hero-links .primary-link:hover {
+		background: #e2b762;
 	}
 	.story {
 		display: grid;
@@ -315,6 +353,29 @@
 		font-size: 0.78rem;
 		line-height: 1.45;
 	}
+	.more-work {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+		padding: 1.5rem 0;
+		border-top: 1px solid rgb(231 232 225 / 16%);
+	}
+	.more-work span {
+		color: #808580;
+		font:
+			600 0.65rem/1.3 'JetBrains Mono Variable',
+			monospace;
+		text-transform: uppercase;
+	}
+	.more-work a {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		color: #d8a54a;
+		font-size: 0.82rem;
+		font-weight: 650;
+	}
 	footer {
 		display: flex;
 		align-items: center;
@@ -386,6 +447,10 @@
 			gap: 0.75rem;
 		}
 		footer {
+			align-items: flex-start;
+			flex-direction: column;
+		}
+		.more-work {
 			align-items: flex-start;
 			flex-direction: column;
 		}
