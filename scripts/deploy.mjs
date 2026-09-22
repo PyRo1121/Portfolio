@@ -1,7 +1,11 @@
 import { spawnSync } from 'node:child_process';
 
 function run(command, args) {
-	const result = spawnSync(command, args, { stdio: 'inherit' });
+	const result = spawnSync(command, args, {
+		stdio: 'inherit',
+		// npm and npx are .cmd shims on Windows, which require a shell.
+		shell: process.platform === 'win32'
+	});
 	if (result.error !== undefined) throw result.error;
 	if (result.status !== 0) {
 		throw new Error(`${command} ${args.join(' ')} failed with status ${String(result.status)}.`);
