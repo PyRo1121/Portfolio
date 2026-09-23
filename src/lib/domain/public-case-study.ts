@@ -10,6 +10,14 @@ export type PublicCaseStudyWorkflowStep = {
 	readonly outcome: string;
 };
 
+export type PublicCaseStudyVisual = {
+	readonly imagePath: string;
+	readonly alt: string;
+	readonly caption: string;
+	readonly pageUrl: string;
+	readonly linkLabel: string;
+};
+
 export type PublicCaseStudy = {
 	readonly slug: 'omg' | 'deploylint';
 	readonly eyebrow: string;
@@ -23,6 +31,7 @@ export type PublicCaseStudy = {
 	readonly reflection: string;
 	readonly workflowIntro: string;
 	readonly workflowSteps: readonly [PublicCaseStudyWorkflowStep, ...PublicCaseStudyWorkflowStep[]];
+	readonly visual: PublicCaseStudyVisual;
 	readonly tools: ReadonlyArray<string>;
 	readonly evidence: readonly [PublicCaseStudyEvidence, ...PublicCaseStudyEvidence[]];
 };
@@ -41,7 +50,7 @@ export const PUBLIC_CASE_STUDIES = [
 		difficulty:
 			'The hard part is not parsing another command. Package managers disagree about names, privileges, dependency behavior, transactions, and what a successful operation means. Supporting more than one platform forced me to make those differences explicit and to learn where a shared abstraction helps—and where it starts lying.',
 		result:
-			'OMG is a public beta with tagged releases, downloadable artifacts, a live documentation site, and inspectable source. Support differs by platform, so the release notes and platform table are the best way to check a specific workflow.',
+			'OMG ships as a public alpha. Its release page lists downloadable platform archives and verification steps, while the live CLI reference documents commands, native backends, and platform limits. The screenshot below shows that reference.',
 		reflection:
 			'OMG taught me that ambitious tooling becomes credible through boundaries, tests, release discipline, and accurate documentation—not through a longer feature list.',
 		workflowIntro:
@@ -68,6 +77,14 @@ export const PUBLIC_CASE_STUDIES = [
 				outcome: 'Inspect dependency vulnerability evidence without leaving the workflow.'
 			}
 		],
+		visual: {
+			imagePath: '/portfolio/omg-cli-docs.png',
+			alt: 'OMG CLI reference page describing commands and native package backends',
+			caption:
+				'Public CLI reference captured September 22, 2026. It documents the command interface and platform-specific backends.',
+			pageUrl: 'https://getomg.xyz/docs/cli',
+			linkLabel: 'Open the live CLI reference'
+		},
 		tools: [
 			'Rust',
 			'CLI design',
@@ -112,7 +129,7 @@ export const PUBLIC_CASE_STUDIES = [
 		difficulty:
 			'The difficult part is refusing to guess. A repository can contain several applications, ambiguous lockfiles, or unsupported deployment targets. DeployLint must explain those boundaries, keep pull request jobs away from production credentials, and never let an automated author approve its own deployment.',
 		result:
-			'The public product offers a repository scan and setup flow, explains its deployment protection model, and publishes practical CI/CD guides. The implementation repository is private; the links below show the live product and its public behavior rather than claiming public source access.',
+			'DeployLint has a live public setup page, GitHub App, and CI/CD guide. The setup page shows the steps from GitHub sign-in through repository connection and dashboard review. Repository assessment and pull request creation follow authentication.',
 		reflection:
 			'DeployLint made me treat the generated pull request as an explanation and review record, not just a YAML delivery mechanism.',
 		workflowIntro:
@@ -140,6 +157,14 @@ export const PUBLIC_CASE_STUDIES = [
 				outcome: 'Inspect the isolated branch and workflow changes before merging.'
 			}
 		],
+		visual: {
+			imagePath: '/portfolio/deploylint-start.png',
+			alt: 'DeployLint public setup page with GitHub sign-in and three setup steps',
+			caption:
+				'Public setup page captured September 22, 2026. The page explains sign-in, repository connection, and dashboard review.',
+			pageUrl: 'https://deploylint.com/start',
+			linkLabel: 'Open the live setup page'
+		},
 		tools: ['TypeScript', 'SvelteKit', 'GitHub Apps', 'GitHub Actions', 'Cloudflare Workers'],
 		evidence: [
 			{

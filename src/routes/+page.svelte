@@ -64,7 +64,7 @@
 	<header class="site-header">
 		<a class="wordmark" href={resolve('/')} aria-current="page">
 			<strong>Olen Latham</strong>
-			<span>Developer tools / cloud systems</span>
+			<span>Software developer / developer tools</span>
 		</a>
 		<nav aria-label="Portfolio navigation">
 			<a href="#work">Work</a>
@@ -84,8 +84,10 @@
 	<main id="portfolio-content" tabindex="-1">
 		<section class="hero" aria-labelledby="portfolio-heading">
 			<div class="hero-copy">
-				<p class="hello">Developer tools / CI/CD systems</p>
-				<h1 id="portfolio-heading">I build tools that make complex work clearer.</h1>
+				<p class="hello">Software developer / developer tools</p>
+				<h1 id="portfolio-heading">
+					I build tools that make setup and delivery easier to inspect.
+				</h1>
 				<p class="hero-summary">
 					OMG brings packages and runtimes into one workflow. DeployLint turns a repository into a
 					reviewed CI/CD setup. Both make the path from an idea to production easier to inspect and
@@ -143,7 +145,7 @@
 					/>
 				</a>
 				<div class="project-copy">
-					<p class="project-kind">01 / Rust CLI / public beta</p>
+					<p class="project-kind">01 / Rust CLI / public alpha</p>
 					<h3>OMG</h3>
 					<h4>{omg.title}</h4>
 					<p>{OMG_PROJECT.tagline}</p>
@@ -204,7 +206,7 @@
 				</div>
 			</article>
 
-			<aside class="side-project" aria-labelledby="tokens-heading">
+			<aside id="tokens" class="side-project" aria-labelledby="tokens-heading">
 				<div>
 					<p class="section-label">Personal experiment / live dashboard</p>
 					<h3 id="tokens-heading">Token Control</h3>
@@ -221,9 +223,12 @@
 
 		<section class="capabilities" aria-labelledby="capabilities-heading">
 			<header>
-				<p class="section-label">Where I’m useful</p>
-				<h2 id="capabilities-heading">From “something’s wrong” to a fix people can trust.</h2>
-				<p>I’m strongest where communication, troubleshooting, and implementation meet.</p>
+				<p class="section-label">How I work</p>
+				<h2 id="capabilities-heading">I trace the problem through the code and the system.</h2>
+				<p>
+					I build developer tools and use my cloud and support experience to diagnose what happens
+					in production.
+				</p>
 				<a href={resolve('/about')}>Read how I got here <ArrowUpRight size={15} weight="bold" /></a>
 			</header>
 			<div class="capability-list">
@@ -290,7 +295,7 @@
 	</main>
 
 	<footer class="site-footer">
-		<span>Olen Latham / software, systems, and cloud work</span>
+		<span>Olen Latham / software developer and developer tools</span>
 		<nav aria-label="Footer links">
 			<a href={PUBLIC_GITHUB_URL} target="_blank" rel="external noreferrer"
 				><GithubLogo size={15} weight="fill" /> GitHub</a

@@ -17,7 +17,7 @@ export const PUBLIC_CONTACT_MAILTO =
 
 /** Truthful role categories currently invited by the public portfolio. */
 export const PUBLIC_AVAILABILITY_LINE =
-	'Open to IT support, cloud operations, junior systems, and software opportunities.';
+	'Open to software developer and developer tools roles, with cloud and IT work also in scope.';
 export const PUBLIC_RESUME_LINE = 'Download one-page résumé (PDF)';
 
 /** Raster social card used by Open Graph, Twitter, and structured profile data. */
@@ -82,7 +82,7 @@ function serializeJsonLd(graph: ReadonlyArray<Record<string, unknown>>): string 
 
 /** Home and about copy for search results. Finance is intentionally absent. */
 export const homeSeo: PublicSeoPage = {
-	title: 'Olen Latham — Developer behind OMG and DeployLint',
+	title: 'Olen Latham — Software developer behind OMG and DeployLint',
 	description:
 		'Olen Latham builds OMG, a Rust CLI for packages and runtimes, and DeployLint, a GitHub Actions CI/CD setup and deployment protection product. Explore both projects.',
 	canonical: `${PUBLIC_SITE_ORIGIN}/`,
@@ -122,9 +122,9 @@ export const homeSeo: PublicSeoPage = {
 };
 
 export const aboutSeo: PublicSeoPage = {
-	title: 'About Olen Latham — From customer support to software and cloud systems',
+	title: 'About Olen Latham — Software developer and developer tools',
 	description:
-		'Olen Latham works in customer service and builds developer tools with Rust, TypeScript, Svelte, and Cloudflare. Read the story behind OMG and DeployLint.',
+		'Olen Latham builds developer tools with Rust, TypeScript, Svelte, and Cloudflare. Read about OMG, DeployLint, and his customer service background.',
 	canonical: `${PUBLIC_SITE_ORIGIN}/about`,
 	image: portfolioImage,
 	jsonLd: serializeJsonLd([

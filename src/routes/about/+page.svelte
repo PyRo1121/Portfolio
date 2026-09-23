@@ -63,12 +63,17 @@
 	<header class="intro">
 		<div class="intro-copy">
 			<p class="hello">Hi, I’m Olen.</p>
-			<h1>I like fixing problems that waste people’s time.</h1>
+			<h1>I build developer tools around the details that slow teams down.</h1>
 			<div class="introduction">
 				<p>
-					I work in customer service at Bank of America, where the job starts with listening:
-					understand what went wrong, make a confusing situation clearer, and help someone reach the
-					next step.
+					I'm a software developer focused on developer tools and CI/CD. I built OMG to bring
+					package and runtime workflows together, and DeployLint to make repository setup
+					reviewable.
+				</p>
+				<p>
+					My customer service work at Bank of America taught me to investigate unclear problems,
+					explain the next step, and follow through. I bring that practice to software and cloud
+					systems.
 				</p>
 			</div>
 			<div id="contact" class="contact-row">
@@ -97,15 +102,13 @@
 			</div>
 			<p class="contact-note">{PUBLIC_CONTACT_EMAIL} · McKinney, TX</p>
 			<p class="next-step">
-				Outside work, I build developer tools and cloud applications. I’m working toward a role
-				where I can bring the same patience and troubleshooting instinct to software, systems, and
-				infrastructure.
+				I want to build useful software with a team that owns its tools through release and support.
 			</p>
 		</div>
 
 		<figure>
 			<img src={profilePhotoUrl} alt="Olen Latham" width="640" height="640" />
-			<figcaption>Developer tools, cloud systems, and the work behind them.</figcaption>
+			<figcaption>Software developer focused on developer tools and CI/CD.</figcaption>
 		</figure>
 	</header>
 
@@ -155,10 +158,9 @@
 		</div>
 		<div class="career-copy">
 			<p>
-				I know that side projects are not the same as years in an engineering role, and I’m not
-				trying to pretend otherwise. What I do bring is experience talking with people when the
-				problem is unclear, staying with difficult issues, documenting what happened, and learning
-				unfamiliar systems until I can make progress.
+				OMG has pushed me to test native integrations, account for platform differences, and
+				document release limits. DeployLint has pushed me to turn CI/CD assumptions into reviewable
+				decisions. My customer service experience helps me stay with problems through resolution.
 			</p>
 			<p>
 				{PUBLIC_AVAILABILITY_LINE} I’m especially interested in teams where reliability, clear communication,

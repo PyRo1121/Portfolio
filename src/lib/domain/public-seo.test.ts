@@ -41,12 +41,14 @@ describe('public SEO copy', () => {
 		expect(homeSeo.jsonLd).toContain(PUBLIC_SOCIAL_IMAGE_URL);
 	});
 
-	it('uses the landing page to sell capability and the About page to explain the transition', () => {
+	it('leads with software development and keeps the support background on the About page', () => {
 		expect(homeSeo.title).toContain('OMG and DeployLint');
+		expect(homeSeo.title).toContain('Software developer');
 		expect(homeSeo.description).toContain('GitHub Actions');
 		expect(homeSeo.description).not.toContain('customer-service');
-		expect(aboutSeo.title).toContain('From customer support to software and cloud systems');
-		expect(aboutSeo.description).toContain('OMG and DeployLint');
+		expect(aboutSeo.title).toContain('Software developer and developer tools');
+		expect(aboutSeo.description).toContain('customer service background');
+		expect(aboutSeo.description).toContain('OMG, DeployLint');
 	});
 
 	it('describes each project with a distinct search title and public product identity', () => {
@@ -67,7 +69,7 @@ describe('public SEO copy', () => {
 			'mailto:olen@latham.cloud?subject=Opportunity%20for%20Olen%20Latham'
 		);
 		expect(PUBLIC_AVAILABILITY_LINE).toBe(
-			'Open to IT support, cloud operations, junior systems, and software opportunities.'
+			'Open to software developer and developer tools roles, with cloud and IT work also in scope.'
 		);
 		expect(PUBLIC_RESUME_LINE).toBe('Download one-page résumé (PDF)');
 	});

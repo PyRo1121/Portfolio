@@ -20,6 +20,7 @@
 	const seo = $derived(caseStudySeo(study));
 	const pageTitle = $derived(seo.title);
 	const resumeUrl = asset('/olen-latham-resume.pdf');
+	const visualUrl = $derived(asset(study.visual.imagePath));
 	let clientTelemetry = $state<ClientTelemetry | null>(null);
 	loadClientTelemetry().then((loaded) => (clientTelemetry = loaded));
 	const productAction = $derived(study.slug === 'omg' ? 'omg_site_open' : 'deploylint_site_open');
@@ -139,6 +140,23 @@
 		</a>
 	</section>
 
+	<section class="product-screen" aria-labelledby={`${study.slug}-screen`}>
+		<div class="screen-heading">
+			<div>
+				<p>Public page</p>
+				<h2 id={`${study.slug}-screen`}>What the public site shows</h2>
+			</div>
+			<a href={study.visual.pageUrl} target="_blank" rel="external noopener">
+				{study.visual.linkLabel}
+				<ArrowUpRight size={15} weight="bold" />
+			</a>
+		</div>
+		<figure>
+			<img src={visualUrl} alt={study.visual.alt} width="1440" height="1000" loading="lazy" />
+			<figcaption>{study.visual.caption}</figcaption>
+		</figure>
+	</section>
+
 	<blockquote>
 		<p>{study.reflection}</p>
 	</blockquote>
@@ -173,8 +191,11 @@
 
 	<footer>
 		<div>
-			<p>Looking for someone who brings customer-service follow-through to technical work?</p>
-			<strong>I’m open to IT support, cloud operations, junior systems, and software roles.</strong>
+			<p>Interested in the engineering behind these tools?</p>
+			<strong
+				>I’m open to software developer and developer tools roles, with cloud and IT work also in
+				scope.</strong
+			>
 		</div>
 		<div class="footer-actions">
 			<a
@@ -415,6 +436,52 @@
 		font-weight: 650;
 		text-decoration: none;
 	}
+	.product-screen {
+		padding: clamp(3rem, 6vw, 5rem) 0;
+		border-top: 1px solid rgb(231 232 225 / 16%);
+	}
+	.screen-heading {
+		display: flex;
+		align-items: end;
+		justify-content: space-between;
+		gap: 1.5rem;
+		margin-bottom: 1.5rem;
+	}
+	.screen-heading p {
+		margin: 0 0 0.65rem;
+		color: #d8a54a;
+		font:
+			650 0.65rem/1.3 'JetBrains Mono Variable',
+			monospace;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+	}
+	.screen-heading a {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		color: #d8a54a;
+		font-size: 0.82rem;
+		font-weight: 650;
+		text-decoration: none;
+	}
+	.product-screen figure {
+		margin: 0;
+		border: 1px solid rgb(231 232 225 / 16%);
+		background: #111516;
+	}
+	.product-screen img {
+		display: block;
+		width: 100%;
+		height: auto;
+	}
+	.product-screen figcaption {
+		padding: 0.85rem 1rem;
+		border-top: 1px solid rgb(231 232 225 / 16%);
+		color: #b2b6b1;
+		font-size: 0.78rem;
+		line-height: 1.5;
+	}
 	h2 {
 		font-size: clamp(1.35rem, 2.3vw, 2rem);
 		line-height: 1;
@@ -572,6 +639,10 @@
 		}
 		.workflow ol {
 			grid-template-columns: 1fr;
+		}
+		.screen-heading {
+			align-items: flex-start;
+			flex-direction: column;
 		}
 		.story-sections section {
 			gap: 0.9rem;
