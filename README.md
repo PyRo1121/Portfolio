@@ -83,6 +83,15 @@ The complete repository gate is:
 npm run ci
 ```
 
+CI also checks the generated public HTML for SEO regressions. To run that check alone after a build:
+
+```bash
+npm run build
+npm run seo:check
+```
+
+The audit, search targets, and post-deployment indexing steps are in [`docs/SEO-AUDIT.md`](docs/SEO-AUDIT.md). Public content revision dates live in `src/lib/domain/public-seo.ts`; update them when the corresponding page content changes, not on every build.
+
 ## Deployment
 
 ```bash

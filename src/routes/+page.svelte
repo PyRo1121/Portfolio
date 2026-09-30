@@ -6,11 +6,10 @@
 		GithubLogoIcon as GithubLogo,
 		LinkedinLogoIcon as LinkedinLogo
 	} from 'phosphor-svelte';
-	import { publicCaseStudyFor } from '$lib/domain/public-case-study';
+	import PublicSeoHead from '$lib/components/PublicSeoHead.svelte';
 	import { DEPLOYLINT_PROJECT, OMG_PROJECT, TOKEN_CONTROL_URL } from '$lib/domain/showcase';
 	import {
 		homeSeo,
-		jsonLdScriptTag,
 		PUBLIC_AVAILABILITY_LINE,
 		PUBLIC_CONTACT_EMAIL,
 		PUBLIC_CONTACT_MAILTO,
@@ -21,8 +20,6 @@
 	import { loadClientTelemetry } from '$lib/telemetry/telemetry-gate';
 	import type { ClientTelemetry } from '$lib/telemetry/client-telemetry';
 
-	const omg = publicCaseStudyFor('omg');
-	const deploylint = publicCaseStudyFor('deploylint');
 	let clientTelemetry = $state<ClientTelemetry | null>(null);
 	loadClientTelemetry().then((loaded) => (clientTelemetry = loaded));
 	const profilePhotoUrl = asset('/portrait.webp');
@@ -31,32 +28,7 @@
 	const resumeUrl = asset('/olen-latham-resume.pdf');
 </script>
 
-<svelte:head>
-	<title>{homeSeo.title}</title>
-	<meta name="description" content={homeSeo.description} />
-	<link rel="canonical" href={homeSeo.canonical} />
-	<link rel="me" href={PUBLIC_GITHUB_URL} />
-	<link rel="me" href={PUBLIC_LINKEDIN_URL} />
-	<meta property="og:type" content="profile" />
-	<meta property="og:site_name" content="latham.cloud" />
-	<meta property="og:locale" content="en_US" />
-	<meta property="og:title" content={homeSeo.title} />
-	<meta property="og:description" content={homeSeo.description} />
-	<meta property="og:url" content={homeSeo.canonical} />
-	<meta property="og:image" content={homeSeo.image.url} />
-	<meta property="og:image:type" content={homeSeo.image.type} />
-	<meta property="og:image:width" content={homeSeo.image.width.toString()} />
-	<meta property="og:image:height" content={homeSeo.image.height.toString()} />
-	<meta property="og:image:alt" content={homeSeo.image.alt} />
-	<meta name="twitter:card" content="summary_large_image" />
-	<meta name="twitter:title" content={homeSeo.title} />
-	<meta name="twitter:description" content={homeSeo.description} />
-	<meta name="twitter:image" content={homeSeo.image.url} />
-	<meta name="twitter:image:alt" content={homeSeo.image.alt} />
-	<!-- JSON-LD is serialized from local constants, not untrusted input. -->
-	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-	{@html jsonLdScriptTag(homeSeo.jsonLd)}
-</svelte:head>
+<PublicSeoHead seo={homeSeo} />
 
 <a class="skip-link" href="#portfolio-content">Skip to portfolio</a>
 
@@ -84,14 +56,12 @@
 	<main id="portfolio-content" tabindex="-1">
 		<section class="hero" aria-labelledby="portfolio-heading">
 			<div class="hero-copy">
-				<p class="hello">Software developer / developer tools</p>
-				<h1 id="portfolio-heading">
-					I build tools that make setup and delivery easier to inspect.
-				</h1>
+				<p class="hello">McKinney, Texas / open to software development roles</p>
+				<h1 id="portfolio-heading">Olen Latham. Software developer.</h1>
 				<p class="hero-summary">
-					OMG brings packages and runtimes into one workflow. DeployLint turns a repository into a
-					reviewed CI/CD setup. Both make the path from an idea to production easier to inspect and
-					trust.
+					I build developer tools with Rust, TypeScript, SvelteKit, and Cloudflare Workers. OMG
+					brings Linux and macOS packages and language runtimes into one CLI. DeployLint turns
+					repository evidence into a reviewed GitHub Actions CI/CD setup.
 				</p>
 				<div class="hero-actions">
 					<a class="primary-action" href="#work">Explore OMG and DeployLint</a>
@@ -111,7 +81,13 @@
 
 			<figure class="portrait">
 				<div class="portrait-frame">
-					<img src={profilePhotoUrl} alt="Olen Latham" width="640" height="642" />
+					<img
+						src={profilePhotoUrl}
+						alt="Olen Latham, software developer in McKinney, Texas"
+						width="640"
+						height="642"
+						fetchpriority="high"
+					/>
 				</div>
 				<figcaption>
 					<p>{PUBLIC_AVAILABILITY_LINE}</p>
@@ -122,7 +98,7 @@
 		<section id="work" class="selected-work" aria-labelledby="work-heading">
 			<header>
 				<p class="section-label">Selected work</p>
-				<h2 id="work-heading">Built for the places where development gets stuck.</h2>
+				<h2 id="work-heading">Developer tools I've built.</h2>
 				<p>
 					Two different products, each with a working site and a deeper account of the decisions
 					behind it.
@@ -147,13 +123,13 @@
 				<div class="project-copy">
 					<p class="project-kind">01 / Rust CLI / public alpha</p>
 					<h3>OMG</h3>
-					<h4>{omg.title}</h4>
+					<h4>Rust package and runtime CLI</h4>
 					<p>{OMG_PROJECT.tagline}</p>
 					<div class="project-links">
 						<a
 							href={resolve('/work/omg')}
 							onclick={() => clientTelemetry?.recordPortfolioAction('featured_omg_open')}
-							>Read the case study <ArrowUpRight size={15} weight="bold" /></a
+							>Read the OMG case study <ArrowUpRight size={15} weight="bold" /></a
 						>
 						<a
 							href={OMG_PROJECT.demoUrl}
@@ -187,13 +163,13 @@
 				<div class="project-copy">
 					<p class="project-kind">02 / TypeScript / CI/CD</p>
 					<h3>DeployLint</h3>
-					<h4>{deploylint.title}</h4>
+					<h4>Repository-aware GitHub Actions setup</h4>
 					<p>{DEPLOYLINT_PROJECT.tagline}</p>
 					<div class="project-links">
 						<a
 							href={resolve('/work/deploylint')}
 							onclick={() => clientTelemetry?.recordPortfolioAction('featured_deploylint_open')}
-							>Read the case study <ArrowUpRight size={15} weight="bold" /></a
+							>Read the DeployLint case study <ArrowUpRight size={15} weight="bold" /></a
 						>
 						<a
 							href={DEPLOYLINT_PROJECT.demoUrl}
@@ -226,8 +202,9 @@
 				<p class="section-label">How I work</p>
 				<h2 id="capabilities-heading">I trace the problem through the code and the system.</h2>
 				<p>
-					I build developer tools and use my cloud and support experience to diagnose what happens
-					in production.
+					I work on Rust CLIs, TypeScript applications, Svelte interfaces, and Cloudflare
+					deployments. My projects cover native package integrations, GitHub Apps, CI/CD, and
+					release automation.
 				</p>
 				<a href={resolve('/about')}>Read how I got here <ArrowUpRight size={15} weight="bold" /></a>
 			</header>
@@ -264,7 +241,7 @@
 
 		<section id="contact" class="closing" aria-labelledby="contact-heading">
 			<div>
-				<h2 id="contact-heading">Need someone who can stay with the problem?</h2>
+				<h2 id="contact-heading">Let's talk about your software team.</h2>
 				<p>{PUBLIC_AVAILABILITY_LINE}</p>
 			</div>
 			<div class="closing-actions">
@@ -392,7 +369,7 @@
 		text-transform: uppercase;
 	}
 	h1 {
-		max-width: 11ch;
+		max-width: 14ch;
 		margin: 1rem 0 0;
 		font-size: clamp(3.7rem, 6.2vw, 6rem);
 		font-weight: 680;

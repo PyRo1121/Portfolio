@@ -1,13 +1,9 @@
 <script lang="ts">
 	import { asset, resolve } from '$app/paths';
 	import { ArrowUpRightIcon as ArrowUpRight } from 'phosphor-svelte';
+	import PublicSeoHead from '$lib/components/PublicSeoHead.svelte';
 	import type { PublicCaseStudy } from '$lib/domain/public-case-study';
-	import {
-		PUBLIC_CONTACT_MAILTO,
-		PUBLIC_SITE_ORIGIN,
-		caseStudySeo,
-		jsonLdScriptTag
-	} from '$lib/domain/public-seo';
+	import { PUBLIC_CONTACT_MAILTO, caseStudySeo } from '$lib/domain/public-seo';
 	import { loadClientTelemetry } from '$lib/telemetry/telemetry-gate';
 	import type { ClientTelemetry } from '$lib/telemetry/client-telemetry';
 
@@ -16,9 +12,7 @@
 	};
 
 	let { study }: Props = $props();
-	const canonical = $derived(`${PUBLIC_SITE_ORIGIN}/work/${study.slug}`);
 	const seo = $derived(caseStudySeo(study));
-	const pageTitle = $derived(seo.title);
 	const resumeUrl = asset('/olen-latham-resume.pdf');
 	const visualUrl = $derived(asset(study.visual.imagePath));
 	let clientTelemetry = $state<ClientTelemetry | null>(null);
@@ -26,30 +20,7 @@
 	const productAction = $derived(study.slug === 'omg' ? 'omg_site_open' : 'deploylint_site_open');
 </script>
 
-<svelte:head>
-	<title>{pageTitle}</title>
-	<meta name="description" content={seo.description} />
-	<link rel="canonical" href={canonical} />
-	<meta property="og:type" content="article" />
-	<meta property="og:site_name" content="latham.cloud" />
-	<meta property="og:locale" content="en_US" />
-	<meta property="og:title" content={pageTitle} />
-	<meta property="og:description" content={seo.description} />
-	<meta property="og:url" content={canonical} />
-	<meta property="og:image" content={seo.image.url} />
-	<meta property="og:image:type" content={seo.image.type} />
-	<meta property="og:image:width" content={seo.image.width.toString()} />
-	<meta property="og:image:height" content={seo.image.height.toString()} />
-	<meta property="og:image:alt" content={seo.image.alt} />
-	<meta name="twitter:card" content="summary_large_image" />
-	<meta name="twitter:title" content={pageTitle} />
-	<meta name="twitter:description" content={seo.description} />
-	<meta name="twitter:image" content={seo.image.url} />
-	<meta name="twitter:image:alt" content={seo.image.alt} />
-	<!-- JSON-LD is serialized from local constants, not untrusted input. -->
-	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-	{@html jsonLdScriptTag(seo.jsonLd)}
-</svelte:head>
+<PublicSeoHead {seo} />
 
 <a class="skip-link" href="#case-study-content">Skip to case study</a>
 
@@ -64,6 +35,10 @@
 	<header class="hero">
 		<p>{study.eyebrow}</p>
 		<h1>{study.title}</h1>
+		<p class="byline">
+			By <a href={resolve('/about')}>Olen Latham</a>, software developer. Updated
+			<time datetime={seo.modified}>{seo.modified}</time>.
+		</p>
 		<div class="hero-summary">
 			<p>{study.summary}</p>
 			<ul aria-label="Tools and topics">
@@ -111,6 +86,20 @@
 			</section>
 		</div>
 	</article>
+
+	<section class="engineering" aria-labelledby={`${study.slug}-engineering`}>
+		<h2 id={`${study.slug}-engineering`}>Engineering decisions</h2>
+		{#each study.engineeringNotes as note (note.heading)}
+			<section>
+				<h3>{note.heading}</h3>
+				<p>{note.body}</p>
+				<a href={note.href} target="_blank" rel="external noopener">
+					{note.linkLabel}
+					<ArrowUpRight size={15} weight="bold" />
+				</a>
+			</section>
+		{/each}
+	</section>
 
 	<section class="workflow" aria-labelledby={`${study.slug}-workflow`}>
 		<header>
@@ -262,7 +251,7 @@
 	.hero {
 		padding: clamp(4rem, 10vw, 8rem) 0 clamp(4rem, 8vw, 6rem);
 	}
-	.hero > p {
+	.hero > p:not(.byline) {
 		margin: 0 0 1.5rem;
 		font:
 			650 0.68rem/1.2 'JetBrains Mono Variable',
@@ -278,6 +267,39 @@
 		line-height: 0.91;
 		letter-spacing: -0.065em;
 		text-wrap: balance;
+	}
+	.hero .byline {
+		margin: 1.5rem 0 0;
+		color: #b2b6b1;
+		font-size: 0.82rem;
+		line-height: 1.6;
+	}
+	.byline a,
+	.engineering a {
+		color: #d8a54a;
+	}
+	.engineering {
+		padding: clamp(3rem, 6vw, 5rem) 0;
+		border-top: 1px solid rgb(231 232 225 / 16%);
+	}
+	.engineering section {
+		max-width: 48rem;
+		margin-top: 2rem;
+	}
+	.engineering h3 {
+		font-size: 1.2rem;
+		line-height: 1.3;
+	}
+	.engineering p {
+		color: #b2b6b1;
+		font-size: 1rem;
+		line-height: 1.7;
+	}
+	.engineering a {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		font-size: 0.82rem;
 	}
 	.hero-summary {
 		display: grid;

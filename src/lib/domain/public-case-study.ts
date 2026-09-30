@@ -29,6 +29,12 @@ export type PublicCaseStudy = {
 	readonly difficulty: string;
 	readonly result: string;
 	readonly reflection: string;
+	readonly engineeringNotes: ReadonlyArray<{
+		readonly heading: string;
+		readonly body: string;
+		readonly href: string;
+		readonly linkLabel: string;
+	}>;
 	readonly workflowIntro: string;
 	readonly workflowSteps: readonly [PublicCaseStudyWorkflowStep, ...PublicCaseStudyWorkflowStep[]];
 	readonly visual: PublicCaseStudyVisual;
@@ -40,7 +46,7 @@ export const PUBLIC_CASE_STUDIES = [
 	{
 		slug: 'omg',
 		eyebrow: 'Case study · OMG',
-		title: 'One command for the whole development environment.',
+		title: 'OMG: a Rust CLI for packages and runtimes.',
 		websiteUrl: 'https://getomg.xyz/',
 		summary:
 			'OMG is a Rust CLI that brings system packages, language runtimes, developer tools, project tasks, and security evidence into one workflow across Linux and Apple silicon macOS.',
@@ -53,6 +59,20 @@ export const PUBLIC_CASE_STUDIES = [
 			'OMG ships as a public alpha. Its release page lists downloadable platform archives and verification steps, while the live CLI reference documents commands, native backends, and platform limits. The screenshot below shows that reference.',
 		reflection:
 			'OMG taught me that ambitious tooling becomes credible through boundaries, tests, release discipline, and accurate documentation—not through a longer feature list.',
+		engineeringNotes: [
+			{
+				heading: 'Native package backends, not a new package format',
+				body: 'OMG connects to libalpm on Arch, APT on Debian and Ubuntu, DNF and RPM on Fedora, and Homebrew on macOS. These backends retain their own transaction and privilege rules. A shared command interface does not mean identical behavior on every platform. I document those differences so users can check the operation before running it.',
+				href: 'https://github.com/omg-cli/omg/blob/main/docs/architecture.md',
+				linkLabel: 'Read the package backend architecture'
+			},
+			{
+				heading: 'An optional daemon and explicit security limits',
+				body: 'The Rust CLI runs package transactions through the selected backend. The optional omgd daemon keeps derived indexes and status caches warm, with selected queries sent over a Unix socket. Commands retain a direct backend path without the daemon. Package verification and runtime integrity checks depend on the provider. I do not present vulnerability evidence or a local audit log as proof that every download passed the same security policy.',
+				href: 'https://github.com/omg-cli/omg/blob/main/docs/security.md',
+				linkLabel: 'Read the security boundaries'
+			}
+		],
 		workflowIntro:
 			'A real CLI path, using commands documented in the public repository. Exact backend behavior depends on platform and package availability.',
 		workflowSteps: [
@@ -119,7 +139,7 @@ export const PUBLIC_CASE_STUDIES = [
 	{
 		slug: 'deploylint',
 		eyebrow: 'Case study · DeployLint',
-		title: 'CI/CD setup that begins with the repository.',
+		title: 'DeployLint: repository-aware GitHub Actions setup.',
 		websiteUrl: 'https://deploylint.com/',
 		summary:
 			'DeployLint inspects a GitHub repository, previews a tailored GitHub Actions pipeline, and opens a setup pull request for human review. It also makes production deployment decisions traceable.',
@@ -132,6 +152,20 @@ export const PUBLIC_CASE_STUDIES = [
 			'DeployLint has a live public setup page, GitHub App, and CI/CD guide. The setup page shows the steps from GitHub sign-in through repository connection and dashboard review. Repository assessment and pull request creation follow authentication.',
 		reflection:
 			'DeployLint made me treat the generated pull request as an explanation and review record, not just a YAML delivery mechanism.',
+		engineeringNotes: [
+			{
+				heading: 'Repository evidence before workflow generation',
+				body: 'The TypeScript and SvelteKit application starts with application roots, manifests, lockfiles, runtime versions, and existing scripts. That evidence determines what the GitHub Actions plan can propose. A monorepo or conflicting lockfiles may need a human decision rather than a guessed build command. The preview explains generated files and missing credentials before a GitHub App opens a setup pull request.',
+				href: 'https://deploylint.com/guides/github-actions-setup',
+				linkLabel: 'Read the repository-aware CI/CD guide'
+			},
+			{
+				heading: 'Pull request validation is not production deployment',
+				body: 'DeployLint separates pull request checks from production credentials and deployment decisions. Immutable dependency installation, job permissions, branch references, and protected environments are review concerns, not template defaults to ignore. A green check, an approved deployment decision, and a successful deployment are different records. The generated pull request gives the developer a workflow diff to inspect before merging.',
+				href: 'https://deploylint.com/start',
+				linkLabel: 'Explore the setup and review flow'
+			}
+		],
 		workflowIntro:
 			'The public setup journey, from a repository scan to a reviewable pull request. Generation depends on supported evidence and plan eligibility.',
 		workflowSteps: [

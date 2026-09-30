@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { asset, resolve } from '$app/paths';
+	import PublicSeoHead from '$lib/components/PublicSeoHead.svelte';
 	import {
 		ArrowUpRightIcon as ArrowUpRight,
 		EnvelopeSimpleIcon as EnvelopeSimple,
@@ -8,7 +9,6 @@
 	} from 'phosphor-svelte';
 	import {
 		aboutSeo,
-		jsonLdScriptTag,
 		PUBLIC_AVAILABILITY_LINE,
 		PUBLIC_CONTACT_EMAIL,
 		PUBLIC_CONTACT_MAILTO,
@@ -25,32 +25,7 @@
 	const resumeUrl = asset('/olen-latham-resume.pdf');
 </script>
 
-<svelte:head>
-	<title>{aboutSeo.title}</title>
-	<meta name="description" content={aboutSeo.description} />
-	<link rel="canonical" href={aboutSeo.canonical} />
-	<link rel="me" href={PUBLIC_GITHUB_URL} />
-	<link rel="me" href={PUBLIC_LINKEDIN_URL} />
-	<meta property="og:type" content="profile" />
-	<meta property="og:site_name" content="latham.cloud" />
-	<meta property="og:locale" content="en_US" />
-	<meta property="og:title" content={aboutSeo.title} />
-	<meta property="og:description" content={aboutSeo.description} />
-	<meta property="og:url" content={aboutSeo.canonical} />
-	<meta property="og:image" content={aboutSeo.image.url} />
-	<meta property="og:image:type" content={aboutSeo.image.type} />
-	<meta property="og:image:width" content={aboutSeo.image.width.toString()} />
-	<meta property="og:image:height" content={aboutSeo.image.height.toString()} />
-	<meta property="og:image:alt" content={aboutSeo.image.alt} />
-	<meta name="twitter:card" content="summary_large_image" />
-	<meta name="twitter:title" content={aboutSeo.title} />
-	<meta name="twitter:description" content={aboutSeo.description} />
-	<meta name="twitter:image" content={aboutSeo.image.url} />
-	<meta name="twitter:image:alt" content={aboutSeo.image.alt} />
-	<!-- JSON-LD is serialized from local constants, not untrusted input. -->
-	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-	{@html jsonLdScriptTag(aboutSeo.jsonLd)}
-</svelte:head>
+<PublicSeoHead seo={aboutSeo} />
 
 <a class="skip-link" href="#about-content">Skip to about</a>
 
@@ -62,12 +37,13 @@
 
 	<header class="intro">
 		<div class="intro-copy">
-			<p class="hello">Hi, I’m Olen.</p>
-			<h1>I build developer tools around the details that slow teams down.</h1>
+			<p class="hello">About Olen Latham / McKinney, Texas</p>
+			<h1>Software developer. Developer tools builder.</h1>
 			<div class="introduction">
 				<p>
-					I'm a software developer focused on developer tools and CI/CD. I built OMG to bring
-					package and runtime workflows together, and DeployLint to make repository setup
+					I'm Olen Latham, a software developer in McKinney, Texas, focused on developer tools and
+					CI/CD. I build with Rust, TypeScript, SvelteKit, and Cloudflare Workers. I built OMG to
+					bring package and runtime workflows together, and DeployLint to make GitHub Actions setup
 					reviewable.
 				</p>
 				<p>
@@ -107,19 +83,19 @@
 		</div>
 
 		<figure>
-			<img src={profilePhotoUrl} alt="Olen Latham" width="640" height="640" />
+			<img src={profilePhotoUrl} alt="Olen Latham" width="640" height="642" fetchpriority="high" />
 			<figcaption>Software developer focused on developer tools and CI/CD.</figcaption>
 		</figure>
 	</header>
 
 	<section class="projects" aria-labelledby="projects-heading">
 		<header>
-			<h2 id="projects-heading">What I’m building, and why.</h2>
+			<h2 id="projects-heading">My software projects</h2>
 		</header>
 
 		<div class="project-grid">
 			<article>
-				<h3>OMG: one development workflow</h3>
+				<h3>OMG: Rust CLI development</h3>
 				<p>
 					OMG started with a problem I kept running into: system packages and language runtimes all
 					came with different commands, configuration, and update paths. I wanted one tool I could
@@ -135,15 +111,16 @@
 				</a>
 			</article>
 			<article>
-				<h3>DeployLint: safer CI/CD setup</h3>
+				<h3>DeployLint: TypeScript and GitHub Actions</h3>
 				<p>
 					DeployLint started with another recurring problem: a working application does not mean its
 					GitHub Actions pipeline is ready for production. Permissions, lockfiles, secrets, and
 					review rules are easy to get wrong when they are copied from a generic example.
 				</p>
 				<p>
-					I built a repository-aware setup flow that previews the workflow and opens a pull request
-					for review. The product also makes protected deployment decisions traceable.
+					I built a repository-aware setup flow with TypeScript, SvelteKit, GitHub Apps, and
+					Cloudflare Workers. It previews the workflow and opens a pull request for review. The
+					product also makes protected deployment decisions traceable.
 				</p>
 				<a href={resolve('/work/deploylint')}>
 					Read the DeployLint case study <ArrowUpRight size={15} weight="bold" />

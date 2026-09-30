@@ -5,7 +5,6 @@
 	import type { ClientTelemetry } from '$lib/telemetry/client-telemetry';
 	import { IconContext } from 'phosphor-svelte';
 	import '../app.css';
-	import '$lib/styles/desk.css';
 
 	let { children }: LayoutProps = $props();
 	let telemetry = $state<ClientTelemetry | null>(null);
