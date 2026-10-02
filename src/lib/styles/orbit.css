@@ -1,6 +1,15 @@
 .film-overlay[hidden] {
 	display: none;
 }
+.orbit-transition {
+	position: fixed;
+	inset: 0;
+	z-index: 150;
+	background: #040710;
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 400ms ease;
+}
 .film-overlay {
 	position: fixed;
 	inset: 0;
@@ -301,15 +310,17 @@ body[data-film='off'][data-motion='on'] .hero-content {
 .orbit-stage .hero-art {
 	object-position: 65% center;
 	opacity: 0.8;
+	transition: opacity 700ms ease;
 }
 .orbit-stage .flight-scene {
 	opacity: 0;
+	transition: opacity 700ms ease;
 }
 body[data-scene='ready'] .orbit-stage .flight-scene {
 	opacity: 1;
 }
 body[data-scene='ready'] .orbit-stage .hero-art {
-	visibility: hidden;
+	opacity: 0;
 }
 .orbit-stage .hero-content {
 	position: relative;
@@ -420,19 +431,29 @@ body[data-scene='ready'] .orbit-stage .hero-art {
 	opacity: var(--reading-opacity, 1);
 	text-shadow: 0 2px 25px #000;
 }
+.beacon-reading {
+	padding: 18px 20px 20px;
+	border: 1px solid #b6ddff38;
+	border-radius: 14px;
+	background: linear-gradient(145deg, #030b19ed, #071322d9);
+	box-shadow: 0 12px 36px #0005;
+	text-shadow: 0 1px 3px #000;
+}
 .beacon-reading > span {
-	font-size: 10px;
+	font-size: 11px;
+	font-weight: 600;
 	letter-spacing: 0.2em;
 	text-transform: uppercase;
-	color: #cbdfef;
+	color: #d9efff;
 }
 .beacon-reading strong {
 	display: block;
 	font: 400 65px/1.2 var(--display);
+	color: #ffffff;
 }
 .beacon-reading small {
-	font-size: 11px;
-	color: #c5d4e6;
+	font-size: 12px;
+	color: #e2ecf8;
 }
 .orbit-support {
 	position: absolute;

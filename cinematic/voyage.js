@@ -122,6 +122,7 @@ export async function createVoyage({ scene, camera, world, renderer, keep, resiz
 		.to(state, { title: 1, duration: 2, ease: 'power2.out' }, 6.3)
 		.to(state, { title: 0, veil: 1, duration: 1.1, ease: 'power2.in' }, 11.3);
 	let active = false,
+		pending = false,
 		time = 0,
 		disposed = false,
 		returnFocus = null;
@@ -139,6 +140,19 @@ export async function createVoyage({ scene, camera, world, renderer, keep, resiz
 		)
 	];
 	const priorInert = new Map();
+	const curtain = document.createElement('div');
+	curtain.className = 'orbit-transition';
+	curtain.setAttribute('aria-hidden', 'true');
+	body.append(curtain);
+	function uncover() {
+		requestAnimationFrame(() =>
+			requestAnimationFrame(() => {
+				if (disposed) return;
+				curtain.style.transition = '';
+				curtain.style.opacity = '0';
+			})
+		);
+	}
 	function volume(on) {
 		if (!master || !audio) return;
 		master.gain.cancelScheduledValues(audio.currentTime);
@@ -174,7 +188,11 @@ export async function createVoyage({ scene, camera, world, renderer, keep, resiz
 		}
 	}
 	function end(restoreFocus = false) {
+		pending = false;
+		curtain.style.opacity = '0';
 		if (!active) return;
+		curtain.style.transition = 'none';
+		curtain.style.opacity = '1';
 		active = false;
 		body.dataset.film = 'off';
 		panel.hidden = true;
@@ -186,23 +204,41 @@ export async function createVoyage({ scene, camera, world, renderer, keep, resiz
 		camera.rotation.set(0, 0, 0);
 		volume(false);
 		if (!disposed) resize();
+		uncover();
 		if (restoreFocus || panel.contains(document.activeElement))
 			(returnFocus || replay).focus({ preventScroll: true });
 	}
-	function start(manual = false) {
+	async function start(manual = false) {
 		if (
 			disposed ||
 			active ||
+			pending ||
 			reduce.matches ||
 			body.dataset.motion !== 'on' ||
-			body.dataset.scene !== 'ready'
+			(manual && body.dataset.scene !== 'ready')
 		)
-			return;
+			return false;
+		pending = true;
+		curtain.style.opacity = '1';
+		await new Promise((resolve) => setTimeout(resolve, 420));
+		if (
+			disposed ||
+			!pending ||
+			reduce.matches ||
+			body.dataset.motion !== 'on' ||
+			(!manual && (scrollY > 150 || document.hidden))
+		) {
+			pending = false;
+			curtain.style.opacity = '0';
+			return false;
+		}
+		pending = false;
 		returnFocus = manual ? replay : null;
 		active = true;
 		time = 0;
 		timeline.seek(0);
 		body.dataset.film = 'on';
+		body.dataset.scene = 'ready';
 		panel.hidden = false;
 		covered.forEach((element) => {
 			priorInert.set(element, element.inert);
@@ -214,11 +250,13 @@ export async function createVoyage({ scene, camera, world, renderer, keep, resiz
 		}
 		volume(soundOn);
 		resize();
+		uncover();
 		try {
 			sessionStorage.setItem(PLAYBACK_HISTORY_KEY, '1');
 		} catch {
 			/* Playback history is optional. */
 		}
+		return true;
 	}
 	function update(dt, elapsed, center, globeScale) {
 		if (!active) {
@@ -304,15 +342,18 @@ export async function createVoyage({ scene, camera, world, renderer, keep, resiz
 	return {
 		update,
 		start: () => {
-			if (!seen && scrollY < 100 && !document.hidden) start();
+			return !seen && scrollY < 100 && !document.hidden ? start() : false;
 		},
 		get active() {
 			return active;
 		},
 		cancel: () => end(true),
 		dispose() {
+			if (disposed) return;
 			disposed = true;
 			end();
+			curtain.remove();
+			replay.hidden = true;
 			timeline.kill();
 			oscillators.forEach((oscillator) => oscillator.stop());
 			audio?.close();
