@@ -12,6 +12,8 @@ import {
 	PUBLIC_SEO_SKILLS,
 	PUBLIC_SOCIAL_IMAGE_URL,
 	publicSitemapPaths,
+	publicContentModified,
+	jsonLdScriptTag,
 	renderPublicSitemapXml
 } from './public-seo';
 
@@ -38,15 +40,17 @@ describe('public SEO copy', () => {
 
 	it('uses a raster social card for link-preview compatibility', () => {
 		expect(PUBLIC_SOCIAL_IMAGE_URL).toBe('https://latham.cloud/og-image.png');
-		expect(homeSeo.jsonLd).toContain(PUBLIC_SOCIAL_IMAGE_URL);
+		expect(homeSeo.image.url).toBe(PUBLIC_SOCIAL_IMAGE_URL);
+		expect(homeSeo.jsonLd).toContain('https://latham.cloud/portrait.webp');
 	});
 
 	it('leads with software development and keeps the support background on the About page', () => {
-		expect(homeSeo.title).toContain('OMG and DeployLint');
+		expect(homeSeo.title).toContain('Olen Latham');
 		expect(homeSeo.title).toContain('Software developer');
-		expect(homeSeo.description).toContain('GitHub Actions');
+		expect(homeSeo.title).toContain('McKinney, TX');
+		expect(homeSeo.description).toContain('OMG and DeployLint');
 		expect(homeSeo.description).not.toContain('customer-service');
-		expect(aboutSeo.title).toContain('Software developer and developer tools');
+		expect(aboutSeo.title).toContain('Developer tools & CI/CD');
 		expect(aboutSeo.description).toContain('customer service background');
 		expect(aboutSeo.description).toContain('OMG, DeployLint');
 	});
@@ -84,7 +88,77 @@ describe('public SEO copy', () => {
 		expect(xml).not.toContain('/career/portfolio.md');
 		expect(xml).not.toContain('/owner');
 		expect(xml).not.toContain('/__warm');
-		expect(xml).not.toContain('<lastmod>');
+		for (const path of publicSitemapPaths) {
+			expect(xml).toContain(`<lastmod>${publicContentModified[path]}</lastmod>`);
+		}
+	});
+
+	it('keeps every search snippet distinct and on the canonical HTTPS host', () => {
+		const pages = [
+			homeSeo,
+			aboutSeo,
+			...['omg', 'deploylint'].map((slug) =>
+				caseStudySeo(publicCaseStudyFor(slug === 'omg' ? 'omg' : 'deploylint'))
+			)
+		];
+		expect(new Set(pages.map((page) => page.title)).size).toBe(pages.length);
+		expect(new Set(pages.map((page) => page.description)).size).toBe(pages.length);
+		for (const page of pages) {
+			expect(page.title.length).toBeLessThan(70);
+			expect(page.description.length).toBeLessThan(180);
+			expect(page.canonical).toMatch(/^https:\/\/latham\.cloud\//u);
+			expect(page.modified).toMatch(/^\d{4}-\d{2}-\d{2}$/u);
+		}
+	});
+
+	it('connects the About profile to the real portrait and author identity', () => {
+		const graph: unknown = JSON.parse(aboutSeo.jsonLd);
+		expect(graph).toMatchObject({
+			'@context': 'https://schema.org',
+			'@graph': expect.arrayContaining([
+				expect.objectContaining({
+					'@type': ['ProfilePage', 'AboutPage'],
+					mainEntity: { '@id': 'https://latham.cloud/#olen-latham' }
+				}),
+				expect.objectContaining({
+					'@type': 'Person',
+					name: 'Olen Latham',
+					url: 'https://latham.cloud/about',
+					image: 'https://latham.cloud/portrait.webp'
+				}),
+				expect.objectContaining({ '@type': 'WebSite', name: 'Olen Latham' }),
+				expect.objectContaining({ '@type': 'BreadcrumbList' })
+			])
+		});
+	});
+
+	it('uses the visible case study title and real author without fabricated rich-result claims', () => {
+		for (const slug of ['omg', 'deploylint'] as const) {
+			const study = publicCaseStudyFor(slug);
+			const seo = caseStudySeo(study);
+			const graph: unknown = JSON.parse(seo.jsonLd);
+			expect(graph).toMatchObject({
+				'@graph': expect.arrayContaining([
+					expect.objectContaining({
+						'@type': 'Article',
+						headline: study.title,
+						author: { '@id': 'https://latham.cloud/#olen-latham' },
+						dateModified: seo.modified,
+						mainEntityOfPage: { '@id': `${seo.canonical}#page` }
+					})
+				])
+			});
+			expect(seo.jsonLd).not.toMatch(/aggregateRating|reviewCount|datePublished|offers/iu);
+		}
+	});
+
+	it('escapes HTML script terminators without changing the JSON value', () => {
+		const value = { text: '</script><script>alert(1)</script>' };
+		const tag = jsonLdScriptTag(JSON.stringify(value));
+		expect(tag.match(/<script/gu)).toHaveLength(1);
+		expect(tag.match(/<\/script>/gu)).toHaveLength(1);
+		const json = tag.replace('<script type="application/ld+json">', '').replace('</script>', '');
+		expect(JSON.parse(json)).toEqual(value);
 	});
 
 	it('points Person JSON-LD at the retained GitHub and LinkedIn identities only', () => {

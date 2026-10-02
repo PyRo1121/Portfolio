@@ -1,0 +1,5 @@
+Voyager spacecraft model
+Credit: NASA Visualization Technology Applications and Development (VTAD)
+Source: https://science.nasa.gov/resource/voyager-3d-model/
+Asset: https://assets.science.nasa.gov/content/dam/science/psd/solar/2023/09/v/Voyager.glb
+Downloaded 2026-10-02. Used as visual scenery; the flight is an artistic interpretation.

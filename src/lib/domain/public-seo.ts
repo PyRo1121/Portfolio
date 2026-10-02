@@ -1,43 +1,41 @@
 import { publicCaseStudyPaths, type PublicCaseStudy } from './public-case-study';
 
-/** Canonical public origin. Crawlable pages stay on this host. */
 export const PUBLIC_SITE_ORIGIN = 'https://latham.cloud';
-
 export const PUBLIC_PERSON_ID = `${PUBLIC_SITE_ORIGIN}/#olen-latham`;
-
 export const PUBLIC_GITHUB_URL = 'https://github.com/PyRo1121';
 export const PUBLIC_LINKEDIN_URL = 'https://www.linkedin.com/in/olen-latham-9b647654/';
-
-/** Public address for direct recruiter and collaborator contact. */
 export const PUBLIC_CONTACT_EMAIL = 'olen@latham.cloud';
-
-/** Prefilled direct-email action used by public conversion surfaces. */
 export const PUBLIC_CONTACT_MAILTO =
 	'mailto:olen@latham.cloud?subject=Opportunity%20for%20Olen%20Latham';
-
-/** Truthful role categories currently invited by the public portfolio. */
 export const PUBLIC_AVAILABILITY_LINE =
 	'Open to software developer and developer tools roles, with cloud and IT work also in scope.';
 export const PUBLIC_RESUME_LINE = 'Download one-page résumé (PDF)';
-
-/** Raster social card used by Open Graph, Twitter, and structured profile data. */
 export const PUBLIC_SOCIAL_IMAGE_URL = `${PUBLIC_SITE_ORIGIN}/og-image.png`;
-
 export const PUBLIC_SEO_SKILLS = [
+	'Rust',
 	'TypeScript',
 	'Svelte',
 	'SvelteKit',
 	'Cloudflare Workers',
-	'GitHub'
+	'GitHub Actions'
 ] as const;
-
-/** One-line identity under the public top-bar name. */
 export const PUBLIC_IDENTITY_LINE = 'Software developer · TypeScript · Svelte · Cloudflare';
+export const publicSitemapPaths = ['/', '/about', ...publicCaseStudyPaths] as const;
+
+// Content revision dates, not build dates. Update only when a page's content changes.
+export const publicContentModified = {
+	'/': '2026-10-02',
+	'/about': '2026-10-02',
+	'/work/omg': '2026-10-02',
+	'/work/deploylint': '2026-10-02'
+} satisfies Record<(typeof publicSitemapPaths)[number], string>;
 
 export type PublicSeoPage = {
+	readonly kind: 'profile' | 'article';
 	readonly title: string;
 	readonly description: string;
 	readonly canonical: string;
+	readonly modified: string;
 	readonly image: {
 		readonly url: string;
 		readonly type: 'image/png';
@@ -53,7 +51,7 @@ const portfolioImage: PublicSeoPage['image'] = {
 	type: 'image/png',
 	width: 1200,
 	height: 630,
-	alt: 'Olen Latham — creator of OMG and DeployLint'
+	alt: 'Olen Latham, software developer and creator of OMG and DeployLint'
 };
 
 function personNode(): Record<string, unknown> {
@@ -61,60 +59,92 @@ function personNode(): Record<string, unknown> {
 		'@type': 'Person',
 		'@id': PUBLIC_PERSON_ID,
 		name: 'Olen Latham',
-		url: `${PUBLIC_SITE_ORIGIN}/`,
-		image: PUBLIC_SOCIAL_IMAGE_URL,
+		url: `${PUBLIC_SITE_ORIGIN}/about`,
+		image: `${PUBLIC_SITE_ORIGIN}/portrait.webp`,
 		jobTitle: 'Software developer',
-		email: 'mailto:olen@latham.cloud',
+		description:
+			'Software developer in McKinney, Texas, building developer tools with Rust and TypeScript.',
+		email: `mailto:${PUBLIC_CONTACT_EMAIL}`,
+		homeLocation: {
+			'@type': 'Place',
+			name: 'McKinney, Texas'
+		},
 		knowsAbout: [...PUBLIC_SEO_SKILLS],
 		sameAs: [PUBLIC_GITHUB_URL, PUBLIC_LINKEDIN_URL],
+		mainEntityOfPage: { '@id': `${PUBLIC_SITE_ORIGIN}/about#page` },
 		subjectOf: publicCaseStudyPaths.map((path) => ({
 			'@id': `${PUBLIC_SITE_ORIGIN}${path}#article`
 		}))
 	};
 }
 
-function serializeJsonLd(graph: ReadonlyArray<Record<string, unknown>>): string {
-	return JSON.stringify({
-		'@context': 'https://schema.org',
-		'@graph': graph
-	});
+function websiteNode(): Record<string, unknown> {
+	return {
+		'@type': 'WebSite',
+		'@id': `${PUBLIC_SITE_ORIGIN}/#website`,
+		url: `${PUBLIC_SITE_ORIGIN}/`,
+		name: 'Olen Latham',
+		alternateName: 'Olen Latham portfolio',
+		description:
+			'Software development portfolio, developer tools, and engineering case studies by Olen Latham.',
+		inLanguage: 'en-US',
+		publisher: { '@id': PUBLIC_PERSON_ID }
+	};
 }
 
-/** Home and about copy for search results. Finance is intentionally absent. */
+function breadcrumbNode({
+	canonical,
+	name
+}: {
+	canonical: string;
+	name: string;
+}): Record<string, unknown> {
+	return {
+		'@type': 'BreadcrumbList',
+		'@id': `${canonical}#breadcrumb`,
+		itemListElement: [
+			{ '@type': 'ListItem', position: 1, name: 'Olen Latham', item: `${PUBLIC_SITE_ORIGIN}/` },
+			{ '@type': 'ListItem', position: 2, name, item: canonical }
+		]
+	};
+}
+
+function serializeJsonLd(graph: ReadonlyArray<Record<string, unknown>>): string {
+	return JSON.stringify({ '@context': 'https://schema.org', '@graph': graph });
+}
+
 export const homeSeo: PublicSeoPage = {
-	title: 'Olen Latham — Software developer behind OMG and DeployLint',
+	kind: 'profile',
+	title: 'Olen Latham | Software developer in McKinney, TX',
 	description:
-		'Olen Latham builds OMG, a Rust CLI for packages and runtimes, and DeployLint, a GitHub Actions CI/CD setup and deployment protection product. Explore both projects.',
+		'Olen Latham builds developer tools with Rust, TypeScript, SvelteKit, and Cloudflare Workers. Explore OMG and DeployLint, read case studies, and get in touch.',
 	canonical: `${PUBLIC_SITE_ORIGIN}/`,
+	modified: publicContentModified['/'],
 	image: portfolioImage,
 	jsonLd: serializeJsonLd([
-		{
-			'@type': 'WebSite',
-			'@id': `${PUBLIC_SITE_ORIGIN}/#website`,
-			url: `${PUBLIC_SITE_ORIGIN}/`,
-			name: 'Olen Latham — Portfolio',
-			description:
-				'Portfolio for Olen Latham, creator of OMG and DeployLint: developer tools, CI/CD systems, and project case studies.',
-			inLanguage: 'en',
-			publisher: { '@id': PUBLIC_PERSON_ID }
-		},
+		websiteNode(),
 		{
 			'@type': 'ProfilePage',
 			'@id': `${PUBLIC_SITE_ORIGIN}/#profile`,
 			url: `${PUBLIC_SITE_ORIGIN}/`,
-			name: 'Olen Latham — Software developer',
+			name: 'Olen Latham, software developer in McKinney, Texas',
+			inLanguage: 'en-US',
+			dateModified: publicContentModified['/'],
 			isPartOf: { '@id': `${PUBLIC_SITE_ORIGIN}/#website` },
-			about: { '@id': PUBLIC_PERSON_ID },
 			mainEntity: { '@id': PUBLIC_PERSON_ID }
 		},
 		personNode(),
 		{
 			'@type': 'ItemList',
 			'@id': `${PUBLIC_SITE_ORIGIN}/#selected-work`,
-			name: 'Selected projects',
+			name: 'Developer tools by Olen Latham',
 			itemListElement: publicCaseStudyPaths.map((path, index) => ({
 				'@type': 'ListItem',
 				position: index + 1,
+				name:
+					path === '/work/omg'
+						? 'OMG, a Rust package and runtime CLI'
+						: 'DeployLint, GitHub Actions CI/CD setup',
 				url: `${PUBLIC_SITE_ORIGIN}${path}`
 			}))
 		}
@@ -122,101 +152,113 @@ export const homeSeo: PublicSeoPage = {
 };
 
 export const aboutSeo: PublicSeoPage = {
-	title: 'About Olen Latham — Software developer and developer tools',
+	kind: 'profile',
+	title: 'About Olen Latham | Developer tools & CI/CD',
 	description:
-		'Olen Latham builds developer tools with Rust, TypeScript, Svelte, and Cloudflare. Read about OMG, DeployLint, and his customer service background.',
+		'Meet Olen Latham, a software developer in McKinney, Texas. Read about OMG, DeployLint, his Rust and TypeScript work, and his customer service background.',
 	canonical: `${PUBLIC_SITE_ORIGIN}/about`,
+	modified: publicContentModified['/about'],
 	image: portfolioImage,
 	jsonLd: serializeJsonLd([
+		websiteNode(),
 		{
-			'@type': 'AboutPage',
+			'@type': ['ProfilePage', 'AboutPage'],
 			'@id': `${PUBLIC_SITE_ORIGIN}/about#page`,
 			url: `${PUBLIC_SITE_ORIGIN}/about`,
 			name: 'About Olen Latham',
+			inLanguage: 'en-US',
+			dateModified: publicContentModified['/about'],
 			isPartOf: { '@id': `${PUBLIC_SITE_ORIGIN}/#website` },
-			about: { '@id': PUBLIC_PERSON_ID },
+			breadcrumb: { '@id': `${PUBLIC_SITE_ORIGIN}/about#breadcrumb` },
 			mainEntity: { '@id': PUBLIC_PERSON_ID }
 		},
-		personNode()
+		personNode(),
+		breadcrumbNode({ canonical: `${PUBLIC_SITE_ORIGIN}/about`, name: 'About Olen' })
 	])
 };
 
-/** Case-study page metadata, built from the same study data the page renders. */
 export function caseStudySeo(study: PublicCaseStudy): PublicSeoPage {
-	const canonical = `${PUBLIC_SITE_ORIGIN}/work/${study.slug}`;
-	const section = study.eyebrow.replace('Case study · ', '');
+	const path = study.slug === 'omg' ? '/work/omg' : '/work/deploylint';
+	const canonical = `${PUBLIC_SITE_ORIGIN}${path}`;
+	const name = study.slug === 'omg' ? 'OMG' : 'DeployLint';
+	const image = `${PUBLIC_SITE_ORIGIN}/portfolio/${study.slug}-social.png`;
 	const isOmg = study.slug === 'omg';
 	return {
+		kind: 'article',
 		title: isOmg
-			? 'OMG: Rust package and runtime CLI — Olen Latham'
-			: 'DeployLint: GitHub Actions CI/CD setup — Olen Latham',
+			? 'OMG: Rust package and runtime CLI | Olen Latham'
+			: 'DeployLint: GitHub Actions CI/CD setup | Olen Latham',
 		description: isOmg
-			? 'How I built OMG, a Rust CLI for packages, language runtimes, and security evidence. Explore the design, platform tradeoffs, live site, and source.'
-			: 'How I built DeployLint to inspect repositories, preview GitHub Actions workflows, and open reviewed setup pull requests. Explore the live product.',
+			? 'Olen Latham built OMG, a Rust CLI for Linux and macOS packages, language runtimes, and security evidence. Read the engineering case study and explore the source.'
+			: 'Olen Latham built DeployLint with TypeScript, SvelteKit, and Cloudflare Workers to turn repository evidence into reviewed GitHub Actions setup pull requests.',
 		canonical,
+		modified: publicContentModified[path],
 		image: {
-			url: `${PUBLIC_SITE_ORIGIN}/portfolio/${isOmg ? 'omg' : 'deploylint'}-social.png`,
+			url: image,
 			type: 'image/png',
 			width: 1200,
 			height: 630,
 			alt: isOmg
-				? 'OMG — Rust package and runtime management CLI'
-				: 'DeployLint — GitHub Actions CI/CD setup and deployment protection'
+				? 'OMG, a Rust package and runtime management CLI'
+				: 'DeployLint, GitHub Actions CI/CD setup and deployment protection'
 		},
 		jsonLd: serializeJsonLd([
+			websiteNode(),
+			{
+				'@type': 'WebPage',
+				'@id': `${canonical}#page`,
+				url: canonical,
+				name: study.title,
+				inLanguage: 'en-US',
+				isPartOf: { '@id': `${PUBLIC_SITE_ORIGIN}/#website` },
+				breadcrumb: { '@id': `${canonical}#breadcrumb` },
+				mainEntity: { '@id': `${canonical}#article` }
+			},
 			{
 				'@type': 'Article',
 				'@id': `${canonical}#article`,
 				url: canonical,
 				headline: study.title,
 				description: study.summary,
-				inLanguage: 'en',
-				articleSection: section,
+				dateModified: publicContentModified[path],
+				inLanguage: 'en-US',
+				articleSection: 'Software engineering case studies',
 				keywords: [...study.tools],
-				image: `${PUBLIC_SITE_ORIGIN}/portfolio/${isOmg ? 'omg' : 'deploylint'}-social.png`,
+				image,
 				isPartOf: { '@id': `${PUBLIC_SITE_ORIGIN}/#website` },
 				author: { '@id': PUBLIC_PERSON_ID },
 				about: { '@id': `${canonical}#project` },
-				mainEntityOfPage: canonical
+				mainEntityOfPage: { '@id': `${canonical}#page` }
 			},
 			{
-				'@type': 'SoftwareApplication',
+				'@type': isOmg ? 'SoftwareSourceCode' : 'CreativeWork',
 				'@id': `${canonical}#project`,
-				name: section,
+				name,
 				description: study.summary,
 				url: study.websiteUrl,
-				applicationCategory: 'DeveloperApplication',
-				operatingSystem: isOmg ? 'Linux, macOS' : 'Web',
 				creator: { '@id': PUBLIC_PERSON_ID },
-				...(isOmg ? { codeRepository: 'https://github.com/omg-cli/omg' } : {})
+				...(isOmg
+					? {
+							codeRepository: 'https://github.com/omg-cli/omg',
+							programmingLanguage: 'Rust',
+							runtimePlatform: 'Linux, macOS'
+						}
+					: {})
 			},
-			{
-				'@type': 'BreadcrumbList',
-				'@id': `${canonical}#breadcrumb`,
-				itemListElement: [
-					{ '@type': 'ListItem', position: 1, name: 'Portfolio', item: `${PUBLIC_SITE_ORIGIN}/` },
-					{ '@type': 'ListItem', position: 2, name: section, item: canonical }
-				]
-			},
+			breadcrumbNode({ canonical, name }),
 			personNode()
 		])
 	};
 }
 
-export const publicSitemapPaths = ['/', '/about', ...publicCaseStudyPaths] as const;
-
-function locFor(path: (typeof publicSitemapPaths)[number]): string {
-	return path === '/' ? `${PUBLIC_SITE_ORIGIN}/` : `${PUBLIC_SITE_ORIGIN}${path}`;
-}
-
-/** XML sitemap for public URLs only. */
 export function renderPublicSitemapXml(): string {
 	return [
 		'<?xml version="1.0" encoding="UTF-8"?>',
 		'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
 		...publicSitemapPaths.flatMap((path) => [
 			'  <url>',
-			`    <loc>${locFor(path)}</loc>`,
+			`    <loc>${PUBLIC_SITE_ORIGIN}${path}</loc>`,
+			`    <lastmod>${publicContentModified[path]}</lastmod>`,
 			'  </url>'
 		]),
 		'</urlset>',
@@ -224,7 +266,7 @@ export function renderPublicSitemapXml(): string {
 	].join('\n');
 }
 
-/** Wrap JSON-LD for `<svelte:head>` without a nested script block Prettier cannot parse. */
 export function jsonLdScriptTag(payload: string): string {
-	return `<script type="application/ld+json">${payload}</script>`;
+	// HTML parsers terminate script elements at </script>, even inside JSON strings.
+	return `<script type="application/ld+json">${payload.replace(/</gu, '\\u003c')}</script>`;
 }

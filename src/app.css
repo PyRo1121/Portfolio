@@ -1,16 +1,68 @@
 @import '@fontsource-variable/geist';
 @import '@fontsource-variable/jetbrains-mono';
 
-@font-face {
-	font-family: 'Observatory Mono';
-	src: url('/observatory-mono.woff2') format('woff2');
-	font-display: swap;
-	font-style: normal;
-	font-weight: 400;
+* {
+	box-sizing: border-box;
 }
-
+html,
+body {
+	width: 100%;
+	min-height: 100%;
+	margin: 0;
+	background: #0b0d0e;
+	color: #f0f0eb;
+}
+body {
+	font-family: 'Geist Variable', sans-serif;
+	-webkit-font-smoothing: antialiased;
+}
+button,
+input,
+a {
+	font: inherit;
+}
+:focus-visible {
+	outline: 2px solid #d8a54a;
+	outline-offset: 2px;
+}
+::selection {
+	background: #d8a54a;
+	color: #0b0d0e;
+}
 :root {
 	font-synthesis: none;
 	text-rendering: optimizeLegibility;
 	color-scheme: dark;
+	--bg: #0b0d0e;
+	--surface: #111416;
+	--surface-deep: #0e1112;
+	--high: #191d1f;
+	--ink: #f0f0eb;
+	--muted: #979b96;
+	--faint: #828884;
+	--line: rgba(231, 232, 225, 0.115);
+	--strong: rgba(231, 232, 225, 0.23);
+	--accent: #d8a54a;
+	--accent-soft: rgba(216, 165, 74, 0.12);
+	--positive: #93b49b;
+	--negative: #c98272;
+	--sans: 'Geist Variable', sans-serif;
+	--mono: 'JetBrains Mono Variable', monospace;
+	--ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+.skip-link {
+	position: fixed;
+	z-index: 20;
+	top: 0.5rem;
+	left: 0.5rem;
+	padding: 0.6rem 0.8rem;
+	border: 1px solid #d8a54a;
+	background: #f0f0eb;
+	color: #0b0d0e;
+	font: 650 0.68rem/1 var(--mono);
+	text-decoration: none;
+	transform: translateY(-150%);
+}
+.skip-link:focus {
+	transform: none;
 }

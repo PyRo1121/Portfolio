@@ -1,10 +1,24 @@
 # Olen Latham
 
-> Software developer shipping TypeScript, Svelte, and Cloudflare Workers.
+> Software developer in McKinney, Texas, building developer tools with Rust, TypeScript, SvelteKit, and Cloudflare Workers. Creator of OMG and DeployLint. Open to software developer and developer tools roles, with cloud and IT work also in scope.
 
-- Site: https://latham.cloud/
-- About: https://latham.cloud/about
-- GitHub: https://github.com/PyRo1121
-- LinkedIn: https://www.linkedin.com/in/olen-latham-9b647654/
-- Email: olen@latham.cloud
+## Portfolio
 
+- [Portfolio](https://latham.cloud/): Selected software projects and direct contact paths.
+- [About Olen Latham](https://latham.cloud/about): Software work, customer service background, and role interests.
+- [OMG case study](https://latham.cloud/work/omg): Rust CLI, native package backends, runtimes, and engineering decisions. OMG is a public alpha.
+- [DeployLint case study](https://latham.cloud/work/deploylint): Repository-aware GitHub Actions setup, reviewed pull requests, and deployment decisions. The implementation repository is private.
+- [Resume PDF](https://latham.cloud/olen-latham-resume.pdf): One-page public resume.
+
+## Project evidence
+
+- [OMG product and documentation](https://getomg.xyz/): Installation, CLI reference, and platform limits.
+- [OMG source](https://github.com/omg-cli/omg): Public Rust source, tests, and release history.
+- [DeployLint](https://deploylint.com/): Live CI/CD setup product.
+- [Token Control](https://tokens.latham.cloud/): Personal dashboard for AI-assisted coding activity and estimated API-equivalent spend.
+
+## Contact
+
+- [GitHub](https://github.com/PyRo1121)
+- [LinkedIn](https://www.linkedin.com/in/olen-latham-9b647654/)
+- [Email Olen](mailto:olen@latham.cloud)

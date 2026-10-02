@@ -1,0 +1,5 @@
+Earth day, night, clouds, and Milky Way textures by Solar System Scope / INOVE.
+Source: https://www.solarsystemscope.com/textures/
+License: Creative Commons Attribution 4.0 International
+https://creativecommons.org/licenses/by/4.0/
+The original textures are unchanged. The scene applies animated lighting and color grading at runtime.

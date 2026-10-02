@@ -36,6 +36,7 @@
 	import type { ClientTelemetry } from '$lib/telemetry/client-telemetry';
 	import { DashboardView } from '$lib/state/dashboard-view.svelte';
 	import { createDeferredRefreshPoll } from '$lib/state/deferred-refresh';
+	import '$lib/styles/desk.css';
 
 	let { data, form }: PageProps = $props();
 	let freshSnapshot: GitHubDashboardSnapshot | null = $state.raw(null);

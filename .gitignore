@@ -40,3 +40,7 @@ vite.config.ts.timestamp-*
 # Generated content-hash static assets
 static/*.txt
 !static/bcd77fb2a446f73e12faf47f6e8d90f4.txt
+
+# Generated cinematic module (rebuilt for dev and production)
+/static/orbit/scene.js
+/static/orbit/scene.js.LEGAL.txt

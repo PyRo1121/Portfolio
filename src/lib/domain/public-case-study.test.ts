@@ -40,6 +40,18 @@ describe('public recruiter case studies', () => {
 		}
 	});
 
+	it('names each product in its main heading and explains linked engineering decisions', () => {
+		for (const study of PUBLIC_CASE_STUDIES) {
+			expect(study.title.toLowerCase()).toContain(study.slug);
+			expect(study.engineeringNotes.length).toBeGreaterThan(0);
+			for (const note of study.engineeringNotes) {
+				expect(note.body.length).toBeGreaterThan(100);
+				expect(note.href).toMatch(/^https:\/\//u);
+				expect(note.linkLabel).not.toBe('Read more');
+			}
+		}
+	});
+
 	it('does not publish unsupported OMG marketing claims', () => {
 		const copy = JSON.stringify(PUBLIC_CASE_STUDIES).toLocaleLowerCase();
 		expect(copy).not.toContain('fastest');
