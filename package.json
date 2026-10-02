@@ -10,8 +10,8 @@
 		"node": ">=22.22.2"
 	},
 	"scripts": {
-		"dev": "vite dev",
-		"build": "vite build",
+		"dev": "node scripts/build-cinematic.mjs && vite dev",
+		"build": "node scripts/build-cinematic.mjs && vite build",
 		"deploy": "node scripts/deploy.mjs",
 		"seo:indexnow": "node scripts/submit-indexnow.mjs",
 		"seo:check": "node scripts/verify-public-seo.mjs",
@@ -38,6 +38,7 @@
 		"@sveltejs/kit": "^2.63.0",
 		"@sveltejs/vite-plugin-svelte": "^7.1.2",
 		"@types/node": "^24",
+		"esbuild": "^0.28.2",
 		"eslint": "^10.4.1",
 		"eslint-config-prettier": "^10.1.8",
 		"eslint-plugin-svelte": "^3.19.0",
@@ -57,8 +58,10 @@
 		"@fontsource-variable/jetbrains-mono": "^5.3.0",
 		"echarts": "6.1.0",
 		"effect": "^3.22.1",
+		"gsap": "^3.15.0",
 		"jose": "^6.2.9",
 		"phosphor-svelte": "^3.1.0",
+		"three": "^0.185.1",
 		"web-vitals": "^6.0.0"
 	},
 	"overrides": {

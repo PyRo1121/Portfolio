@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PublicShell from '$lib/components/PublicShell.svelte';
 	import { asset, resolve } from '$app/paths';
 	import PublicSeoHead from '$lib/components/PublicSeoHead.svelte';
 	import {
@@ -27,151 +28,149 @@
 
 <PublicSeoHead seo={aboutSeo} />
 
-<a class="skip-link" href="#about-content">Skip to about</a>
+<PublicShell>
+	<a class="skip-link" href="#about-content">Skip to about</a>
 
-<main id="about-content" class="about-page" tabindex="-1">
-	<nav class="topline" aria-label="Page navigation">
-		<a href={resolve('/')}><span aria-hidden="true">←</span> Portfolio</a>
-		<span>About Olen</span>
-	</nav>
+	<main id="about-content" class="about-page" tabindex="-1">
+		<nav class="topline" aria-label="Page navigation">
+			<a href={resolve('/')}><span aria-hidden="true">←</span> Back to orbit</a>
+			<span>About Olen</span>
+		</nav>
 
-	<header class="intro">
-		<div class="intro-copy">
-			<p class="hello">About Olen Latham / McKinney, Texas</p>
-			<h1>Software developer. Developer tools builder.</h1>
-			<div class="introduction">
-				<p>
-					I'm Olen Latham, a software developer in McKinney, Texas, focused on developer tools and
-					CI/CD. I build with Rust, TypeScript, SvelteKit, and Cloudflare Workers. I built OMG to
-					bring package and runtime workflows together, and DeployLint to make GitHub Actions setup
-					reviewable.
-				</p>
-				<p>
-					My customer service work at Bank of America taught me to investigate unclear problems,
-					explain the next step, and follow through. I bring that practice to software and cloud
-					systems.
+		<header class="intro">
+			<div class="intro-copy">
+				<p class="hello">About Olen Latham / McKinney, Texas</p>
+				<h1>Software developer. Developer tools builder.</h1>
+				<div class="introduction">
+					<p>
+						I'm Olen Latham, a software developer in McKinney, Texas, focused on developer tools and
+						CI/CD. I build with Rust, TypeScript, SvelteKit, and Cloudflare Workers. I built OMG to
+						bring package and runtime workflows together, and DeployLint to make GitHub Actions
+						setup reviewable.
+					</p>
+					<p>
+						My customer service work at Bank of America taught me to investigate unclear problems,
+						explain the next step, and follow through. I bring that practice to software and cloud
+						systems.
+					</p>
+				</div>
+				<div id="contact" class="contact-row">
+					<a
+						class="primary-contact"
+						href={PUBLIC_CONTACT_MAILTO}
+						rel="external"
+						onclick={() => clientTelemetry?.recordContact('email_about')}
+					>
+						<EnvelopeSimple size={17} weight="fill" /> Email Olen
+					</a>
+					<a
+						href={PUBLIC_LINKEDIN_URL}
+						target="_blank"
+						rel="external noreferrer"
+						onclick={() => clientTelemetry?.recordContact('linkedin_about')}
+					>
+						<LinkedinLogo size={17} weight="fill" /> LinkedIn
+					</a>
+					<a
+						href={resumeUrl}
+						download
+						onclick={() => clientTelemetry?.recordPortfolioAction('resume_download')}
+						>{PUBLIC_RESUME_LINE}</a
+					>
+				</div>
+				<p class="contact-note">{PUBLIC_CONTACT_EMAIL} · McKinney, TX</p>
+				<p class="next-step">
+					I want to build useful software with a team that owns its tools through release and
+					support.
 				</p>
 			</div>
-			<div id="contact" class="contact-row">
-				<a
-					class="primary-contact"
-					href={PUBLIC_CONTACT_MAILTO}
-					rel="external"
-					onclick={() => clientTelemetry?.recordContact('email_about')}
-				>
-					<EnvelopeSimple size={17} weight="fill" /> Email Olen
-				</a>
-				<a
-					href={PUBLIC_LINKEDIN_URL}
-					target="_blank"
-					rel="external noreferrer"
-					onclick={() => clientTelemetry?.recordContact('linkedin_about')}
-				>
-					<LinkedinLogo size={17} weight="fill" /> LinkedIn
-				</a>
-				<a
-					href={resumeUrl}
-					download
-					onclick={() => clientTelemetry?.recordPortfolioAction('resume_download')}
-					>{PUBLIC_RESUME_LINE}</a
-				>
-			</div>
-			<p class="contact-note">{PUBLIC_CONTACT_EMAIL} · McKinney, TX</p>
-			<p class="next-step">
-				I want to build useful software with a team that owns its tools through release and support.
-			</p>
-		</div>
 
-		<figure>
-			<img src={profilePhotoUrl} alt="Olen Latham" width="640" height="642" fetchpriority="high" />
-			<figcaption>Software developer focused on developer tools and CI/CD.</figcaption>
-		</figure>
-	</header>
-
-	<section class="projects" aria-labelledby="projects-heading">
-		<header>
-			<h2 id="projects-heading">My software projects</h2>
+			<figure>
+				<img
+					src={profilePhotoUrl}
+					alt="Olen Latham"
+					width="640"
+					height="642"
+					fetchpriority="high"
+				/>
+				<figcaption>Software developer focused on developer tools and CI/CD.</figcaption>
+			</figure>
 		</header>
 
-		<div class="project-grid">
-			<article>
-				<h3>OMG: Rust CLI development</h3>
-				<p>
-					OMG started with a problem I kept running into: system packages and language runtimes all
-					came with different commands, configuration, and update paths. I wanted one tool I could
-					reach for instead of remembering seven.
-				</p>
-				<p>
-					Building it in Rust has pushed me into package resolution, platform differences,
-					performance work, release automation, and the less glamorous job of documenting what
-					actually works.
-				</p>
-				<a href={resolve('/work/omg')}>
-					Read the OMG case study <ArrowUpRight size={15} weight="bold" />
-				</a>
-			</article>
-			<article>
-				<h3>DeployLint: TypeScript and GitHub Actions</h3>
-				<p>
-					DeployLint started with another recurring problem: a working application does not mean its
-					GitHub Actions pipeline is ready for production. Permissions, lockfiles, secrets, and
-					review rules are easy to get wrong when they are copied from a generic example.
-				</p>
-				<p>
-					I built a repository-aware setup flow with TypeScript, SvelteKit, GitHub Apps, and
-					Cloudflare Workers. It previews the workflow and opens a pull request for review. The
-					product also makes protected deployment decisions traceable.
-				</p>
-				<a href={resolve('/work/deploylint')}>
-					Read the DeployLint case study <ArrowUpRight size={15} weight="bold" />
-				</a>
-			</article>
-		</div>
-	</section>
+		<section class="projects" aria-labelledby="projects-heading">
+			<header>
+				<h2 id="projects-heading">My software projects</h2>
+			</header>
 
-	<section class="career-shift" aria-labelledby="career-heading">
-		<div>
-			<h2 id="career-heading">What I can bring to a team</h2>
-		</div>
-		<div class="career-copy">
-			<p>
-				OMG has pushed me to test native integrations, account for platform differences, and
-				document release limits. DeployLint has pushed me to turn CI/CD assumptions into reviewable
-				decisions. My customer service experience helps me stay with problems through resolution.
-			</p>
-			<p>
-				{PUBLIC_AVAILABILITY_LINE} I’m especially interested in teams where reliability, clear communication,
-				and steady follow-through matter as much as knowing the right tool on day one.
-			</p>
-		</div>
-	</section>
+			<div class="project-grid">
+				<article>
+					<h3>OMG: Rust CLI development</h3>
+					<p>
+						OMG started with a problem I kept running into: system packages and language runtimes
+						all came with different commands, configuration, and update paths. I wanted one tool I
+						could reach for instead of remembering seven.
+					</p>
+					<p>
+						Building it in Rust has pushed me into package resolution, platform differences,
+						performance work, release automation, and the less glamorous job of documenting what
+						actually works.
+					</p>
+					<a href={resolve('/work/omg')}>
+						Read the OMG case study <ArrowUpRight size={15} weight="bold" />
+					</a>
+				</article>
+				<article>
+					<h3>DeployLint: TypeScript and GitHub Actions</h3>
+					<p>
+						DeployLint started with another recurring problem: a working application does not mean
+						its GitHub Actions pipeline is ready for production. Permissions, lockfiles, secrets,
+						and review rules are easy to get wrong when they are copied from a generic example.
+					</p>
+					<p>
+						I built a repository-aware setup flow with TypeScript, SvelteKit, GitHub Apps, and
+						Cloudflare Workers. It previews the workflow and opens a pull request for review. The
+						product also makes protected deployment decisions traceable.
+					</p>
+					<a href={resolve('/work/deploylint')}>
+						Read the DeployLint case study <ArrowUpRight size={15} weight="bold" />
+					</a>
+				</article>
+			</div>
+		</section>
 
-	<footer>
-		<p>If you want to see how I work, start with the projects and case studies.</p>
-		<nav aria-label="Work links">
-			<a href={PUBLIC_GITHUB_URL} target="_blank" rel="external noreferrer">
-				<GithubLogo size={16} weight="fill" /> GitHub
-			</a>
-			<a href={`${PUBLIC_GITHUB_URL}?tab=repositories`} target="_blank" rel="external noreferrer"
-				>Repositories <ArrowUpRight size={14} weight="bold" /></a
-			>
-		</nav>
-	</footer>
-</main>
+		<section class="career-shift" aria-labelledby="career-heading">
+			<div>
+				<h2 id="career-heading">What I can bring to a team</h2>
+			</div>
+			<div class="career-copy">
+				<p>
+					OMG has pushed me to test native integrations, account for platform differences, and
+					document release limits. DeployLint has pushed me to turn CI/CD assumptions into
+					reviewable decisions. My customer service experience helps me stay with problems through
+					resolution.
+				</p>
+				<p>
+					{PUBLIC_AVAILABILITY_LINE} I’m especially interested in teams where reliability, clear communication,
+					and steady follow-through matter as much as knowing the right tool on day one.
+				</p>
+			</div>
+		</section>
+
+		<footer>
+			<p>If you want to see how I work, start with the projects and case studies.</p>
+			<nav aria-label="Work links">
+				<a href={PUBLIC_GITHUB_URL} target="_blank" rel="external noreferrer">
+					<GithubLogo size={16} weight="fill" /> GitHub
+				</a>
+				<a href={`${PUBLIC_GITHUB_URL}?tab=repositories`} target="_blank" rel="external noreferrer"
+					>Repositories <ArrowUpRight size={14} weight="bold" /></a
+				>
+			</nav>
+		</footer>
+	</main>
+</PublicShell>
 
 <style>
-	:global(html),
-	:global(body) {
-		margin: 0;
-		min-height: 100%;
-		background: #0b0d0e;
-		color: #f0f0eb;
-		font-family: 'Geist Variable', sans-serif;
-		overflow: auto;
-	}
-	:global(*) {
-		box-sizing: border-box;
-	}
 	.about-page {
 		width: min(100% - 3rem, 74rem);
 		min-height: 100dvh;
@@ -184,9 +183,9 @@
 		justify-content: space-between;
 		min-height: 3rem;
 		border-bottom: 1px solid var(--line);
-		color: #808580;
+		color: var(--faint);
 		font:
-			600 0.65rem/1 'JetBrains Mono Variable',
+			600 0.65rem/1 'Geist Variable',
 			monospace;
 		letter-spacing: 0.06em;
 		text-transform: uppercase;
@@ -200,7 +199,7 @@
 	.topline a {
 		display: inline-flex;
 		gap: 0.55rem;
-		color: #f0f0eb;
+		color: var(--ink);
 	}
 	.topline a span {
 		color: var(--accent);
@@ -216,18 +215,20 @@
 		margin: 0 0 1rem;
 		color: var(--accent);
 		font:
-			650 0.7rem/1.2 'JetBrains Mono Variable',
+			650 0.7rem/1.2 'Geist Variable',
 			monospace;
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
 	}
 	h1 {
+		font-family: var(--display);
+		font-weight: 400;
 		max-width: 11ch;
 		margin: 0;
 		font-size: clamp(3.6rem, 6.5vw, 6.25rem);
-		font-weight: 680;
+		font-weight: 400;
 		line-height: 0.92;
-		letter-spacing: -0.065em;
+		letter-spacing: -0.025em;
 		text-wrap: balance;
 	}
 	.introduction {
@@ -267,7 +268,7 @@
 		min-height: 2.75rem;
 		padding: 0 1rem;
 		border: 1px solid var(--strong);
-		color: #f0f0eb;
+		color: var(--ink);
 		font-size: 0.8rem;
 		font-weight: 650;
 		text-decoration: none;
@@ -279,7 +280,7 @@
 	.contact-row .primary-contact {
 		border-color: var(--accent);
 		background: var(--accent);
-		color: #0b0d0e;
+		color: var(--bg);
 	}
 	.contact-row a:hover,
 	.contact-row a:focus-visible {
@@ -288,7 +289,7 @@
 	}
 	.contact-row .primary-contact:hover,
 	.contact-row .primary-contact:focus-visible {
-		background: #e2b762;
+		background: #c5f2ff;
 	}
 	.contact-row a:active {
 		transform: translateY(1px);
@@ -297,7 +298,7 @@
 		margin: 0.8rem 0 0;
 		color: var(--faint);
 		font:
-			500 0.6rem/1.5 'JetBrains Mono Variable',
+			500 0.6rem/1.5 'Geist Variable',
 			monospace;
 	}
 	figure {
@@ -319,7 +320,7 @@
 		padding-top: 0.8rem;
 		color: var(--faint);
 		font:
-			500 0.6rem/1.45 'JetBrains Mono Variable',
+			500 0.6rem/1.45 'Geist Variable',
 			monospace;
 	}
 	.projects {

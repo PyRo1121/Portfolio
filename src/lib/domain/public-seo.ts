@@ -24,10 +24,10 @@ export const publicSitemapPaths = ['/', '/about', ...publicCaseStudyPaths] as co
 
 // Content revision dates, not build dates. Update only when a page's content changes.
 export const publicContentModified = {
-	'/': '2026-09-30',
-	'/about': '2026-09-30',
-	'/work/omg': '2026-09-30',
-	'/work/deploylint': '2026-09-30'
+	'/': '2026-10-02',
+	'/about': '2026-10-02',
+	'/work/omg': '2026-10-02',
+	'/work/deploylint': '2026-10-02'
 } satisfies Record<(typeof publicSitemapPaths)[number], string>;
 
 export type PublicSeoPage = {
