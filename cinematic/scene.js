@@ -7,6 +7,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { createVoyage } from './voyage.js';
 export { mountPortfolioSpace } from './gallery.js';
+export { mountObservatory } from './observatory.js';
 
 export function mountOrbit(hero) {
 	const body = document.body;
