@@ -40,23 +40,6 @@ export function mountPortfolioSpace(canvas) {
 	});
 	const stars = new THREE.Points(geometry, material);
 	scene.add(stars);
-	const orbitGeometry = new THREE.RingGeometry(4.2, 4.217, 180);
-	const orbitMaterial = new THREE.MeshBasicMaterial({
-		color: '#dfa57a',
-		side: THREE.DoubleSide,
-		transparent: true,
-		opacity: 0.075,
-		depthWrite: false
-	});
-	const orbits = new THREE.Group();
-	for (let i = 0; i < 3; i++) {
-		const ring = new THREE.Mesh(orbitGeometry, orbitMaterial);
-		ring.scale.setScalar(1 + i * 0.19);
-		ring.rotation.set(0.7 + i * 0.16, 0.25, -0.4);
-		orbits.add(ring);
-	}
-	orbits.position.set(4, 0, -1);
-	scene.add(orbits);
 	let frame = 0,
 		last = 0,
 		visible = false,
@@ -66,8 +49,6 @@ export function mountPortfolioSpace(canvas) {
 	let renderWidth = 0,
 		renderHeight = 0;
 	let enabled = document.body.dataset.motion !== 'off' && !reduced.matches;
-	const warm = new THREE.Color('#dfa57a'),
-		cool = new THREE.Color('#85c4e4');
 	function draw(now = 0) {
 		frame = 0;
 		if (disposed || lost || document.hidden || !visible) return;
@@ -76,9 +57,6 @@ export function mountPortfolioSpace(canvas) {
 			last = now;
 			if (enabled) stars.rotation.y += delta * 0.008;
 			stars.position.y = enabled ? progress * 2 : 0;
-			orbits.rotation.z = enabled ? -progress * 0.7 : -0.2;
-			orbits.position.x = enabled ? 4 - Math.sin(progress * Math.PI) * 7 : 2;
-			orbitMaterial.color.copy(warm).lerp(cool, Math.sin(progress * Math.PI));
 			renderer.render(scene, camera);
 		}
 		if (enabled) frame = requestAnimationFrame(draw);
@@ -155,8 +133,6 @@ export function mountPortfolioSpace(canvas) {
 		canvas.removeEventListener('webglcontextlost', contextLost);
 		geometry.dispose();
 		material.dispose();
-		orbitGeometry.dispose();
-		orbitMaterial.dispose();
 		renderer.dispose();
 	};
 }

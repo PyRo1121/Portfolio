@@ -2,16 +2,16 @@
 	import PublicShell from '$lib/components/PublicShell.svelte';
 	import CinematicHero from '$lib/components/CinematicHero.svelte';
 	import PortfolioSpace from '$lib/components/PortfolioSpace.svelte';
+	import ProjectObservatory from '$lib/components/ProjectObservatory.svelte';
 	import '$lib/styles/portfolio-home.css';
 	import { asset, resolve } from '$app/paths';
 	import {
 		ArrowUpRightIcon as ArrowUpRight,
 		EnvelopeSimpleIcon as EnvelopeSimple,
-		GithubLogoIcon as GithubLogo,
 		LinkedinLogoIcon as LinkedinLogo
 	} from 'phosphor-svelte';
 	import PublicSeoHead from '$lib/components/PublicSeoHead.svelte';
-	import { DEPLOYLINT_PROJECT, OMG_PROJECT, TOKEN_CONTROL_URL } from '$lib/domain/showcase';
+	import { TOKEN_CONTROL_URL } from '$lib/domain/showcase';
 	import {
 		homeSeo,
 		PUBLIC_AVAILABILITY_LINE,
@@ -26,8 +26,6 @@
 	let clientTelemetry = $state<ClientTelemetry | null>(null);
 	loadClientTelemetry().then((loaded) => (clientTelemetry = loaded));
 
-	const omgImage = asset('/portfolio/omg-landing.webp');
-	const deploylintImage = asset('/portfolio/deploylint-preview.png');
 	const resumeUrl = asset('/olen-latham-resume.pdf');
 </script>
 
@@ -38,153 +36,7 @@
 		<CinematicHero telemetry={clientTelemetry} />
 		<div class="portfolio-content">
 			<PortfolioSpace />
-			<section id="work" class="selected-work" aria-labelledby="work-heading">
-				<header>
-					<p class="section-label">Selected work</p>
-					<h2 id="work-heading">From the terminal<br />to production.</h2>
-					<p>
-						A command line. A deployment pipeline. A way to see where the tokens went. Each started
-						with something I wanted to work better.
-					</p>
-					<nav class="project-index" aria-label="Featured projects">
-						<a href="#omg-project">OMG <span>Developer tools</span></a>
-						<a href="#deploylint-project">DeployLint <span>CI/CD</span></a>
-						<a href="#tokens">Token Control <span>Usage explorer</span></a>
-					</nav>
-				</header>
-
-				<article id="omg-project" class="project project-omg">
-					<div class="project-visual">
-						<div class="project-world" aria-hidden="true">
-							<span class="world-orbit"></span><span class="world-core"></span>
-						</div>
-						<span class="project-watermark" aria-hidden="true">OMG</span>
-						<a
-							class="project-image"
-							href={resolve('/work/omg')}
-							onclick={() => clientTelemetry?.recordPortfolioAction('featured_omg_open')}
-							aria-label="Read the OMG case study"
-						>
-							<img
-								src={omgImage}
-								alt="The OMG landing page: one command that installs apps and programming languages on Linux and macOS"
-								width="1440"
-								height="900"
-								loading="lazy"
-							/>
-						</a>
-						<div class="command-strip">
-							<span aria-hidden="true">$</span> <code>omg</code><span
-								>Packages. Runtimes. Tasks.</span
-							>
-						</div>
-					</div>
-					<div class="project-copy">
-						<p class="project-kind"><span></span> Rust CLI / Public alpha</p>
-						<h3>OMG</h3>
-						<h4>Less tool juggling.<br />More building.</h4>
-						<p>{OMG_PROJECT.tagline} One place to work with the tools a project depends on.</p>
-						<ul class="project-tech" aria-label="OMG technologies">
-							<li>Rust</li>
-							<li>Linux</li>
-							<li>macOS</li>
-						</ul>
-						<div class="project-links">
-							<a
-								href={resolve('/work/omg')}
-								onclick={() => clientTelemetry?.recordPortfolioAction('featured_omg_open')}
-								>Read the OMG case study <ArrowUpRight size={15} weight="bold" /></a
-							>
-							<a
-								href={OMG_PROJECT.demoUrl}
-								target="_blank"
-								rel="external noopener"
-								onclick={() => clientTelemetry?.recordPortfolioAction('omg_site_open')}
-								>Visit OMG <ArrowUpRight size={15} weight="bold" /></a
-							>
-							<a href={OMG_PROJECT.repoUrl} target="_blank" rel="external noopener"
-								><GithubLogo size={15} weight="fill" /> Source</a
-							>
-						</div>
-					</div>
-				</article>
-
-				<article id="deploylint-project" class="project project-deploylint">
-					<div class="project-visual">
-						<div class="project-world" aria-hidden="true">
-							<span class="world-orbit"></span><span class="world-core"></span>
-						</div>
-						<a
-							class="project-image"
-							href={resolve('/work/deploylint')}
-							onclick={() => clientTelemetry?.recordPortfolioAction('featured_deploylint_open')}
-							aria-label="Read the DeployLint case study"
-						>
-							<img
-								src={deploylintImage}
-								alt="DeployLint preview showing its repository-specific GitHub Actions setup"
-								width="1440"
-								height="900"
-								loading="lazy"
-							/>
-						</a>
-						<div class="pipeline-strip" aria-label="DeployLint workflow">
-							<span>Repository</span><i aria-hidden="true"></i><span>Workflow</span><i
-								aria-hidden="true"
-							></i><span>Pull request</span>
-						</div>
-					</div>
-					<div class="project-copy">
-						<p class="project-kind"><span></span> TypeScript / CI/CD</p>
-						<h3>DeployLint</h3>
-						<h4>A clearer path<br />to production.</h4>
-						<p>{DEPLOYLINT_PROJECT.tagline}</p>
-						<ul class="project-tech" aria-label="DeployLint technologies">
-							<li>SvelteKit</li>
-							<li>GitHub Apps</li>
-							<li>Cloudflare</li>
-						</ul>
-						<div class="project-links">
-							<a
-								href={resolve('/work/deploylint')}
-								onclick={() => clientTelemetry?.recordPortfolioAction('featured_deploylint_open')}
-								>Read the DeployLint case study <ArrowUpRight size={15} weight="bold" /></a
-							>
-							<a
-								href={DEPLOYLINT_PROJECT.demoUrl}
-								target="_blank"
-								rel="external noopener"
-								onclick={() => clientTelemetry?.recordPortfolioAction('deploylint_site_open')}
-								>Visit DeployLint <ArrowUpRight size={15} weight="bold" /></a
-							>
-						</div>
-					</div>
-				</article>
-
-				<aside id="tokens" class="side-project" aria-labelledby="tokens-heading">
-					<div class="token-instrument" aria-hidden="true">
-						<div class="instrument-ring outer"></div>
-						<div class="instrument-ring inner"></div>
-						<div class="instrument-core">
-							<span>Recorded tokens</span><strong>12.60<span>B</span></strong><small
-								>30-day snapshot</small
-							>
-						</div>
-						<span class="instrument-satellite"></span>
-					</div>
-					<div>
-						<p class="section-label">A personal experiment</p>
-						<h3 id="tokens-heading">Token Control</h3>
-						<p>
-							I built this to make my AI-assisted coding activity visible. It tracks token volume,
-							model and provider mix, cache use, and estimated API-equivalent spend across my tools.
-						</p>
-						<a href={TOKEN_CONTROL_URL} target="_blank" rel="external noopener"
-							>Explore the live dashboard <ArrowUpRight size={15} weight="bold" /></a
-						>
-					</div>
-				</aside>
-			</section>
+			<ProjectObservatory telemetry={clientTelemetry} />
 
 			<section class="usage-section" aria-labelledby="usage-heading">
 				<div>
