@@ -210,13 +210,16 @@ export function mountOrbit(hero) {
 
 	function projectAnchor() {
 		world.getWorldPosition(center);
-		projected.copy(center).project(camera);
+		projected.copy(center);
+		projected.x -= world.scale.x * (width >= 1000 ? 3.9 : 1.2);
+		projected.y -= world.scale.x * (width >= 1000 ? 1.95 : 3);
+		projected.project(camera);
 		const x = (projected.x * 0.5 + 0.5) * width,
 			y = (-projected.y * 0.5 + 0.5) * height;
 		beacon.style.left = `${x}px`;
 		beacon.style.top = `${y}px`;
 		beacon.style.right = 'auto';
-		beacon.style.transform = 'translate(-50%,-50%)';
+		beacon.style.transform = 'none';
 		beacon.style.setProperty('--reading-opacity', String(1 - jump * 0.85));
 		canvas.dataset.anchorX = x.toFixed(2);
 		canvas.dataset.anchorY = y.toFixed(2);
@@ -248,7 +251,7 @@ export function mountOrbit(hero) {
 		const viewHeight = 2 * Math.tan(THREE.MathUtils.degToRad(21)) * 18;
 		world.scale.setScalar(((radiusPixels / height) * viewHeight) / 3);
 		const x = mobile ? 0.5 : width < 1000 ? 0.76 : 0.755,
-			y = mobile ? 0.79 : 0.48;
+			y = mobile ? 0.75 : 0.48;
 		world.position.set((x - 0.5) * viewHeight * camera.aspect, (0.5 - y) * viewHeight, 0);
 		if (ready && !redraw)
 			redraw = requestAnimationFrame(() => {

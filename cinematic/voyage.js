@@ -299,11 +299,7 @@ export async function createVoyage({ scene, camera, world, renderer, keep, resiz
 		prelude.setAttribute('aria-hidden', String(state.prelude < 0.1));
 		progress.style.transform = `scaleX(${time / timeline.duration()})`;
 		shot.textContent =
-			time < 4
-				? '01 / A signal in the silence'
-				: time < 7
-					? '02 / A world of possibilities'
-					: '03 / The human behind it all';
+			time < 4 ? '01 / Departure' : time < 7 ? '02 / Approach' : '03 / Back to Earth';
 		panel.dataset.time = time.toFixed(2);
 	}
 	function availability() {
