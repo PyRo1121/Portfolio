@@ -38,7 +38,7 @@
 					stroke-width="1.3"
 				/><circle cx="16" cy="16" r="5" fill="currentColor" /></svg
 			>
-			<span>OLEN <i>/</i> IN ORBIT<small>Olen Latham · Software developer</small></span>
+			<span>Olen Latham</span>
 		</a>
 		<nav aria-label="Portfolio navigation">
 			<a href={resolve('/#work')}>Work</a>
@@ -58,7 +58,7 @@
 	<footer class="public-footer">
 		<div>
 			<a class="footer-brand" href={resolve('/')}>Still looking up.</a>
-			<p>A personal universe by Olen Latham.<br />Built from curiosity. Launched from Earth.</p>
+			<p>Independent software projects.<br />McKinney, Texas.</p>
 		</div>
 		<nav aria-label="Footer navigation">
 			<a href={PUBLIC_GITHUB_URL} target="_blank" rel="external noreferrer">GitHub</a><a

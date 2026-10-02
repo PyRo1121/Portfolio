@@ -41,20 +41,20 @@
 		<div class="film-letterbox bottom"></div>
 		<div class="film-veil" aria-hidden="true"></div>
 		<div class="film-prelude">
-			<span>EVERY BUILD BEGINS</span>
-			<p>with a little<br />curiosity.</p>
+			<span>IT STARTS WITH A QUESTION</span>
+			<p>Could this<br />work better?</p>
 		</div>
 		<div class="film-title">
-			<p>A PERSONAL UNIVERSE</p>
-			<strong>OLEN<span>IN ORBIT</span></strong><small
-				>Software. Systems. A restless imagination.</small
+			<p>FROM IDEA TO RELEASE</p>
+			<strong>MAKE<span>IT REAL</span></strong><small
+				>Tools, experiments, and the decisions behind them.</small
 			>
 		</div>
 		<div class="film-topline">
-			<span>OLEN / IN ORBIT</span><span class="film-edition">AN EXPLORATION IN THREE ACTS</span>
+			<span>SELECTED WORK / 2026</span><span class="film-edition">A SHORT INTRODUCTION</span>
 		</div>
 		<div class="film-bottomline">
-			<span class="film-shot">01 / A signal in the silence</span>
+			<span class="film-shot">01 / Departure</span>
 			<div>
 				<button type="button" id="film-sound" aria-pressed="false">Sound off</button><button
 					type="button"
@@ -66,13 +66,13 @@
 	</div>
 	<div class="hero-content">
 		<h1 id="portfolio-heading">
-			<span class="hero-identity">Olen Latham · Software developer</span><span class="hero-lines"
-				>One human.<br />A universe<br />of builds.</span
+			<span class="hero-identity">Software developer</span><span class="hero-lines"
+				>I build tools<br />I want<br />to use.</span
 			>
 		</h1>
 		<p class="orbit-summary">
-			I turn the things I wish existed into things you can use. Developer tools in Rust. Web
-			platforms in TypeScript. Ideas that refuse to stay ideas.
+			Rust command-line tools, TypeScript apps, and the infrastructure behind them. Explore the
+			projects, the code, and the decisions that shaped them.
 		</p>
 		<div class="orbit-actions">
 			<a class="orbit-button primary" href="#work">Explore the work</a><a
@@ -95,7 +95,7 @@
 	</div>
 	<div class="hero-beacon" aria-hidden="true">
 		<div class="beacon-reading">
-			<span>Origin point</span><strong>Earth.</strong><small>One restless builder.</small>
+			<span>03 / Home planet</span><strong>Earth</strong><small>McKinney, Texas</small>
 		</div>
 	</div>
 	<div class="orbit-support">

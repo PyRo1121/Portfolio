@@ -422,38 +422,70 @@ body[data-scene='ready'] .orbit-stage .hero-art {
 }
 .hero-beacon {
 	position: absolute;
-	left: 75.5%;
-	top: 48%;
-	transform: translate(-50%, -50%);
-	width: 240px;
-	text-align: center;
+	left: 45%;
+	top: 77%;
+	width: 220px;
+	text-align: left;
 	pointer-events: none;
 	opacity: var(--reading-opacity, 1);
 	text-shadow: 0 2px 25px #000;
 }
 .beacon-reading {
-	padding: 18px 20px 20px;
-	border: 1px solid #b6ddff38;
-	border-radius: 14px;
-	background: linear-gradient(145deg, #030b19ed, #071322d9);
-	box-shadow: 0 12px 36px #0005;
-	text-shadow: 0 1px 3px #000;
+	position: relative;
+	text-shadow: 0 2px 8px #020710;
+}
+.beacon-reading::before {
+	content: '';
+	position: absolute;
+	left: 178px;
+	top: -36px;
+	width: 22px;
+	height: 26px;
+	border-left: 1px solid #a2d8ed8c;
+	border-bottom: 1px solid #a2d8ed8c;
+	transform: skewX(-24deg);
+}
+.beacon-reading::after {
+	content: '';
+	position: absolute;
+	left: 182px;
+	top: -39px;
+	width: 3px;
+	height: 3px;
+	border-radius: 50%;
+	background: #b7e4f7;
 }
 .beacon-reading > span {
-	font-size: 11px;
-	font-weight: 600;
-	letter-spacing: 0.2em;
+	display: block;
+	margin-bottom: 6px;
+	font-size: 9px;
+	font-weight: 500;
+	letter-spacing: 0.22em;
 	text-transform: uppercase;
-	color: #d9efff;
+	color: #b1cddd;
 }
 .beacon-reading strong {
-	display: block;
-	font: 400 65px/1.2 var(--display);
+	display: inline-block;
+	font: 400 28px/1 var(--display);
+	letter-spacing: 0.05em;
 	color: #ffffff;
 }
 .beacon-reading small {
-	font-size: 12px;
-	color: #e2ecf8;
+	margin-left: 12px;
+	font-size: 10px;
+	color: #c8dbe7;
+}
+@media (max-width: 999px) {
+	.hero-beacon {
+		left: 66%;
+		top: 84%;
+	}
+	.beacon-reading::before {
+		left: 8px;
+	}
+	.beacon-reading::after {
+		left: 12px;
+	}
 }
 .orbit-support {
 	position: absolute;
@@ -504,12 +536,6 @@ body[data-film='off'][data-motion='on'] .hero-content {
 	.orbit-summary {
 		max-width: 340px;
 	}
-	.hero-beacon {
-		width: 160px;
-	}
-	.beacon-reading strong {
-		font-size: 50px;
-	}
 }
 @media (max-width: 600px) {
 	.orbit-stage {
@@ -549,11 +575,8 @@ body[data-film='off'][data-motion='on'] .hero-content {
 		font-size: 11px;
 	}
 	.hero-beacon {
-		left: 50%;
-		top: 79%;
-	}
-	.beacon-reading strong {
-		font-size: 55px;
+		left: calc(50% - 64px);
+		top: calc(75% + 176px);
 	}
 	.orbit-support {
 		font-size: 9px;
