@@ -29,7 +29,9 @@ export function mountOrbit(hero) {
 		disposed = false,
 		lost = false;
 	let width = 1,
-		height = 1;
+		height = 1,
+		pixelRatio = 0,
+		redraw = 0;
 	let sceneTime = 0,
 		travel = 0,
 		jump = 0,
@@ -90,9 +92,9 @@ export function mountOrbit(hero) {
 			blending: THREE.AdditiveBlending,
 			vertexShader: `varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
 			fragmentShader: `uniform float uTime,uJump;uniform vec3 uColor;varying vec2 vUv;
-    void main(){float pulse=pow(.5+.5*cos(vUv.x*6.283185-uTime*.27),28.);
-      float ticks=pow(.5+.5*cos(vUv.x*6.283185*96.),18.);float core=pow(1.-abs(vUv.y-.5)*2.,2.);
-      gl_FragColor=vec4(uColor*(1.1+pulse*2.),core*(.26+ticks*.1+pulse*.7)*(1.-uJump*.65));}`
+    void main(){float pulse=pow(.5+.5*cos(vUv.x*6.283185-uTime*.27),12.);
+      float core=pow(1.-abs(vUv.y-.5)*2.,2.);
+      gl_FragColor=vec4(uColor*(1.1+pulse),core*(.3+pulse*.45)*(1.-uJump*.65));}`
 		})
 	);
 	orbit.add(
@@ -100,15 +102,10 @@ export function mountOrbit(hero) {
 		new THREE.Mesh(keep(new THREE.TorusGeometry(4.28, 0.006, 5, 256)), ringMaterial)
 	);
 	orbit.rotation.set(1.12, 0.18, -0.31);
-	const satelliteGeometry = keep(new THREE.IcosahedronGeometry(0.057, 1));
+	const satelliteGeometry = keep(new THREE.SphereGeometry(0.063, 12, 8));
 	const satelliteMaterial = keep(
-		new THREE.MeshPhysicalMaterial({
-			color: '#d7ecff',
-			metalness: 0.65,
-			roughness: 0.2,
-			clearcoat: 0.8,
-			emissive: '#7bcfff',
-			emissiveIntensity: 1.4
+		new THREE.MeshBasicMaterial({
+			color: new THREE.Color('#b9e7ff').multiplyScalar(1.8)
 		})
 	);
 	const satellites = Array.from({ length: 6 }, () => {
@@ -227,15 +224,20 @@ export function mountOrbit(hero) {
 	function resize() {
 		if (!renderer || disposed) return;
 		const rect = hero.getBoundingClientRect();
-		width = rect.width;
-		height = voyage?.active ? innerHeight : rect.height;
-		const mobile = width <= 600;
+		const nextWidth = Math.max(1, Math.round(rect.width));
+		const nextHeight = Math.max(1, Math.round(voyage?.active ? innerHeight : rect.height));
+		const mobile = nextWidth <= 600;
 		const dpr = Math.min(devicePixelRatio || 1, mobile || balanced ? 1 : 1.35);
-		renderer.setPixelRatio(dpr);
-		renderer.setSize(width, height, false);
-		composer.setPixelRatio(dpr);
-		composer.setSize(width, height);
-		bloom.enabled = !mobile && !balanced;
+		if (width !== nextWidth || height !== nextHeight || pixelRatio !== dpr) {
+			const ratioChanged = pixelRatio !== dpr;
+			width = nextWidth;
+			height = nextHeight;
+			pixelRatio = dpr;
+			renderer.setDrawingBufferSize(width, height, dpr);
+			if (ratioChanged) composer.setPixelRatio(dpr);
+			composer.setSize(width, height);
+		}
+		bloom.enabled = !mobile;
 		camera.aspect = width / height;
 		camera.updateProjectionMatrix();
 		backdropUniforms.uAspect.value = camera.aspect;
@@ -248,14 +250,18 @@ export function mountOrbit(hero) {
 		const x = mobile ? 0.5 : width < 1000 ? 0.76 : 0.755,
 			y = mobile ? 0.79 : 0.48;
 		world.position.set((x - 0.5) * viewHeight * camera.aspect, (0.5 - y) * viewHeight, 0);
-		render(previous, 0);
+		if (ready && !redraw)
+			redraw = requestAnimationFrame(() => {
+				redraw = 0;
+				render(previous, 0);
+			});
 	}
 	function render(frame, dt) {
 		if (!ready || disposed || lost) return;
 		previous = frame;
 		if (dt > 0.034) slowFrames++;
 		else slowFrames = Math.max(0, slowFrames - 1);
-		if (slowFrames > 60 && !balanced) {
+		if (slowFrames > 60 && !balanced && !voyage?.active) {
 			balanced = true;
 			resize();
 		}
@@ -302,7 +308,7 @@ export function mountOrbit(hero) {
 			node.rotation.set(sceneTime * 0.4, i + sceneTime * 0.2, 0);
 		});
 		key.color.copy(keyColor).lerp(ion, nebula * 0.3);
-		satelliteMaterial.emissive.copy(atmosphereColor);
+		satelliteMaterial.color.copy(atmosphereColor).multiplyScalar(1.8);
 		flareMaterial.uniforms.uColor.value.copy(atmosphereColor);
 		voyage?.update(step, sceneTime, world.position, world.scale.x);
 		orbit.visible = !voyage?.active;
@@ -339,6 +345,7 @@ export function mountOrbit(hero) {
 	function cleanup() {
 		if (disposed) return;
 		disposed = true;
+		cancelAnimationFrame(redraw);
 		resizeObserver?.disconnect();
 		controller.dispose();
 		voyage?.dispose();
@@ -369,7 +376,13 @@ export function mountOrbit(hero) {
 			renderer.outputColorSpace = THREE.SRGBColorSpace;
 			renderer.toneMapping = THREE.ACESFilmicToneMapping;
 			renderer.toneMappingExposure = 1.1;
-			composer = new EffectComposer(renderer);
+			// Canvas antialiasing does not apply to the composer's offscreen buffers.
+			const target = new THREE.WebGLRenderTarget(1, 1, {
+				type: THREE.HalfFloatType,
+				samples: Math.min(4, renderer.capabilities.maxSamples)
+			});
+			composer = new EffectComposer(renderer, target);
+			canvas.dataset.samples = String(target.samples);
 			composer.addPass(new RenderPass(scene, camera));
 			bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.42, 0.55, 0.8);
 			composer.addPass(bloom);
@@ -389,6 +402,24 @@ export function mountOrbit(hero) {
 			});
 			composer.addPass(lens);
 			composer.addPass(new OutputPass());
+			const voyageLoading = createVoyage({
+				scene,
+				camera,
+				world,
+				renderer,
+				keep,
+				resize,
+				isDisposed: () => disposed
+			})
+				.then((value) => {
+					if (disposed) {
+						value.dispose();
+						return null;
+					}
+					voyage = value;
+					return value;
+				})
+				.catch(() => null);
 			const loader = new THREE.TextureLoader(new THREE.LoadingManager());
 			const [day, night, cloudMap, sky] = await Promise.all(
 				['earth-day.jpg', 'earth-night.jpg', 'earth-clouds.jpg', 'milky-way.jpg'].map(
@@ -440,11 +471,19 @@ export function mountOrbit(hero) {
 			clouds = new THREE.Mesh(sphere, cloudMaterial);
 			clouds.scale.setScalar(1.011);
 			globe.add(clouds);
+			// Finalize lighting and model materials before compiling or revealing anything.
+			voyage = await voyageLoading;
+			if (disposed) {
+				voyage?.dispose();
+				return;
+			}
+			for (const resource of resources) if (resource.isTexture) renderer.initTexture(resource);
 			await renderer.compileAsync(scene, camera);
 			if (disposed) return;
-			ready = true;
 			resize();
-			body.dataset.scene = 'ready';
+			ready = true;
+			// Warm the bloom/output passes while the illustrated fallback is still covering them.
+			render(previous, 0);
 			body.dataset.sceneVersion = 'earth-cinema';
 			canvas.dataset.engine = `three.js r${THREE.REVISION}`;
 			document.addEventListener('orbit-frame', onFrame);
@@ -453,18 +492,9 @@ export function mountOrbit(hero) {
 			resizeObserver = new ResizeObserver(resize);
 			resizeObserver.observe(hero);
 			window.addEventListener('resize', resize, { passive: true });
-			createVoyage({ scene, camera, world, renderer, keep, resize, isDisposed: () => disposed })
-				.then((value) => {
-					if (disposed) {
-						value.dispose();
-						return;
-					}
-					voyage = value;
-					voyage.start();
-				})
-				.catch(() => {
-					console.info('Voyager could not load; the Earth experience remains available.');
-				});
+			const playing = await voyage?.start();
+			if (disposed) return;
+			if (!playing) body.dataset.scene = 'ready';
 			canvas.addEventListener('webglcontextlost', (event) => {
 				event.preventDefault();
 				lost = true;
@@ -478,12 +508,15 @@ export function mountOrbit(hero) {
 				body.dataset.scene = 'ready';
 			});
 			window.addEventListener('pagehide', onPageHide);
-		} catch {
+		} catch (error) {
 			if (disposed) return;
 			body.dataset.scene = 'fallback';
 			clearAnchor();
 			cleanup();
-			console.warn('The cinematic scene is unavailable; the illustrated scene remains active.');
+			console.warn(
+				'The cinematic scene is unavailable; the illustrated scene remains active.',
+				error
+			);
 		}
 	}
 	void start();
