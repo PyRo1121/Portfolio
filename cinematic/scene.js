@@ -2,9 +2,11 @@ import { createController } from './controller.js';
 import * as THREE from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { CinematicBloomPass } from './bloom.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { FXAAShader } from 'three/addons/shaders/FXAAShader.js';
 import { createVoyage } from './voyage.js';
 export { mountPortfolioSpace } from './gallery.js';
 export { mountObservatory } from './observatory.js';
@@ -26,7 +28,7 @@ export function mountOrbit(hero) {
 	const orbit = new THREE.Group();
 	world.add(globe, orbit);
 	scene.add(world);
-	let renderer, composer, bloom, resizeObserver, voyage, lens;
+	let renderer, composer, bloom, resizeObserver, voyage, lens, antialias;
 	let ready = false,
 		disposed = false,
 		lost = false;
@@ -38,8 +40,9 @@ export function mountOrbit(hero) {
 		travel = 0,
 		jump = 0,
 		frames = 0;
-	let slowFrames = 0,
+	let slowTime = 0,
 		balanced = false;
+	let noiseTime = -Infinity;
 	let nebula = 0,
 		paletteTarget = body.dataset.lighting === 'nebula' ? 1 : 0;
 	let previous = { dt: 0, elapsed: 0, boost: false, pointer: { x: 0, y: 0 } };
@@ -115,8 +118,35 @@ export function mountOrbit(hero) {
 		return node;
 	});
 
+	const noiseTarget = keep(
+		new THREE.WebGLRenderTarget(1, 1, {
+			type: THREE.HalfFloatType,
+			depthBuffer: false
+		})
+	);
+	const noiseUniforms = { uAspect: { value: 1 }, uTime: { value: 0 } };
+	const noiseMaterial = keep(
+		new THREE.ShaderMaterial({
+			uniforms: noiseUniforms,
+			depthTest: false,
+			depthWrite: false,
+			toneMapped: false,
+			vertexShader: `varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}`,
+			fragmentShader: `uniform float uAspect,uTime;varying vec2 vUv;
+		float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+		float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1)),f.x),f.y);}
+		float fbm(vec2 p){float n=0.,a=.5;for(int i=0;i<4;i++){n+=a*noise(p);p=mat2(.8,.6,-.6,.8)*p*2.1;a*=.48;}return n;}
+		void main(){vec2 p=(vUv-.5)*vec2(uAspect,1.);
+		float haze=fbm(p*3.8+vec2(uTime*.007,0.));
+		float band=exp(-pow((p.y-p.x*.42+.04)*2.8,2.));
+		float wisps=pow(fbm(p*5.+haze*2.),3.)*band;
+		gl_FragColor=vec4(wisps,0.,0.,1.);}`
+		})
+	);
+	const noiseQuad = new FullScreenQuad(noiseMaterial);
 	const backdropUniforms = {
 		uMap: { value: null },
+		uNoise: { value: noiseTarget.texture },
 		uAspect: { value: 1 },
 		uTime: { value: 0 },
 		uNebula: { value: 0 }
@@ -128,13 +158,9 @@ export function mountOrbit(hero) {
 			depthTest: false,
 			vertexShader: `varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,1.,1.);}`,
 			fragmentShader: `
-    uniform sampler2D uMap;uniform float uAspect,uTime,uNebula;varying vec2 vUv;
-    float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
-    float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1)),f.x),f.y);}
-    float fbm(vec2 p){float n=0.,a=.5;for(int i=0;i<4;i++){n+=a*noise(p);p=mat2(.8,.6,-.6,.8)*p*2.1;a*=.48;}return n;}
-    void main(){vec2 p=(vUv-.5)*vec2(uAspect,1.);vec2 uv=vec2(vUv.x*.62+uTime*.00012,vUv.y*.7+.1);
-      vec3 stars=texture2D(uMap,uv).rgb*.28;float haze=fbm(p*3.8+vec2(uTime*.007,0.));
-      float band=exp(-pow((p.y-p.x*.42+.04)*2.8,2.));float wisps=pow(fbm(p*5.+haze*2.),3.)*band;
+    uniform sampler2D uMap,uNoise;uniform float uTime,uNebula;varying vec2 vUv;
+    void main(){vec2 uv=vec2(vUv.x*.62+uTime*.00012,vUv.y*.7+.1);
+      vec3 stars=texture2D(uMap,uv).rgb*.28;float wisps=texture2D(uNoise,vUv).r;
       vec3 blue=mix(vec3(.016,.04,.13),vec3(.15,.055,.24),uNebula);vec3 c=stars+blue*wisps*2.3;
       c*=mix(.26,1.,smoothstep(.15,.65,vUv.x));c*=smoothstep(0.,.16,vUv.y);
       gl_FragColor=vec4(c+vec3(.001,.002,.005),1.);}`
@@ -217,10 +243,10 @@ export function mountOrbit(hero) {
 		projected.project(camera);
 		const x = (projected.x * 0.5 + 0.5) * width,
 			y = (-projected.y * 0.5 + 0.5) * height;
-		beacon.style.left = `${x}px`;
-		beacon.style.top = `${y}px`;
+		beacon.style.left = '0';
+		beacon.style.top = '0';
 		beacon.style.right = 'auto';
-		beacon.style.transform = 'none';
+		beacon.style.transform = `translate3d(${x}px,${y}px,0)`;
 		beacon.style.setProperty('--reading-opacity', String(1 - jump * 0.85));
 		canvas.dataset.anchorX = x.toFixed(2);
 		canvas.dataset.anchorY = y.toFixed(2);
@@ -240,12 +266,24 @@ export function mountOrbit(hero) {
 			renderer.setDrawingBufferSize(width, height, dpr);
 			if (ratioChanged) composer.setPixelRatio(dpr);
 			composer.setSize(width, height);
+			antialias.uniforms.resolution.value.set(1 / (width * dpr), 1 / (height * dpr));
+			noiseTarget.setSize(
+				Math.min(width, 512),
+				Math.max(1, Math.round((Math.min(width, 512) * height) / width))
+			);
+			noiseTime = -Infinity;
 		}
-		bloom.enabled = !mobile;
+		bloom.enabled = true;
+		antialias.enabled = balanced;
+		bloom.resolutionScale = balanced ? 0.5 : 1;
+		bloom.setSize(width * dpr, height * dpr);
 		camera.aspect = width / height;
 		camera.updateProjectionMatrix();
 		backdropUniforms.uAspect.value = camera.aspect;
+		noiseUniforms.uAspect.value = camera.aspect;
 		canvas.dataset.quality = mobile || balanced ? 'balanced' : 'cinematic';
+		canvas.dataset.antialias = balanced ? 'fxaa' : 'msaa';
+		canvas.dataset.bloom = 'on';
 		const radiusPixels = mobile
 			? Math.min(width * 0.43, 190)
 			: Math.min(width * 0.235, height * 0.36);
@@ -263,10 +301,15 @@ export function mountOrbit(hero) {
 	function render(frame, dt) {
 		if (!ready || disposed || lost) return;
 		previous = frame;
-		if (dt > 0.034) slowFrames++;
-		else slowFrames = Math.max(0, slowFrames - 1);
-		if (slowFrames > 60 && !balanced && !voyage?.active) {
+		if (dt > 0.034) slowTime += dt;
+		else slowTime = Math.max(0, slowTime - dt);
+		if (slowTime > 1 && !balanced) {
 			balanced = true;
+			for (const target of [composer.renderTarget1, composer.renderTarget2]) {
+				target.samples = 0;
+				target.dispose();
+			}
+			canvas.dataset.samples = '0';
 			resize();
 		}
 		const moving = body.dataset.motion === 'on' && !reduced.matches,
@@ -308,13 +351,20 @@ export function mountOrbit(hero) {
 		key.color.copy(keyColor).lerp(ion, nebula * 0.3);
 		satelliteMaterial.color.copy(atmosphereColor).multiplyScalar(1.8);
 		flareMaterial.uniforms.uColor.value.copy(atmosphereColor);
-		voyage?.update(step, sceneTime, world.position, world.scale.x);
+		voyage?.update(moving ? dt : 0, sceneTime, world.position, world.scale.x);
 		orbit.visible = !voyage?.active;
 		flare.visible = !voyage?.active;
 		camera.updateMatrixWorld();
 		lens.uniforms.uTime.value = sceneTime;
 		lens.uniforms.uWarp.value = jump;
 		lens.uniforms.uFilm.value = voyage?.active ? 1 : 0;
+		if (Math.abs(sceneTime - noiseTime) >= 0.1) {
+			noiseUniforms.uTime.value = sceneTime;
+			renderer.setRenderTarget(noiseTarget);
+			noiseQuad.render(renderer);
+			renderer.setRenderTarget(null);
+			noiseTime = sceneTime;
+		}
 		bloom.strength = (voyage?.active ? 0.3 : 0.42) + jump * 0.25;
 		world.updateMatrixWorld(true);
 		projectAnchor();
@@ -350,6 +400,7 @@ export function mountOrbit(hero) {
 	}
 	function onContextRestored() {
 		lost = false;
+		noiseTime = -Infinity;
 		resize();
 		body.dataset.scene = 'ready';
 		hero.dispatchEvent(
@@ -371,6 +422,7 @@ export function mountOrbit(hero) {
 		document.removeEventListener('orbit-motion', onMotion);
 		document.removeEventListener('orbit-lighting', onLighting);
 		resources.forEach((value) => value.dispose?.());
+		noiseQuad.dispose();
 		['scene', 'sceneVersion', 'film', 'motion', 'heroVisible', 'lighting'].forEach(
 			(key) => delete body.dataset[key]
 		);
@@ -393,32 +445,44 @@ export function mountOrbit(hero) {
 			renderer.outputColorSpace = THREE.SRGBColorSpace;
 			renderer.toneMapping = THREE.ACESFilmicToneMapping;
 			renderer.toneMappingExposure = 1.1;
+			const gl = renderer.getContext();
+			const debug = gl.getExtension('WEBGL_debug_renderer_info');
+			const backend = debug ? gl.getParameter(debug.UNMASKED_RENDERER_WEBGL) : '';
+			balanced = /Basic Render Driver|SwiftShader|llvmpipe|software/i.test(backend);
 			// Canvas antialiasing does not apply to the composer's offscreen buffers.
 			const target = new THREE.WebGLRenderTarget(1, 1, {
 				type: THREE.HalfFloatType,
-				samples: Math.min(4, renderer.capabilities.maxSamples)
+				samples: balanced ? 0 : Math.min(4, renderer.capabilities.maxSamples)
 			});
 			composer = new EffectComposer(renderer, target);
 			canvas.dataset.samples = String(target.samples);
 			composer.addPass(new RenderPass(scene, camera));
-			bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.42, 0.55, 0.8);
+			bloom = new CinematicBloomPass(new THREE.Vector2(1, 1), 0.42, 0.55, 0.8);
 			composer.addPass(bloom);
-			lens = new ShaderPass({
-				uniforms: {
-					tDiffuse: { value: null },
-					uTime: { value: 0 },
-					uWarp: { value: 0 },
-					uFilm: { value: 0 }
-				},
-				vertexShader: `varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
-				fragmentShader: `uniform sampler2D tDiffuse;uniform float uTime,uWarp,uFilm;varying vec2 vUv;
+			lens = new OutputPass();
+			Object.assign(lens.uniforms, {
+				uTime: { value: 0 },
+				uWarp: { value: 0 },
+				uFilm: { value: 0 }
+			});
+			lens.material.fragmentShader = `precision highp float;
+				#include <tonemapping_pars_fragment>
+				#include <colorspace_pars_fragment>
+				uniform sampler2D tDiffuse;uniform float uTime,uWarp,uFilm;varying vec2 vUv;
         void main(){vec2 p=vUv-.5;vec2 shift=p*dot(p,p)*uWarp*.018;
           vec3 c=texture2D(tDiffuse,vUv).rgb;c.r=texture2D(tDiffuse,vUv+shift).r;c.b=texture2D(tDiffuse,vUv-shift).b;
           c*=1.-dot(p,p)*(.4+uFilm*.35);float grain=fract(sin(dot(vUv+fract(uTime),vec2(12.9898,78.233)))*43758.5453)-.5;
-          gl_FragColor=vec4(max(c+grain*.003,0.),1.);}`
-			});
+          gl_FragColor=vec4(max(c+grain*.003,0.),1.);
+				#ifdef ACES_FILMIC_TONE_MAPPING
+				gl_FragColor.rgb=ACESFilmicToneMapping(gl_FragColor.rgb);
+				#endif
+				#ifdef SRGB_TRANSFER
+				gl_FragColor=sRGBTransferOETF(gl_FragColor);
+				#endif
+			}`;
 			composer.addPass(lens);
-			composer.addPass(new OutputPass());
+			antialias = new ShaderPass(FXAAShader);
+			composer.addPass(antialias);
 			const voyageLoading = createVoyage({
 				scene,
 				camera,

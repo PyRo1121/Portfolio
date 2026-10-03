@@ -25,7 +25,7 @@ export function createController(hero) {
 			last = 0;
 			return;
 		}
-		const dt = last ? Math.min((now - last) / 1000, 0.05) : 0;
+		const dt = last ? (now - last) / 1000 : 0;
 		last = now;
 		elapsed += dt;
 		eased.x += (pointer.x - eased.x) * 0.05;
