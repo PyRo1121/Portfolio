@@ -59,21 +59,6 @@
 </script>
 
 <section class="hero orbit-stage" bind:this={stage} aria-labelledby="portfolio-heading">
-	<picture>
-		<source media="(max-width: 600px)" srcset="/orbit/earth-poster-mobile.jpg" />
-		<source media="(max-width: 999px)" srcset="/orbit/earth-poster-tablet.jpg" />
-		<img
-			class="hero-art"
-			src="/orbit/earth-poster-desktop.jpg"
-			width="1440"
-			height="965"
-			alt=""
-			fetchpriority="high"
-		/>
-	</picture>
-	{#key canvasVersion}
-		<canvas class="flight-scene" aria-hidden="true"></canvas>
-	{/key}
 	<div class="film-overlay" hidden role="region" aria-label="Opening film">
 		<div class="film-letterbox top"></div>
 		<div class="film-letterbox bottom"></div>
@@ -148,6 +133,23 @@
 			{/if}
 		</p>
 		<noscript>Enable JavaScript to watch the opening.</noscript>
+	</div>
+	<div class="orbit-visual">
+		<picture>
+			<source media="(max-width: 600px)" srcset="/orbit/earth-poster-mobile-stage.jpg" />
+			<source media="(max-width: 999px)" srcset="/orbit/earth-poster-tablet.jpg" />
+			<img
+				class="hero-art"
+				src="/orbit/earth-poster-desktop.jpg"
+				width="1440"
+				height="965"
+				alt=""
+				fetchpriority="high"
+			/>
+		</picture>
+		{#key canvasVersion}
+			<canvas class="flight-scene" aria-hidden="true"></canvas>
+		{/key}
 	</div>
 	<div class="hero-beacon" aria-hidden="true">
 		<div class="beacon-reading">

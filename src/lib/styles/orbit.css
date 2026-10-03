@@ -285,6 +285,12 @@ body[data-film='on'] .motion-toggle {
 	background: #040710;
 	color: #eff4ff;
 }
+.orbit-visual {
+	position: absolute;
+	inset: 0;
+	z-index: -1;
+	pointer-events: none;
+}
 .orbit-stage .hero-art,
 .orbit-stage .flight-scene {
 	position: absolute;
@@ -529,6 +535,14 @@ body[data-scene='ready'] .orbit-stage .hero-art {
 body[data-film='on'] .orbit-stage {
 	padding-top: 108px;
 }
+body[data-film='on'] .orbit-visual {
+	position: static;
+}
+body[data-film='on'] .orbit-stage .flight-scene {
+	position: fixed;
+	height: 100svh;
+	z-index: 2;
+}
 body[data-film='on'] .orbit-support {
 	visibility: hidden;
 }
@@ -543,12 +557,25 @@ body[data-film='on'] .orbit-support {
 @media (max-width: 600px) {
 	.orbit-stage {
 		margin-top: -94px;
-		min-height: 1110px;
+		min-height: 0;
 		padding-top: 94px;
+		padding-bottom: 28px;
 	}
 	.orbit-stage .hero-content {
 		width: calc(100% - 40px);
-		padding: 65px 0 420px;
+		padding: 48px 0 12px;
+	}
+	.orbit-visual {
+		position: relative;
+		inset: auto;
+		height: calc(min(100vw, 440px) + 40px);
+		z-index: 0;
+	}
+	.orbit-stage .hero-art {
+		left: 50%;
+		width: min(100%, 440px);
+		transform: translateX(-50%);
+		object-fit: contain;
 	}
 	.hero-identity {
 		font-size: 10px;
@@ -565,37 +592,58 @@ body[data-film='on'] .orbit-support {
 	}
 	.orbit-actions {
 		gap: 10px;
+		flex-wrap: wrap;
 	}
 	.orbit-button {
 		padding: 11px 14px;
 		font-size: 12px;
 	}
 	.orbit-controls {
-		gap: 22px;
+		gap: 8px 20px;
+		flex-wrap: wrap;
 		margin-top: 18px;
 	}
 	.orbit-controls button {
 		font-size: 11px;
+		min-height: 44px;
 	}
 	.hero-beacon {
-		left: 32.8%;
-		top: calc(75% + min(43vw, 190px));
+		position: relative;
+		left: auto;
+		top: auto;
+		width: auto;
+		margin: 0 20px 24px;
+	}
+	.beacon-reading::before,
+	.beacon-reading::after {
+		display: none;
+	}
+	.beacon-reading small {
+		display: inline-block;
 	}
 	.orbit-support {
+		position: static;
 		font-size: 9px;
-		bottom: 30px;
-		left: 20px;
-		right: 20px;
+		margin: 0 20px 16px;
 	}
 	.orbit-support > a {
 		display: none;
 	}
 	.orbit-support > span {
-		max-width: 200px;
+		max-width: none;
 	}
 	.motion-toggle {
+		position: static;
+		margin-left: 20px;
+	}
+	body[data-film='on'] .motion-toggle {
+		position: fixed;
 		right: 12px;
-		bottom: 12px;
+		bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+		margin: 0;
+	}
+	body[data-film='on'] .orbit-visual {
+		position: static;
 	}
 	body[data-film='on'] .orbit-stage {
 		padding-top: 94px;
