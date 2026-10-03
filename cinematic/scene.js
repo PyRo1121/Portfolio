@@ -42,7 +42,6 @@ export function mountOrbit(hero) {
 		balanced = false;
 	let nebula = 0,
 		paletteTarget = body.dataset.lighting === 'nebula' ? 1 : 0;
-	let arrival = body.dataset.motion === 'on' && !reduced.matches ? 1 : 0;
 	let previous = { dt: 0, elapsed: 0, boost: false, pointer: { x: 0, y: 0 } };
 	const center = new THREE.Vector3();
 	const projected = new THREE.Vector3();
@@ -280,14 +279,8 @@ export function mountOrbit(hero) {
 		jump = moving
 			? THREE.MathUtils.lerp(jump, jumpTarget, 1 - Math.exp(-step * (jumpTarget ? 3 : 2)))
 			: 0;
-		arrival = moving ? Math.max(0, arrival - step / 3.6) : 0;
 		travel += step * (0.55 + jump * 48);
-		const entry = arrival * arrival * arrival;
-		camera.position.set(
-			frame.pointer.x * 0.24 + entry * 0.6,
-			frame.pointer.y * 0.13 + entry * 0.25,
-			18 + entry * 5 + jump * 1.6
-		);
+		camera.position.set(frame.pointer.x * 0.24, frame.pointer.y * 0.13, 18 + jump * 1.6);
 		camera.rotation.set(0, 0, 0);
 		camera.fov = 42 + jump * 14;
 		camera.updateProjectionMatrix();
@@ -497,9 +490,7 @@ export function mountOrbit(hero) {
 			resizeObserver = new ResizeObserver(resize);
 			resizeObserver.observe(hero);
 			window.addEventListener('resize', resize, { passive: true });
-			const playing = await voyage?.start();
-			if (disposed) return;
-			if (!playing) body.dataset.scene = 'ready';
+			body.dataset.scene = 'ready';
 			canvas.addEventListener('webglcontextlost', (event) => {
 				event.preventDefault();
 				lost = true;

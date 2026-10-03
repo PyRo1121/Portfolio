@@ -3,8 +3,6 @@ import { gsap } from 'gsap';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
-const PLAYBACK_HISTORY_KEY = 'latham-voyage-seen';
-
 export async function createVoyage({ scene, camera, world, renderer, keep, resize, isDisposed }) {
 	const body = document.body;
 	const panel = document.querySelector('.film-overlay');
@@ -208,32 +206,26 @@ export async function createVoyage({ scene, camera, world, renderer, keep, resiz
 		if (restoreFocus || panel.contains(document.activeElement))
 			(returnFocus || replay).focus({ preventScroll: true });
 	}
-	async function start(manual = false) {
+	async function start() {
 		if (
 			disposed ||
 			active ||
 			pending ||
 			reduce.matches ||
 			body.dataset.motion !== 'on' ||
-			(manual && body.dataset.scene !== 'ready')
+			body.dataset.scene !== 'ready'
 		)
 			return false;
 		pending = true;
 		curtain.style.opacity = '1';
 		await new Promise((resolve) => setTimeout(resolve, 420));
-		if (
-			disposed ||
-			!pending ||
-			reduce.matches ||
-			body.dataset.motion !== 'on' ||
-			(!manual && (scrollY > 150 || document.hidden))
-		) {
+		if (disposed || !pending || reduce.matches || body.dataset.motion !== 'on' || document.hidden) {
 			pending = false;
 			curtain.style.opacity = '0';
 			return false;
 		}
 		pending = false;
-		returnFocus = manual ? replay : null;
+		returnFocus = replay;
 		active = true;
 		time = 0;
 		timeline.seek(0);
@@ -244,18 +236,11 @@ export async function createVoyage({ scene, camera, world, renderer, keep, resiz
 			priorInert.set(element, element.inert);
 			element.inert = true;
 		});
-		if (manual) {
-			window.scrollTo({ top: 0, behavior: 'instant' });
-			skip.focus({ preventScroll: true });
-		}
+		window.scrollTo({ top: 0, behavior: 'instant' });
+		skip.focus({ preventScroll: true });
 		volume(soundOn);
 		resize();
 		uncover();
-		try {
-			sessionStorage.setItem(PLAYBACK_HISTORY_KEY, '1');
-		} catch {
-			/* Playback history is optional. */
-		}
 		return true;
 	}
 	function update(dt, elapsed, center, globeScale) {
@@ -317,7 +302,7 @@ export async function createVoyage({ scene, camera, world, renderer, keep, resiz
 	function scrollExit() {
 		if (active && scrollY > 150) end();
 	}
-	const replayClick = () => start(true),
+	const replayClick = () => start(),
 		skipClick = () => end(true);
 	replay.hidden = false;
 	availability();
@@ -329,17 +314,8 @@ export async function createVoyage({ scene, camera, world, renderer, keep, resiz
 	document.addEventListener('visibilitychange', visibility);
 	document.addEventListener('keydown', keyboard);
 	window.addEventListener('scroll', scrollExit, { passive: true });
-	let seen = false;
-	try {
-		seen = sessionStorage.getItem(PLAYBACK_HISTORY_KEY) === '1';
-	} catch {
-		/* Playback history is optional. */
-	}
 	return {
 		update,
-		start: () => {
-			return !seen && scrollY < 100 && !document.hidden ? start() : false;
-		},
 		get active() {
 			return active;
 		},
