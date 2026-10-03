@@ -405,6 +405,23 @@ body[data-scene='ready'] .orbit-stage .hero-art {
 	opacity: 0.5;
 	cursor: default;
 }
+.opening-status {
+	position: absolute;
+	max-width: min(100%, 480px);
+	min-height: 24px;
+	margin: 8px 0 0;
+	font-size: 12px;
+	line-height: 24px;
+	color: #afc7dc;
+}
+.opening-status button {
+	border: 0;
+	padding: 0 4px;
+	background: none;
+	color: #edf7ff;
+	text-decoration: underline;
+	cursor: pointer;
+}
 .orbit-controls [hidden],
 .orbit-stage button[hidden] {
 	display: none;

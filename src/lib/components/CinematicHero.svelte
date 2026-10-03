@@ -5,23 +5,49 @@
 	import '$lib/styles/orbit.css';
 	let { telemetry = null }: { telemetry?: ClientTelemetry | null } = $props();
 	let stage: HTMLElement;
+	let openingState = $state<'loading' | 'ready' | 'unavailable'>('loading');
+	let reducedMotion = $state(false);
+	let motionEnabled = $state(true);
+	let retryOpening: (() => void) | undefined;
 	onMount(() => {
 		let disposed = false;
 		let cleanup: (() => void) | undefined;
-		const timer = window.setTimeout(() => {
+		let attempt = 0;
+		const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+		const preference = () => (reducedMotion = reduced.matches);
+		preference();
+		const openingStatus = (event: Event) => {
+			openingState = (event as CustomEvent<'ready' | 'unavailable'>).detail;
+		};
+		const motionStatus = (event: Event) => {
+			motionEnabled = (event as CustomEvent<{ enabled: boolean }>).detail.enabled;
+		};
+		stage.addEventListener('orbit-opening', openingStatus);
+		document.addEventListener('orbit-motion', motionStatus);
+		reduced.addEventListener('change', preference);
+		const loadOpening = () => {
+			cleanup?.();
+			cleanup = undefined;
+			openingState = 'loading';
 			const url = new URL('/orbit/scene.js', window.location.href).href;
-			void import(/* @vite-ignore */ url)
+			const moduleUrl = attempt++ ? `${url}?retry=${Date.now()}` : url;
+			void import(/* @vite-ignore */ moduleUrl)
 				.then((module: { mountOrbit: (root: HTMLElement) => () => void }) => {
 					if (!disposed) cleanup = module.mountOrbit(stage);
 				})
 				.catch(() => {
-					/* The prerendered illustrated portfolio remains usable. */
+					if (!disposed) openingState = 'unavailable';
 				});
-		}, 350);
+		};
+		retryOpening = loadOpening;
+		const timer = window.setTimeout(loadOpening, 350);
 		return () => {
 			disposed = true;
 			window.clearTimeout(timer);
 			cleanup?.();
+			stage.removeEventListener('orbit-opening', openingStatus);
+			document.removeEventListener('orbit-motion', motionStatus);
+			reduced.removeEventListener('change', preference);
 		};
 	});
 </script>
@@ -87,7 +113,11 @@
 			>
 		</div>
 		<div class="orbit-controls">
-			<button type="button" id="replay-film" hidden
+			<button
+				type="button"
+				id="replay-film"
+				disabled={openingState !== 'ready' || reducedMotion}
+				aria-describedby="opening-status"
 				><span aria-hidden="true">▷</span> Watch the opening</button
 			><button type="button" id="warp-button" hidden>Make the jump</button><button
 				type="button"
@@ -96,6 +126,20 @@
 				hidden>Nebula</button
 			>
 		</div>
+		<p id="opening-status" class="opening-status" role="status">
+			{#if openingState === 'unavailable'}
+				The opening couldn’t load. <button type="button" onclick={() => retryOpening?.()}
+					>Try again</button
+				>
+			{:else if openingState === 'loading'}
+				Loading the opening…
+			{:else if reducedMotion}
+				Your device has reduced motion enabled.
+			{:else if !motionEnabled}
+				Motion is paused. Watching the opening resumes it.
+			{/if}
+		</p>
+		<noscript>Enable JavaScript to watch the opening.</noscript>
 	</div>
 	<div class="hero-beacon" aria-hidden="true">
 		<div class="beacon-reading">

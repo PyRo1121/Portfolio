@@ -68,6 +68,16 @@ export function createController(hero) {
 		}
 		sync();
 	}
+	function resume() {
+		if (reduced.matches) return;
+		stored = 'on';
+		try {
+			localStorage.setItem('latham-motion', stored);
+		} catch {
+			/* Storage is optional. */
+		}
+		sync();
+	}
 	function warp() {
 		if (enabled) boostUntil = performance.now() + 3400;
 	}
@@ -113,6 +123,7 @@ export function createController(hero) {
 	hero.addEventListener('pointerleave', leave);
 	reduced.addEventListener('change', sync);
 	document.addEventListener('visibilitychange', visibility);
+	document.addEventListener('orbit-resume', resume);
 	sync();
 	return {
 		dispose() {
@@ -126,6 +137,7 @@ export function createController(hero) {
 			hero.removeEventListener('pointerleave', leave);
 			reduced.removeEventListener('change', sync);
 			document.removeEventListener('visibilitychange', visibility);
+			document.removeEventListener('orbit-resume', resume);
 		}
 	};
 }
