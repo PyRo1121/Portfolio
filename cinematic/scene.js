@@ -89,17 +89,19 @@ export function mountOrbit(hero) {
 	globe.add(atmosphere);
 
 	const ringUniforms = { uTime: { value: 0 }, uColor: { value: ice.clone() }, uJump: { value: 0 } };
+	// MSAA edge fragments can extrapolate UVs beyond the tube; clamp before squaring.
 	const ringMaterial = keep(
 		new THREE.ShaderMaterial({
 			uniforms: ringUniforms,
 			transparent: true,
 			depthWrite: false,
-			blending: THREE.AdditiveBlending,
+			blending: THREE.NormalBlending,
 			vertexShader: `varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
 			fragmentShader: `uniform float uTime,uJump;uniform vec3 uColor;varying vec2 vUv;
-    void main(){float pulse=pow(.5+.5*cos(vUv.x*6.283185-uTime*.27),12.);
-      float core=pow(1.-abs(vUv.y-.5)*2.,2.);
-      gl_FragColor=vec4(uColor*(1.1+pulse),core*(.3+pulse*.45)*(1.-uJump*.65));}`
+    void main(){float phase=clamp(.5+.5*cos(vUv.x*6.283185-uTime*.27),0.,1.);
+      float pulse=phase*phase;pulse*=pulse;
+      float crossSection=clamp(1.-abs(vUv.y-.5)*2.,0.,1.);float core=crossSection*crossSection;
+      gl_FragColor=vec4(uColor*.9,core*(.38+pulse*.06)*(1.-uJump*.65));}`
 		})
 	);
 	orbit.add(
@@ -110,7 +112,10 @@ export function mountOrbit(hero) {
 	const satelliteGeometry = keep(new THREE.SphereGeometry(0.063, 12, 8));
 	const satelliteMaterial = keep(
 		new THREE.MeshBasicMaterial({
-			color: new THREE.Color('#b9e7ff').multiplyScalar(1.8)
+			color: ice.clone().multiplyScalar(0.75),
+			transparent: true,
+			opacity: 0.75,
+			depthWrite: false
 		})
 	);
 	const satellites = Array.from({ length: 6 }, () => {
@@ -354,7 +359,7 @@ export function mountOrbit(hero) {
 			node.rotation.set(sceneTime * 0.4, i + sceneTime * 0.2, 0);
 		});
 		key.color.copy(keyColor).lerp(ion, nebula * 0.3);
-		satelliteMaterial.color.copy(atmosphereColor).multiplyScalar(1.8);
+		satelliteMaterial.color.copy(atmosphereColor).multiplyScalar(0.75);
 		flareMaterial.uniforms.uColor.value.copy(atmosphereColor);
 		voyage?.update(moving ? dt : 0, sceneTime, world.position, world.scale.x);
 		orbit.visible = !voyage?.active;
