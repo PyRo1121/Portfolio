@@ -627,7 +627,6 @@ export function mountOrbit(hero) {
 				([entry]) => {
 					visualVisible = entry.isIntersecting && entry.intersectionRatio >= 0.2;
 					if (arrival.state === 'pending' && visualVisible) arrivalScroll = scrollY;
-					if (!visualVisible && arrival.state === 'playing') arrival.advance({ motion: false });
 					render(previous, 0);
 				},
 				{ threshold: [0, 0.2] }

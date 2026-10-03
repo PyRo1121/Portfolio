@@ -18,7 +18,8 @@ export function createArrival({ returning = false, onComplete = () => {} } = {})
 			if (state === 'playing') state = 'settling';
 		},
 		advance({ dt = 0, visible = false, motion = true, reduced = false, film = false } = {}) {
-			if (reduced || !motion || film) finish();
+			if (reduced || !motion || film || (!visible && (state === 'playing' || state === 'settling')))
+				finish();
 			if (state === 'pending' && visible) state = 'playing';
 			if (state === 'playing' || state === 'settling') {
 				if (visible) time += Math.max(0, dt);

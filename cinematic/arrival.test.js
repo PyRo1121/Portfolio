@@ -33,4 +33,15 @@ describe('inline arrival', () => {
 		expect(arrival.advance({ visible: true, dt: 0.8 }).focus).toBe(0.35);
 		expect(arrival.advance({ visible: true, dt: 0.8 }).weight).toBe(0);
 	});
+	it.each([false, true])(
+		'finishes offscreen with no remaining animation on return, settling=%s',
+		(settling) => {
+			const arrival = createArrival();
+			arrival.advance({ visible: true, dt: 1.5 });
+			if (settling) arrival.interrupt();
+			expect(arrival.advance({ visible: false, dt: 0 }).weight).toBe(0);
+			expect(arrival.state).toBe('complete');
+			expect(arrival.advance({ visible: true, dt: 0.016 }).weight).toBe(0);
+		}
+	);
 });
