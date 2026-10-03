@@ -8,8 +8,8 @@ export function mountPortfolioSpace(canvas) {
 		renderer = new THREE.WebGLRenderer({
 			canvas,
 			alpha: true,
-			antialias: true,
-			powerPreference: 'low-power'
+			antialias: false,
+			powerPreference: 'default'
 		});
 	} catch {
 		return () => {};
@@ -121,6 +121,7 @@ export function mountPortfolioSpace(canvas) {
 	canvas.addEventListener('webglcontextlost', contextLost);
 	resize();
 	return () => {
+		if (disposed) return;
 		disposed = true;
 		cancelAnimationFrame(frame);
 		observer.disconnect();
@@ -134,5 +135,6 @@ export function mountPortfolioSpace(canvas) {
 		geometry.dispose();
 		material.dispose();
 		renderer.dispose();
+		renderer.forceContextLoss();
 	};
 }

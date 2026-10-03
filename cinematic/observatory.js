@@ -62,7 +62,7 @@ export function mountObservatory(canvas, initialProject = 0) {
 			canvas,
 			alpha: true,
 			antialias: false,
-			powerPreference: 'low-power'
+			powerPreference: 'default'
 		});
 	} catch {
 		return { select() {}, dispose() {} };
@@ -205,6 +205,7 @@ export function mountObservatory(canvas, initialProject = 0) {
 			schedule();
 		},
 		dispose() {
+			if (disposed) return;
 			disposed = true;
 			cancelAnimationFrame(frame);
 			observer.disconnect();
@@ -220,6 +221,7 @@ export function mountObservatory(canvas, initialProject = 0) {
 			starGeometry.dispose();
 			starMaterial.dispose();
 			renderer.dispose();
+			renderer.forceContextLoss();
 		}
 	};
 }

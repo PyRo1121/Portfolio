@@ -17,7 +17,7 @@
 						/* The static lighting and all project content remain visible. */
 					});
 			},
-			{ rootMargin: '160px' }
+			{ rootMargin: '0px' }
 		);
 		observer.observe(canvas.parentElement!);
 		return () => {

@@ -182,7 +182,7 @@
 						/* Content and CSS lighting remain available without WebGL. */
 					});
 			},
-			{ rootMargin: '120px' }
+			{ rootMargin: '0px' }
 		);
 		observer.observe(canvas);
 		return () => {
