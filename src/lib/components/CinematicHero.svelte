@@ -27,14 +27,18 @@
 </script>
 
 <section class="hero orbit-stage" bind:this={stage} aria-labelledby="portfolio-heading">
-	<img
-		class="hero-art"
-		src="/orbit/space-hero.png"
-		width="1672"
-		height="941"
-		alt=""
-		fetchpriority="high"
-	/>
+	<picture>
+		<source media="(max-width: 600px)" srcset="/orbit/earth-poster-mobile.jpg" />
+		<source media="(max-width: 999px)" srcset="/orbit/earth-poster-tablet.jpg" />
+		<img
+			class="hero-art"
+			src="/orbit/earth-poster-desktop.jpg"
+			width="1440"
+			height="965"
+			alt=""
+			fetchpriority="high"
+		/>
+	</picture>
 	<canvas class="flight-scene" aria-hidden="true"></canvas>
 	<div class="film-overlay" hidden role="region" aria-label="Opening film">
 		<div class="film-letterbox top"></div>
@@ -84,7 +88,7 @@
 		</div>
 		<div class="orbit-controls">
 			<button type="button" id="replay-film" hidden
-				><span aria-hidden="true">▷</span> Replay the opening</button
+				><span aria-hidden="true">▷</span> Watch the opening</button
 			><button type="button" id="warp-button" hidden>Make the jump</button><button
 				type="button"
 				id="lighting-toggle"

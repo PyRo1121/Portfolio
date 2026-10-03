@@ -193,19 +193,6 @@ body[data-film='on'] .motion-toggle {
 	background: #070c16a6;
 	backdrop-filter: blur(8px);
 }
-body[data-film='off'][data-motion='on'] .hero-content {
-	animation: portfolio-arrival 1.2s ease-out both;
-}
-@keyframes portfolio-arrival {
-	from {
-		opacity: 0;
-		transform: translateY(18px);
-	}
-	to {
-		opacity: 1;
-		transform: none;
-	}
-}
 @media (max-width: 600px) {
 	.public-header .brand {
 		font-size: 16px;
@@ -309,8 +296,8 @@ body[data-film='off'][data-motion='on'] .hero-content {
 	pointer-events: none;
 }
 .orbit-stage .hero-art {
-	object-position: 65% center;
-	opacity: 0.8;
+	object-position: center;
+	opacity: 1;
 	transition: opacity 700ms ease;
 }
 .orbit-stage .flight-scene {
@@ -390,6 +377,7 @@ body[data-scene='ready'] .orbit-stage .hero-art {
 }
 .orbit-controls {
 	display: flex;
+	min-height: 45px;
 	align-items: center;
 	gap: 24px;
 	flex-wrap: wrap;
@@ -424,7 +412,7 @@ body[data-scene='ready'] .orbit-stage .hero-art {
 .hero-beacon {
 	position: absolute;
 	left: 45%;
-	top: 77%;
+	top: 71%;
 	width: 220px;
 	text-align: left;
 	pointer-events: none;
@@ -478,8 +466,8 @@ body[data-scene='ready'] .orbit-stage .hero-art {
 }
 @media (max-width: 999px) {
 	.hero-beacon {
-		left: 66%;
-		top: 84%;
+		left: 66.6%;
+		top: 69%;
 	}
 	.beacon-reading::before {
 		left: 8px;
@@ -527,9 +515,6 @@ body[data-film='on'] .orbit-stage {
 body[data-film='on'] .orbit-support {
 	visibility: hidden;
 }
-body[data-film='off'][data-motion='on'] .hero-content {
-	animation: portfolio-arrival 1s ease-out both;
-}
 @media (min-width: 601px) and (max-width: 1050px) {
 	.hero-lines {
 		font-size: 76px;
@@ -576,8 +561,8 @@ body[data-film='off'][data-motion='on'] .hero-content {
 		font-size: 11px;
 	}
 	.hero-beacon {
-		left: calc(50% - 64px);
-		top: calc(75% + 176px);
+		left: 32.8%;
+		top: calc(75% + min(43vw, 190px));
 	}
 	.orbit-support {
 		font-size: 9px;
