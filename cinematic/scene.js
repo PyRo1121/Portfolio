@@ -14,6 +14,7 @@ export { mountObservatory } from './observatory.js';
 export function mountOrbit(hero) {
 	const body = document.body;
 	const canvas = hero.querySelector('.flight-scene');
+	const visual = hero.querySelector('.orbit-visual');
 	const beacon = hero.querySelector('.hero-beacon');
 	const controller = createController(hero);
 	const reduced = matchMedia('(prefers-reduced-motion: reduce)');
@@ -236,6 +237,10 @@ export function mountOrbit(hero) {
 	world.add(flare);
 
 	function projectAnchor() {
+		if (width <= 600) {
+			clearAnchor();
+			return;
+		}
 		world.getWorldPosition(center);
 		projected.copy(center);
 		projected.x -= world.scale.x * (width >= 1000 ? 3.9 : 1.2);
@@ -253,7 +258,7 @@ export function mountOrbit(hero) {
 	}
 	function resize() {
 		if (!renderer || disposed) return;
-		const rect = hero.getBoundingClientRect();
+		const rect = visual.getBoundingClientRect();
 		const nextWidth = Math.max(1, Math.round(rect.width));
 		const nextHeight = Math.max(1, Math.round(voyage?.active ? innerHeight : rect.height));
 		const mobile = nextWidth <= 600;
@@ -290,7 +295,7 @@ export function mountOrbit(hero) {
 		const viewHeight = 2 * Math.tan(THREE.MathUtils.degToRad(21)) * 18;
 		world.scale.setScalar(((radiusPixels / height) * viewHeight) / 3);
 		const x = mobile ? 0.5 : width < 1000 ? 0.76 : 0.755,
-			y = mobile ? 0.75 : 0.48;
+			y = 0.48;
 		world.position.set((x - 0.5) * viewHeight * camera.aspect, (0.5 - y) * viewHeight, 0);
 		if (ready && !redraw)
 			redraw = requestAnimationFrame(() => {
@@ -572,6 +577,7 @@ export function mountOrbit(hero) {
 			document.addEventListener('orbit-lighting', onLighting);
 			resizeObserver = new ResizeObserver(resize);
 			resizeObserver.observe(hero);
+			resizeObserver.observe(visual);
 			window.addEventListener('resize', resize, { passive: true });
 			body.dataset.scene = 'ready';
 			hero.dispatchEvent(
