@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import type { ClientTelemetry } from '$lib/telemetry/client-telemetry';
 	import { PUBLIC_CONTACT_MAILTO } from '$lib/domain/public-seo';
 	import '$lib/styles/orbit.css';
@@ -9,10 +9,12 @@
 	let reducedMotion = $state(false);
 	let motionEnabled = $state(true);
 	let retryOpening: (() => void) | undefined;
+	let canvasVersion = $state(0);
 	onMount(() => {
 		let disposed = false;
 		let cleanup: (() => void) | undefined;
 		let attempt = 0;
+		let sceneModule: { mountOrbit: (root: HTMLElement) => () => void } | undefined;
 		const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
 		const preference = () => (reducedMotion = reduced.matches);
 		preference();
@@ -25,22 +27,26 @@
 		stage.addEventListener('orbit-opening', openingStatus);
 		document.addEventListener('orbit-motion', motionStatus);
 		reduced.addEventListener('change', preference);
-		const loadOpening = () => {
+		const loadOpening = async () => {
 			cleanup?.();
 			cleanup = undefined;
 			openingState = 'loading';
-			const url = new URL('/orbit/scene.js', window.location.href).href;
-			const moduleUrl = attempt++ ? `${url}?retry=${Date.now()}` : url;
-			void import(/* @vite-ignore */ moduleUrl)
-				.then((module: { mountOrbit: (root: HTMLElement) => () => void }) => {
-					if (!disposed) cleanup = module.mountOrbit(stage);
-				})
-				.catch(() => {
-					if (!disposed) openingState = 'unavailable';
-				});
+			canvasVersion++;
+			await tick();
+			if (disposed) return;
+			try {
+				if (!sceneModule) {
+					const url = new URL('/orbit/scene.js', window.location.href).href;
+					const moduleUrl = attempt++ ? `${url}?retry=${Date.now()}` : url;
+					sceneModule = await import(/* @vite-ignore */ moduleUrl);
+				}
+				if (!disposed && sceneModule) cleanup = sceneModule.mountOrbit(stage);
+			} catch {
+				if (!disposed) openingState = 'unavailable';
+			}
 		};
-		retryOpening = loadOpening;
-		const timer = window.setTimeout(loadOpening, 350);
+		retryOpening = () => void loadOpening();
+		const timer = window.setTimeout(() => void loadOpening(), 0);
 		return () => {
 			disposed = true;
 			window.clearTimeout(timer);
@@ -65,7 +71,9 @@
 			fetchpriority="high"
 		/>
 	</picture>
-	<canvas class="flight-scene" aria-hidden="true"></canvas>
+	{#key canvasVersion}
+		<canvas class="flight-scene" aria-hidden="true"></canvas>
+	{/key}
 	<div class="film-overlay" hidden role="region" aria-label="Opening film">
 		<div class="film-letterbox top"></div>
 		<div class="film-letterbox bottom"></div>

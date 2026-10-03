@@ -377,6 +377,7 @@ export function mountOrbit(hero) {
 		composer?.passes.forEach((pass) => pass.dispose?.());
 		composer?.dispose();
 		renderer?.dispose();
+		renderer?.forceContextLoss();
 	}
 	function onPageHide(event) {
 		if (!event.persisted) cleanup();
@@ -385,9 +386,9 @@ export function mountOrbit(hero) {
 		try {
 			renderer = new THREE.WebGLRenderer({
 				canvas,
-				antialias: true,
+				antialias: false,
 				alpha: false,
-				powerPreference: 'high-performance'
+				powerPreference: 'default'
 			});
 			renderer.outputColorSpace = THREE.SRGBColorSpace;
 			renderer.toneMapping = THREE.ACESFilmicToneMapping;
