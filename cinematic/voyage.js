@@ -244,11 +244,17 @@ export async function createVoyage({ scene, camera, world, renderer, keep, resiz
 		return true;
 	}
 	const shipOffset = new THREE.Vector3();
-	function update(dt, elapsed, center, globeScale) {
+	function update(dt, elapsed, center, globeScale, arrival = { progress: 0, weight: 0 }) {
 		if (!active) {
+			const sweep = Math.sin(Math.PI * arrival.progress) * arrival.weight;
 			ship.visible = true;
 			ship.position.copy(center).add(shipOffset.set(-4.2 * globeScale, 2.4 * globeScale, 2));
-			ship.scale.setScalar(0.33 * globeScale);
+			ship.position.x += sweep * (innerWidth <= 600 ? 4.2 : 3) * globeScale;
+			ship.position.y +=
+				(Math.sin(arrival.progress * Math.PI * 2) * arrival.weight * 0.35 - sweep * 2.4) *
+				globeScale;
+			ship.position.z += sweep * (3 * globeScale + 2);
+			ship.scale.setScalar((0.33 + sweep * 0.02) * globeScale);
 			ship.rotation.set(0.18 + Math.sin(elapsed * 0.06) * 0.06, -0.6 + elapsed * 0.025, -0.3);
 			return;
 		}
