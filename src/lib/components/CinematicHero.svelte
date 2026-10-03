@@ -111,7 +111,7 @@
 				id="replay-film"
 				disabled={openingState !== 'ready' || reducedMotion}
 				aria-describedby="opening-status"
-				><span aria-hidden="true">▷</span> Watch the opening</button
+				><span aria-hidden="true">▷</span> Replay the full opening</button
 			><button type="button" id="warp-button" hidden>Make the jump</button><button
 				type="button"
 				id="lighting-toggle"

@@ -8,6 +8,7 @@ import { FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { FXAAShader } from 'three/addons/shaders/FXAAShader.js';
 import { createVoyage } from './voyage.js';
+import { createArrival } from './arrival.js';
 export { mountPortfolioSpace } from './gallery.js';
 export { mountObservatory } from './observatory.js';
 
@@ -18,6 +19,25 @@ export function mountOrbit(hero) {
 	const beacon = hero.querySelector('.hero-beacon');
 	const controller = createController(hero);
 	const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+	let returning = false;
+	try {
+		returning = localStorage.getItem('latham-arrival-seen') === 'yes';
+	} catch {
+		/* Optional visit memory. */
+	}
+	const arrival = createArrival({
+		returning,
+		onComplete() {
+			try {
+				localStorage.setItem('latham-arrival-seen', 'yes');
+			} catch {
+				/* Optional visit memory. */
+			}
+		}
+	});
+	let visualVisible = false,
+		arrivalScroll = scrollY,
+		arrivalObserver;
 	const resources = new Set();
 	const keep = (value) => (resources.add(value), value);
 	const scene = new THREE.Scene();
@@ -324,6 +344,15 @@ export function mountOrbit(hero) {
 		}
 		const moving = body.dataset.motion === 'on' && !reduced.matches,
 			step = moving ? Math.min(dt, 0.05) : 0;
+		const arrivalPose = arrival.advance({
+			dt,
+			visible: visualVisible && !document.hidden,
+			motion: moving,
+			reduced: reduced.matches,
+			film: voyage?.active
+		});
+		canvas.dataset.arrival = arrival.state;
+		canvas.dataset.arrivalProgress = arrivalPose.progress.toFixed(3);
 		sceneTime += step;
 		nebula = moving
 			? THREE.MathUtils.lerp(nebula, paletteTarget, 1 - Math.exp(-step * 3))
@@ -336,6 +365,11 @@ export function mountOrbit(hero) {
 		camera.position.set(frame.pointer.x * 0.24, frame.pointer.y * 0.13, 18 + jump * 1.6);
 		camera.rotation.set(0, 0, 0);
 		camera.fov = 42 + jump * 14;
+		if (!voyage?.active) {
+			camera.position.x += arrivalPose.focus * (width <= 600 ? 0.25 : -0.8);
+			camera.position.y += arrivalPose.focus * 0.35;
+			camera.position.z += arrivalPose.focus * 1.6;
+		}
 		camera.updateProjectionMatrix();
 		camera.updateMatrixWorld();
 		atmosphereColor.copy(ice).lerp(ion, nebula);
@@ -361,7 +395,7 @@ export function mountOrbit(hero) {
 		key.color.copy(keyColor).lerp(ion, nebula * 0.3);
 		satelliteMaterial.color.copy(atmosphereColor).multiplyScalar(0.75);
 		flareMaterial.uniforms.uColor.value.copy(atmosphereColor);
-		voyage?.update(moving ? dt : 0, sceneTime, world.position, world.scale.x);
+		voyage?.update(moving ? dt : 0, sceneTime, world.position, world.scale.x, arrivalPose);
 		orbit.visible = !voyage?.active;
 		flare.visible = !voyage?.active;
 		camera.updateMatrixWorld();
@@ -389,6 +423,9 @@ export function mountOrbit(hero) {
 	}
 	function onMotion() {
 		render(previous, 0);
+	}
+	function onArrivalScroll() {
+		if (arrival.state === 'playing' && Math.abs(scrollY - arrivalScroll) > 96) arrival.interrupt();
 	}
 	function onLighting(event) {
 		paletteTarget = event.detail.mode === 'nebula' ? 1 : 0;
@@ -422,6 +459,8 @@ export function mountOrbit(hero) {
 		disposed = true;
 		cancelAnimationFrame(redraw);
 		resizeObserver?.disconnect();
+		arrivalObserver?.disconnect();
+		window.removeEventListener('scroll', onArrivalScroll);
 		controller.dispose();
 		voyage?.dispose();
 		canvas.removeEventListener('webglcontextlost', onContextLost);
@@ -573,6 +612,7 @@ export function mountOrbit(hero) {
 			if (disposed) return;
 			resize();
 			ready = true;
+			if (visual.getBoundingClientRect().bottom <= 0) arrival.advance({ motion: false });
 			// Warm the bloom/output passes while the illustrated fallback is still covering them.
 			render(previous, 0);
 			body.dataset.sceneVersion = 'earth-cinema';
@@ -583,6 +623,16 @@ export function mountOrbit(hero) {
 			resizeObserver = new ResizeObserver(resize);
 			resizeObserver.observe(hero);
 			resizeObserver.observe(visual);
+			arrivalObserver = new IntersectionObserver(
+				([entry]) => {
+					visualVisible = entry.isIntersecting && entry.intersectionRatio >= 0.2;
+					if (arrival.state === 'pending' && visualVisible) arrivalScroll = scrollY;
+					render(previous, 0);
+				},
+				{ threshold: [0, 0.2] }
+			);
+			arrivalObserver.observe(visual);
+			window.addEventListener('scroll', onArrivalScroll, { passive: true });
 			window.addEventListener('resize', resize, { passive: true });
 			body.dataset.scene = 'ready';
 			hero.dispatchEvent(
