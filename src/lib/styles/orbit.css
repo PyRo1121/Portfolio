@@ -535,6 +535,14 @@ body[data-scene='ready'] .orbit-stage .hero-art {
 body[data-film='on'] .orbit-stage {
 	padding-top: 108px;
 }
+body[data-film='on'] .orbit-visual {
+	position: static;
+}
+body[data-film='on'] .orbit-stage .flight-scene {
+	position: fixed;
+	height: 100svh;
+	z-index: 2;
+}
 body[data-film='on'] .orbit-support {
 	visibility: hidden;
 }
