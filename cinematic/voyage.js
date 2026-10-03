@@ -288,8 +288,6 @@ export async function createVoyage({ scene, camera, world, renderer, keep, resiz
 		panel.dataset.time = time.toFixed(2);
 	}
 	function availability() {
-		replay.disabled = reduce.matches || body.dataset.motion !== 'on';
-		replay.title = replay.disabled ? 'Enable motion to play the opening film' : '';
 		if (reduce.matches) end();
 		volume(soundOn && active && body.dataset.motion === 'on' && !document.hidden);
 	}
@@ -302,9 +300,11 @@ export async function createVoyage({ scene, camera, world, renderer, keep, resiz
 	function scrollExit() {
 		if (active && scrollY > 150) end();
 	}
-	const replayClick = () => start(),
+	const replayClick = () => {
+			document.dispatchEvent(new CustomEvent('orbit-resume'));
+			void start();
+		},
 		skipClick = () => end(true);
-	replay.hidden = false;
 	availability();
 	replay.addEventListener('click', replayClick);
 	skip.addEventListener('click', skipClick);
@@ -325,7 +325,6 @@ export async function createVoyage({ scene, camera, world, renderer, keep, resiz
 			disposed = true;
 			end();
 			curtain.remove();
-			replay.hidden = true;
 			timeline.kill();
 			oscillators.forEach((oscillator) => oscillator.stop());
 			audio?.close();

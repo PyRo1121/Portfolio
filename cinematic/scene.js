@@ -340,6 +340,22 @@ export function mountOrbit(hero) {
 	function clearAnchor() {
 		['left', 'top', 'right', 'transform'].forEach((p) => beacon.style.removeProperty(p));
 	}
+	function onContextLost(event) {
+		event.preventDefault();
+		lost = true;
+		voyage?.cancel();
+		body.dataset.scene = 'fallback';
+		clearAnchor();
+		hero.dispatchEvent(new CustomEvent('orbit-opening', { detail: 'unavailable' }));
+	}
+	function onContextRestored() {
+		lost = false;
+		resize();
+		body.dataset.scene = 'ready';
+		hero.dispatchEvent(
+			new CustomEvent('orbit-opening', { detail: voyage ? 'ready' : 'unavailable' })
+		);
+	}
 	function cleanup() {
 		if (disposed) return;
 		disposed = true;
@@ -347,6 +363,8 @@ export function mountOrbit(hero) {
 		resizeObserver?.disconnect();
 		controller.dispose();
 		voyage?.dispose();
+		canvas.removeEventListener('webglcontextlost', onContextLost);
+		canvas.removeEventListener('webglcontextrestored', onContextRestored);
 		window.removeEventListener('resize', resize);
 		window.removeEventListener('pagehide', onPageHide);
 		document.removeEventListener('orbit-frame', onFrame);
@@ -491,24 +509,18 @@ export function mountOrbit(hero) {
 			resizeObserver.observe(hero);
 			window.addEventListener('resize', resize, { passive: true });
 			body.dataset.scene = 'ready';
-			canvas.addEventListener('webglcontextlost', (event) => {
-				event.preventDefault();
-				lost = true;
-				voyage?.cancel();
-				body.dataset.scene = 'fallback';
-				clearAnchor();
-			});
-			canvas.addEventListener('webglcontextrestored', () => {
-				lost = false;
-				resize();
-				body.dataset.scene = 'ready';
-			});
+			hero.dispatchEvent(
+				new CustomEvent('orbit-opening', { detail: voyage ? 'ready' : 'unavailable' })
+			);
+			canvas.addEventListener('webglcontextlost', onContextLost);
+			canvas.addEventListener('webglcontextrestored', onContextRestored);
 			window.addEventListener('pagehide', onPageHide);
 		} catch (error) {
 			if (disposed) return;
 			body.dataset.scene = 'fallback';
 			clearAnchor();
 			cleanup();
+			hero.dispatchEvent(new CustomEvent('orbit-opening', { detail: 'unavailable' }));
 			console.warn(
 				'The cinematic scene is unavailable; the illustrated scene remains active.',
 				error
