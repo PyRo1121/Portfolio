@@ -1,6 +1,12 @@
 import * as THREE from 'three';
 import { gsap } from 'gsap';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import {
+	createStarship,
+	launchPose,
+	createLaunchTrajectory,
+	orbitalPoint,
+	orbitalTangent
+} from './starship.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
 export async function createVoyage({ scene, camera, world, renderer, keep, resize, isDisposed }) {
@@ -9,38 +15,11 @@ export async function createVoyage({ scene, camera, world, renderer, keep, resiz
 	const replay = document.querySelector('#replay-film');
 	const skip = document.querySelector('#skip-film');
 	const soundButton = document.querySelector('#film-sound');
+	const caption = document.querySelector('.launch-caption');
 	const reduce = matchMedia('(prefers-reduced-motion: reduce)');
-	const gltf = await new GLTFLoader().loadAsync('/orbit/models/voyager.glb');
-	if (isDisposed()) {
-		gltf.scene.traverse((node) => {
-			if (!node.isMesh) return;
-			node.geometry.dispose();
-			for (const material of Array.isArray(node.material) ? node.material : [node.material]) {
-				for (const value of Object.values(material)) if (value?.isTexture) value.dispose();
-				material.dispose();
-			}
-		});
-		throw new Error('Scene unmounted during model loading');
-	}
-	const ship = new THREE.Group();
-	const bounds = new THREE.Box3().setFromObject(gltf.scene);
-	const size = bounds.getSize(new THREE.Vector3());
-	gltf.scene.position.sub(bounds.getCenter(new THREE.Vector3()));
-	const scale = 5.5 / Math.max(size.x, size.y, size.z);
-	const normalized = new THREE.Group();
-	normalized.add(gltf.scene);
-	normalized.scale.setScalar(scale);
-	ship.add(normalized);
+	if (isDisposed()) throw new Error('Scene unmounted');
+	const { vehicle: ship, booster, plume, plumeMaterial } = createStarship(keep);
 	scene.add(ship);
-	gltf.scene.traverse((node) => {
-		if (!node.isMesh) return;
-		keep(node.geometry);
-		for (const material of Array.isArray(node.material) ? node.material : [node.material]) {
-			keep(material);
-			material.envMapIntensity = 0.4;
-			for (const value of Object.values(material)) if (value?.isTexture) keep(value);
-		}
-	});
 	const pmrem = new THREE.PMREMGenerator(renderer);
 	const room = new RoomEnvironment();
 	const environment = keep(pmrem.fromScene(room, 0.04));
@@ -50,73 +29,11 @@ export async function createVoyage({ scene, camera, world, renderer, keep, resiz
 	const fill = new THREE.DirectionalLight('#ffd9ac', 1.1);
 	fill.position.set(-5, 4, 10);
 	scene.add(fill);
-	const state = {
-		cameraX: 7,
-		cameraY: 2,
-		cameraZ: 17,
-		planetX: 3.9,
-		planetY: -2.8,
-		planetScale: 1.7,
-		shipX: -7,
-		shipY: -0.3,
-		shipZ: 10,
-		shipScale: 1,
-		shipRotation: -0.7,
-		title: 0,
-		prelude: 0,
-		exposure: 0.75,
-		veil: 1
-	};
+	const state = { title: 0, prelude: 0, veil: 1 };
 	const timeline = gsap.timeline({ paused: true });
 	timeline
 		.to(state, { veil: 0, prelude: 1, duration: 1.6, ease: 'power2.out' }, 0)
-		.to(
-			state,
-			{
-				cameraX: 1,
-				cameraY: 0.5,
-				cameraZ: 13,
-				planetX: 3.2,
-				planetY: -1.7,
-				duration: 6,
-				ease: 'sine.inOut'
-			},
-			0
-		)
-		.to(
-			state,
-			{ shipX: 1.6, shipY: 0.5, shipZ: 6.5, shipRotation: 0.5, duration: 6.6, ease: 'sine.inOut' },
-			0
-		)
-		.to(state, { exposure: 1.05, duration: 4.5, ease: 'sine.inOut' }, 1)
 		.to(state, { prelude: 0, duration: 1 }, 3)
-		.to(
-			state,
-			{
-				cameraX: -1,
-				cameraY: 1,
-				cameraZ: 18,
-				planetX: 2.4,
-				planetY: -3.8,
-				planetScale: 1.25,
-				duration: 5.3,
-				ease: 'power2.inOut'
-			},
-			5
-		)
-		.to(
-			state,
-			{
-				shipX: 8,
-				shipY: 2.5,
-				shipZ: -2,
-				shipScale: 0.35,
-				shipRotation: 1.4,
-				duration: 5,
-				ease: 'power1.inOut'
-			},
-			6
-		)
 		.to(state, { title: 1, duration: 2, ease: 'power2.out' }, 6.3)
 		.to(state, { title: 0, veil: 1, duration: 1.1, ease: 'power2.in' }, 11.3);
 	let active = false,
@@ -228,6 +145,7 @@ export async function createVoyage({ scene, camera, world, renderer, keep, resiz
 		returnFocus = replay;
 		active = true;
 		time = 0;
+		orbitTime = 0;
 		timeline.seek(0);
 		body.dataset.film = 'on';
 		body.dataset.scene = 'ready';
@@ -243,21 +161,66 @@ export async function createVoyage({ scene, camera, world, renderer, keep, resiz
 		uncover();
 		return true;
 	}
-	const shipOffset = new THREE.Vector3();
+	const axis = new THREE.Vector3(0, 1, 0);
+	const direction = new THREE.Vector3();
+	const position = new THREE.Vector3();
+	const orbitPosition = new THREE.Vector3();
+	const orbitRotation = new THREE.Quaternion();
+	const launchRotation = new THREE.Quaternion();
+	const trajectory = createLaunchTrajectory();
+	let orbitTime = 0;
+	function flight(progress, weight, dt, center, globeScale) {
+		const pose = launchPose(progress);
+		const phone = innerWidth <= 600;
+		orbitTime += Math.min(dt, 0.05) * (1 - weight);
+		const angle = orbitTime * 0.09;
+		orbitalPoint(angle, orbitPosition);
+		orbitalTangent(angle, direction);
+		if (phone) {
+			orbitPosition.x *= 0.6;
+			direction.z *= 0.2;
+			direction.normalize();
+		}
+		orbitRotation.setFromUnitVectors(axis, direction);
+		trajectory.getPoint(pose.ascent, position);
+		trajectory.getTangent(pose.ascent, direction);
+		if (phone) {
+			position.x *= THREE.MathUtils.lerp(
+				1,
+				0.6,
+				THREE.MathUtils.smoothstep(pose.ascent, 0.15, 0.45)
+			);
+			direction.z *= 0.2;
+			direction.normalize();
+		}
+		launchRotation.setFromUnitVectors(axis, direction);
+		launchRotation.slerp(orbitRotation, pose.turn);
+		ship.position.copy(orbitPosition).lerp(position, weight).multiplyScalar(globeScale).add(center);
+		ship.quaternion.copy(orbitRotation).slerp(launchRotation, weight);
+		ship.scale.setScalar(
+			THREE.MathUtils.lerp(0.42, 0.16 + pose.ascent * 0.26, weight) * globeScale * (phone ? 0.9 : 1)
+		);
+		booster.visible = weight > 0.01 && pose.separation < 1;
+		booster.position.set(-pose.separation * 0.6, -pose.separation * 2.5, 0);
+		booster.rotation.z = pose.separation * 0.4;
+		plume.visible = weight > 0 && pose.ignition > 0;
+		plume.position.y = THREE.MathUtils.lerp(-3.2, -0.85, pose.separation);
+		plume.scale.set(1, 0.75 + pose.ignition * 0.25, 1);
+		plumeMaterial.uniforms.uPower.value = pose.ignition * weight;
+	}
 	function update(dt, elapsed, center, globeScale, arrival = { progress: 0, weight: 0 }) {
 		if (!active) {
-			const sweep = Math.sin(Math.PI * arrival.progress) * arrival.weight;
-			ship.visible = true;
-			ship.position.copy(center).add(shipOffset.set(-4.2 * globeScale, 2.4 * globeScale, 2));
-			ship.position.x += sweep * (innerWidth <= 600 ? 4.2 : 3) * globeScale;
-			ship.position.y +=
-				(Math.sin(arrival.progress * Math.PI * 2) * arrival.weight * 0.35 - sweep * 2.4) *
-				globeScale;
-			ship.position.z += sweep * (3 * globeScale + 2);
-			ship.scale.setScalar((0.33 + sweep * 0.02) * globeScale);
-			ship.rotation.set(0.18 + Math.sin(elapsed * 0.06) * 0.06, -0.6 + elapsed * 0.025, -0.3);
+			flight(arrival.launchProgress ?? arrival.progress, arrival.weight, dt, center, globeScale);
+			caption.hidden = arrival.weight < 0.5;
+			caption.textContent =
+				arrival.progress < 0.28
+					? 'STARBASE, TEXAS / IGNITION'
+					: arrival.progress < 0.65
+						? 'STARBASE, TEXAS / ASCENT'
+						: 'STARSHIP / INTO ORBIT';
 			return;
 		}
+		caption.hidden = true;
 		time += dt;
 		if (time >= timeline.duration()) {
 			end();
@@ -265,24 +228,14 @@ export async function createVoyage({ scene, camera, world, renderer, keep, resiz
 		}
 		timeline.time(time);
 		const phone = innerWidth <= 600;
-		camera.position.set(
-			state.cameraX * (phone ? 0.4 : 1),
-			state.cameraY,
-			state.cameraZ + (phone ? 5 : 0)
-		);
+		camera.position.set(0, 0.4, phone ? 24 : 20);
 		camera.fov = phone ? 48 : 42;
 		camera.lookAt(0, 0.5, 0);
 		camera.updateProjectionMatrix();
-		world.position.set(state.planetX * (phone ? 0.35 : 1), state.planetY + (phone ? 0.6 : 0), 0);
-		world.scale.setScalar(state.planetScale);
-		ship.position.set(
-			state.shipX * (phone ? 0.5 : 1),
-			state.shipY + (phone ? 1.7 : 0),
-			state.shipZ
-		);
-		ship.scale.setScalar(state.shipScale * (phone ? 0.75 : 1));
-		ship.rotation.set(0.3, state.shipRotation, -0.4);
-		renderer.toneMappingExposure = state.exposure;
+		world.position.set(0, phone ? -1 : -0.3, 0);
+		world.scale.setScalar(phone ? 1.1 : 1.65);
+		flight(Math.min(1, time / 10.5), 1, dt, world.position, world.scale.x);
+		renderer.toneMappingExposure = 1.1;
 		panel.style.setProperty('--film-veil', state.veil.toFixed(3));
 		title.style.opacity = state.title;
 		title.setAttribute('aria-hidden', String(state.title < 0.1));
@@ -291,7 +244,7 @@ export async function createVoyage({ scene, camera, world, renderer, keep, resiz
 		prelude.setAttribute('aria-hidden', String(state.prelude < 0.1));
 		progress.style.transform = `scaleX(${time / timeline.duration()})`;
 		shot.textContent =
-			time < 4 ? '01 / Departure' : time < 7 ? '02 / Approach' : '03 / Back to Earth';
+			time < 3 ? '01 / Starbase, Texas' : time < 6 ? '02 / Ascent' : '03 / Into orbit';
 		panel.dataset.time = time.toFixed(2);
 	}
 	function availability() {
@@ -323,6 +276,9 @@ export async function createVoyage({ scene, camera, world, renderer, keep, resiz
 	window.addEventListener('scroll', scrollExit, { passive: true });
 	return {
 		update,
+		get earthTurn() {
+			return active ? launchPose(Math.min(1, time / 10.5)).turn : null;
+		},
 		get active() {
 			return active;
 		},
@@ -330,6 +286,7 @@ export async function createVoyage({ scene, camera, world, renderer, keep, resiz
 		dispose() {
 			if (disposed) return;
 			disposed = true;
+			caption.hidden = true;
 			end();
 			curtain.remove();
 			timeline.kill();

@@ -1,7 +1,7 @@
 const smooth = (value) => value * value * (3 - 2 * value);
 
 export function createArrival({ returning = false, onComplete = () => {} } = {}) {
-	const duration = returning ? 1.6 : 4.8;
+	const duration = returning ? 1.6 : 7.2;
 	let state = 'pending',
 		time = 0,
 		settling = 0;
@@ -30,8 +30,14 @@ export function createArrival({ returning = false, onComplete = () => {} } = {})
 			const weight =
 				state === 'complete' || state === 'pending'
 					? 0
-					: (returning ? 0.35 : 1) * (1 - smooth(Math.min(1, settling / 0.45)));
-			return { progress, weight, focus: Math.sin(Math.PI * progress) ** 2 * weight };
+					: (returning ? 0.35 * (1 - smooth(Math.max(0, (progress - 0.7) / 0.3))) : 1) *
+						(1 - smooth(Math.min(1, settling / 0.45)));
+			return {
+				progress,
+				launchProgress: returning ? 0.9 + progress * 0.1 : progress,
+				weight,
+				focus: Math.sin(Math.PI * progress) ** 2 * weight
+			};
 		}
 	};
 }
