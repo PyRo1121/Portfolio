@@ -655,3 +655,26 @@ body[data-film='on'] .orbit-support {
 		transition: none !important;
 	}
 }
+.launch-caption {
+	position: absolute;
+	top: 110px;
+	right: 12%;
+	z-index: 2;
+	pointer-events: none;
+	padding: 8px 11px;
+	border: 1px solid rgba(137, 217, 255, 0.2);
+	border-radius: 4px;
+	background: rgba(3, 9, 18, 0.8);
+	color: #bcdbe8;
+	font-size: 10px;
+	letter-spacing: 0.12em;
+}
+
+@media (max-width: 600px) {
+	.launch-caption {
+		top: auto;
+		bottom: 16px;
+		left: 20px;
+		right: auto;
+	}
+}

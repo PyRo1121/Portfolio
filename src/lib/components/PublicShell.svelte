@@ -80,11 +80,7 @@
 		<details class="scene-credits">
 			<summary>Scene credits</summary>
 			<p>
-				Voyager model: <a
-					href="https://science.nasa.gov/resource/voyager-3d-model/"
-					target="_blank"
-					rel="noreferrer">NASA / VTAD</a
-				>. Earth and sky textures:
+				Original Starship-inspired spacecraft and launch animation. Earth and sky textures:
 				<a href="https://www.solarsystemscope.com/textures/" target="_blank" rel="noreferrer"
 					>Solar System Scope</a
 				>,

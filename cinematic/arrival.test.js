@@ -7,8 +7,8 @@ describe('inline arrival', () => {
 			arrival = createArrival({ onComplete });
 		expect(arrival.advance({ dt: 10 }).weight).toBe(0);
 		expect(arrival.state).toBe('pending');
-		expect(arrival.advance({ visible: true, dt: 2.4 }).focus).toBe(1);
-		expect(arrival.advance({ visible: true, dt: 2.4 }).weight).toBe(0);
+		expect(arrival.advance({ visible: true, dt: 3.6 }).focus).toBe(1);
+		expect(arrival.advance({ visible: true, dt: 3.6 }).weight).toBe(0);
 		arrival.advance({ visible: true, dt: 20 });
 		expect(onComplete).toHaveBeenCalledTimes(1);
 	});
@@ -30,6 +30,7 @@ describe('inline arrival', () => {
 	});
 	it('uses elapsed time and a shorter returning visit', () => {
 		const arrival = createArrival({ returning: true });
+		expect(arrival.advance({ visible: true }).launchProgress).toBe(0.9);
 		expect(arrival.advance({ visible: true, dt: 0.8 }).focus).toBe(0.35);
 		expect(arrival.advance({ visible: true, dt: 0.8 }).weight).toBe(0);
 	});
