@@ -51,7 +51,7 @@ export async function createVoyage({ scene, camera, world, renderer, keep, resiz
 	const shot = panel.querySelector('.film-shot');
 	const covered = [
 		...document.querySelectorAll(
-			'.public-header, .hero-content, .hero-beacon, .orbit-support, .selected-work, .human-section, .closing, .usage-section, .public-footer'
+			'.public-header, .hero-content, .hero-beacon, .orbit-support, .observatory, .human-section, .closing, .usage-section, .public-footer'
 		)
 	];
 	const priorInert = new Map();
