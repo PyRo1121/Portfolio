@@ -135,6 +135,7 @@
 		<noscript>Enable JavaScript to watch the opening.</noscript>
 	</div>
 	<div class="orbit-visual">
+		<span class="launch-caption" aria-hidden="true" hidden>STARBASE, TEXAS / IGNITION</span>
 		<picture>
 			<source media="(max-width: 600px)" srcset="/orbit/earth-poster-mobile-stage.jpg" />
 			<source media="(max-width: 999px)" srcset="/orbit/earth-poster-tablet.jpg" />

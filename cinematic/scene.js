@@ -9,6 +9,7 @@ import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { FXAAShader } from 'three/addons/shaders/FXAAShader.js';
 import { createVoyage } from './voyage.js';
 import { createArrival } from './arrival.js';
+import { launchPose } from './starship.js';
 export { mountPortfolioSpace } from './gallery.js';
 export { mountObservatory } from './observatory.js';
 
@@ -21,7 +22,7 @@ export function mountOrbit(hero) {
 	const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 	let returning = false;
 	try {
-		returning = localStorage.getItem('latham-arrival-seen') === 'yes';
+		returning = localStorage.getItem('latham-starbase-arrival-seen') === 'yes';
 	} catch {
 		/* Optional visit memory. */
 	}
@@ -29,7 +30,7 @@ export function mountOrbit(hero) {
 		returning,
 		onComplete() {
 			try {
-				localStorage.setItem('latham-arrival-seen', 'yes');
+				localStorage.setItem('latham-starbase-arrival-seen', 'yes');
 			} catch {
 				/* Optional visit memory. */
 			}
@@ -368,7 +369,7 @@ export function mountOrbit(hero) {
 		if (!voyage?.active) {
 			camera.position.x += arrivalPose.focus * (width <= 600 ? 0.25 : -0.8);
 			camera.position.y += arrivalPose.focus * 0.35;
-			camera.position.z += arrivalPose.focus * 1.6;
+			camera.position.z += arrivalPose.focus * (width <= 600 ? 5.5 : 1.6);
 		}
 		camera.updateProjectionMatrix();
 		camera.updateMatrixWorld();
@@ -384,8 +385,11 @@ export function mountOrbit(hero) {
 		backdropUniforms.uTime.value = sceneTime;
 		backdropUniforms.uNebula.value = nebula;
 		earthMaterial.uniforms.uNebula.value = nebula;
-		earth.rotation.set(0, -1.95 + sceneTime * 0.025, 0.12);
-		clouds.rotation.set(0, -1.92 + sceneTime * 0.032, 0.12);
+		const launchTurn = voyage?.earthTurn ?? launchPose(arrivalPose.launchProgress).turn;
+		const launchWeight = voyage?.active ? 1 : arrivalPose.weight;
+		const earthRotation = -1.95 + sceneTime * 0.025 + (1 - launchTurn) * 1.65 * launchWeight;
+		earth.rotation.set(0, earthRotation, 0.12);
+		clouds.rotation.set(0, earthRotation + 0.03 + sceneTime * 0.007, 0.12);
 		orbit.rotation.z = -0.31 + Math.sin(sceneTime * 0.045) * 0.05;
 		satellites.forEach((node, i) => {
 			const angle = sceneTime * 0.1 + (i * Math.PI) / 3;
