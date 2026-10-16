@@ -1,7 +1,7 @@
 import { Either, Schema } from 'effect';
 import { describe, expect, it } from 'vitest';
 import { TelemetryPayloadSchema } from './telemetry-schema';
-import { shouldCollectTelemetryPath } from './telemetry';
+import { isTelemetryOptedOut, shouldCollectTelemetryPath } from './telemetry';
 
 const common = {
 	eventId: 'f8ad3bc4-8b70-4d2c-88aa-0efb3710378f',
@@ -19,6 +19,16 @@ describe('shouldCollectTelemetryPath', () => {
 		expect(shouldCollectTelemetryPath('/about')).toBe(true);
 		expect(shouldCollectTelemetryPath('/owner')).toBe(false);
 		expect(shouldCollectTelemetryPath('/owner/')).toBe(false);
+	});
+});
+
+describe('telemetry privacy signals', () => {
+	it('honors normalized opt-out signals and permits ordinary visits', () => {
+		expect(isTelemetryOptedOut({ doNotTrack: ' YES ' })).toBe(true);
+		expect(isTelemetryOptedOut({ doNotTrack: '1' })).toBe(true);
+		expect(isTelemetryOptedOut({ globalPrivacyControl: true })).toBe(true);
+		expect(isTelemetryOptedOut({ doNotTrack: '0', globalPrivacyControl: false })).toBe(false);
+		expect(isTelemetryOptedOut({})).toBe(false);
 	});
 });
 

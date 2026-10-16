@@ -49,6 +49,7 @@ export function mountPortfolioSpace(canvas) {
 	let renderWidth = 0,
 		renderHeight = 0;
 	let enabled = document.body.dataset.motion !== 'off' && !reduced.matches;
+	let opacityBeforeLoss;
 	function draw(now = 0) {
 		frame = 0;
 		if (disposed || lost || document.hidden || !visible) return;
@@ -96,11 +97,19 @@ export function mountPortfolioSpace(canvas) {
 	}
 	function contextLost(event) {
 		event.preventDefault();
+		if (!lost) opacityBeforeLoss = canvas.style.opacity;
 		lost = true;
 		canvas.style.opacity = '0';
-		visible = false;
 		cancelAnimationFrame(frame);
 		frame = 0;
+	}
+	function contextRestored() {
+		if (disposed || !lost) return;
+		lost = false;
+		last = 0;
+		canvas.style.opacity = opacityBeforeLoss;
+		resize();
+		schedule();
 	}
 	const observer = new IntersectionObserver(([entry]) => {
 		visible = entry.isIntersecting;
@@ -119,6 +128,7 @@ export function mountPortfolioSpace(canvas) {
 	document.addEventListener('visibilitychange', visibility);
 	reduced.addEventListener('change', motion);
 	canvas.addEventListener('webglcontextlost', contextLost);
+	canvas.addEventListener('webglcontextrestored', contextRestored);
 	resize();
 	return () => {
 		if (disposed) return;
@@ -132,6 +142,7 @@ export function mountPortfolioSpace(canvas) {
 		document.removeEventListener('visibilitychange', visibility);
 		reduced.removeEventListener('change', motion);
 		canvas.removeEventListener('webglcontextlost', contextLost);
+		canvas.removeEventListener('webglcontextrestored', contextRestored);
 		geometry.dispose();
 		material.dispose();
 		renderer.dispose();

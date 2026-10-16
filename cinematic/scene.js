@@ -6,7 +6,7 @@ import { CinematicBloomPass } from './bloom.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { FXAAShader } from 'three/addons/shaders/FXAAShader.js';
+import { CinematicFXAAShader } from './fxaa.js';
 import { createVoyage } from './voyage.js';
 import { createArrival } from './arrival.js';
 import { launchPose } from './starship.js';
@@ -53,6 +53,7 @@ export function mountOrbit(hero) {
 	let renderer, composer, bloom, resizeObserver, voyage, lens, antialias;
 	let ready = false,
 		disposed = false,
+		cleaned = false,
 		lost = false;
 	let width = 1,
 		height = 1,
@@ -458,31 +459,35 @@ export function mountOrbit(hero) {
 			new CustomEvent('orbit-opening', { detail: voyage ? 'ready' : 'unavailable' })
 		);
 	}
-	function cleanup() {
+	function disposeRendering() {
 		if (disposed) return;
 		disposed = true;
 		cancelAnimationFrame(redraw);
 		resizeObserver?.disconnect();
 		arrivalObserver?.disconnect();
 		window.removeEventListener('scroll', onArrivalScroll);
-		controller.dispose();
 		voyage?.dispose();
 		canvas.removeEventListener('webglcontextlost', onContextLost);
 		canvas.removeEventListener('webglcontextrestored', onContextRestored);
 		window.removeEventListener('resize', resize);
-		window.removeEventListener('pagehide', onPageHide);
 		document.removeEventListener('orbit-frame', onFrame);
 		document.removeEventListener('orbit-motion', onMotion);
 		document.removeEventListener('orbit-lighting', onLighting);
 		resources.forEach((value) => value.dispose?.());
 		noiseQuad.dispose();
-		['scene', 'sceneVersion', 'film', 'motion', 'heroVisible', 'lighting'].forEach(
-			(key) => delete body.dataset[key]
-		);
+		['scene', 'sceneVersion', 'film'].forEach((key) => delete body.dataset[key]);
 		composer?.passes.forEach((pass) => pass.dispose?.());
 		composer?.dispose();
 		renderer?.dispose();
 		renderer?.forceContextLoss();
+	}
+	function cleanup() {
+		if (cleaned) return;
+		cleaned = true;
+		controller.dispose();
+		disposeRendering();
+		window.removeEventListener('pagehide', onPageHide);
+		['motion', 'heroVisible', 'lighting'].forEach((key) => delete body.dataset[key]);
 	}
 	function onPageHide(event) {
 		if (!event.persisted) cleanup();
@@ -534,7 +539,7 @@ export function mountOrbit(hero) {
 				#endif
 			}`;
 			composer.addPass(lens);
-			antialias = new ShaderPass(FXAAShader);
+			antialias = new ShaderPass(CinematicFXAAShader);
 			composer.addPass(antialias);
 			const voyageLoading = createVoyage({
 				scene,
@@ -644,12 +649,13 @@ export function mountOrbit(hero) {
 			);
 			canvas.addEventListener('webglcontextlost', onContextLost);
 			canvas.addEventListener('webglcontextrestored', onContextRestored);
-			window.addEventListener('pagehide', onPageHide);
 		} catch (error) {
 			if (disposed) return;
-			body.dataset.scene = 'fallback';
 			clearAnchor();
-			cleanup();
+			disposeRendering();
+			body.dataset.scene = 'fallback';
+			hero.querySelector('#warp-button').hidden = true;
+			hero.querySelector('#lighting-toggle').hidden = true;
 			hero.dispatchEvent(new CustomEvent('orbit-opening', { detail: 'unavailable' }));
 			console.warn(
 				'The cinematic scene is unavailable; the illustrated scene remains active.',
@@ -657,6 +663,7 @@ export function mountOrbit(hero) {
 			);
 		}
 	}
+	window.addEventListener('pagehide', onPageHide);
 	void start();
 	return cleanup;
 }

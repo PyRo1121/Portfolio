@@ -51,7 +51,7 @@ export async function createVoyage({ scene, camera, world, renderer, keep, resiz
 	const shot = panel.querySelector('.film-shot');
 	const covered = [
 		...document.querySelectorAll(
-			'.public-header, .hero-content, .hero-beacon, .orbit-support, .selected-work, .human-section, .closing, .usage-section, .public-footer'
+			'.skip-link, .public-header, .hero-content, .hero-beacon, .orbit-support, .observatory, .human-section, .closing, .usage-section, .public-footer'
 		)
 	];
 	const priorInert = new Map();
@@ -176,23 +176,9 @@ export async function createVoyage({ scene, camera, world, renderer, keep, resiz
 		const angle = orbitTime * 0.09;
 		orbitalPoint(angle, orbitPosition);
 		orbitalTangent(angle, direction);
-		if (phone) {
-			orbitPosition.x *= 0.6;
-			direction.z *= 0.2;
-			direction.normalize();
-		}
 		orbitRotation.setFromUnitVectors(axis, direction);
 		trajectory.getPoint(pose.ascent, position);
 		trajectory.getTangent(pose.ascent, direction);
-		if (phone) {
-			position.x *= THREE.MathUtils.lerp(
-				1,
-				0.6,
-				THREE.MathUtils.smoothstep(pose.ascent, 0.15, 0.45)
-			);
-			direction.z *= 0.2;
-			direction.normalize();
-		}
 		launchRotation.setFromUnitVectors(axis, direction);
 		launchRotation.slerp(orbitRotation, pose.turn);
 		ship.position.copy(orbitPosition).lerp(position, weight).multiplyScalar(globeScale).add(center);

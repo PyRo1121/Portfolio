@@ -34,6 +34,17 @@ export function shouldCollectTelemetryPath(path: string): boolean {
 	return path !== '/owner' && path.startsWith('/owner/') === false;
 }
 
+export type TelemetryPrivacySignals = {
+	readonly doNotTrack?: string | null;
+	readonly globalPrivacyControl?: boolean;
+};
+
+export function isTelemetryOptedOut(signals: TelemetryPrivacySignals): boolean {
+	if (signals.globalPrivacyControl === true) return true;
+	const doNotTrack = signals.doNotTrack?.trim().toLowerCase();
+	return doNotTrack === '1' || doNotTrack === 'yes';
+}
+
 /** One persisted telemetry row after server enrichment. */
 export type TelemetryEvent = {
 	readonly id: string;
