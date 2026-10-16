@@ -32,7 +32,7 @@
 		"ci": "npm run check && npm run lint && npm test && npm run build && npm run seo:check"
 	},
 	"devDependencies": {
-		"@cloudflare/workers-types": "5.20260902.1",
+		"@cloudflare/workers-types": "5.20261016.1",
 		"@eslint/js": "^10.0.1",
 		"@sveltejs/adapter-cloudflare": "7.2.9",
 		"@sveltejs/kit": "^2.63.0",
@@ -51,7 +51,7 @@
 		"typescript-eslint": "^8.60.1",
 		"vite": "^8.0.16",
 		"vitest": "^4.1.10",
-		"wrangler": "4.128.0"
+		"wrangler": "4.151.1"
 	},
 	"dependencies": {
 		"@fontsource-variable/geist": "^5.3.0",

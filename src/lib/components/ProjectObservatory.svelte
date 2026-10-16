@@ -203,7 +203,7 @@
 >
 	<header class="observatory-heading">
 		<h2 id="work-heading">The work,<br /><span>up close.</span></h2>
-		<p>Tools I wanted to exist.<br />Now you can look inside.</p>
+		<p>Tools I wanted to exist. <br />Now you can look inside.</p>
 	</header>
 	<noscript>
 		<p class="observatory-no-script">

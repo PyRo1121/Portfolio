@@ -121,6 +121,7 @@ export function mountObservatory(canvas, initialProject = 0) {
 	let width = 0,
 		height = 0;
 	let motionEnabled = !reduced.matches && document.body.dataset.motion !== 'off';
+	let opacityBeforeLoss;
 	function draw(now = 0) {
 		frame = 0;
 		if (disposed || lost || !visible || document.hidden) return;
@@ -177,10 +178,19 @@ export function mountObservatory(canvas, initialProject = 0) {
 	}
 	function contextLost(event) {
 		event.preventDefault();
+		if (!lost) opacityBeforeLoss = canvas.style.opacity;
 		lost = true;
 		canvas.style.opacity = '0';
 		cancelAnimationFrame(frame);
 		frame = 0;
+	}
+	function contextRestored() {
+		if (disposed || !lost) return;
+		lost = false;
+		last = 0;
+		canvas.style.opacity = opacityBeforeLoss;
+		resize();
+		schedule();
 	}
 	const observer = new IntersectionObserver(([entry]) => {
 		visible = entry.isIntersecting;
@@ -198,6 +208,7 @@ export function mountObservatory(canvas, initialProject = 0) {
 	document.addEventListener('visibilitychange', pause);
 	reduced.addEventListener('change', pause);
 	canvas.addEventListener('webglcontextlost', contextLost);
+	canvas.addEventListener('webglcontextrestored', contextRestored);
 	resize();
 	return {
 		select(index) {
@@ -216,6 +227,7 @@ export function mountObservatory(canvas, initialProject = 0) {
 			document.removeEventListener('visibilitychange', pause);
 			reduced.removeEventListener('change', pause);
 			canvas.removeEventListener('webglcontextlost', contextLost);
+			canvas.removeEventListener('webglcontextrestored', contextRestored);
 			planeGeometry.dispose();
 			material.dispose();
 			starGeometry.dispose();

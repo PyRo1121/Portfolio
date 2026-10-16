@@ -4,13 +4,11 @@
 	import { ArrowRightIcon as ArrowRight } from 'phosphor-svelte';
 
 	const isNotFound = $derived(page.status === 404);
-	const heading = $derived(
-		isNotFound ? 'This page isn’t part of the record.' : 'The dashboard hit a boundary.'
-	);
+	const heading = $derived(isNotFound ? 'This page is out of orbit.' : 'This page could not load.');
 	const detail = $derived(
 		isNotFound
-			? 'The address doesn’t match a published dashboard, case study, or public evidence page.'
-			: 'This route could not be rendered. The public dashboard and case studies may still be available.'
+			? 'There is no published page at this address. Explore the projects or read more about me.'
+			: 'Please try again. You can also return to the portfolio or read a project case study.'
 	);
 </script>
 
@@ -35,7 +33,7 @@
 			<p class="detail">{detail}</p>
 			<nav class="recovery-links" aria-label="Recovery links">
 				<a class="primary" href={resolve('/')}>
-					Open the dashboard <ArrowRight size={16} weight="bold" />
+					Back to the portfolio <ArrowRight size={16} weight="bold" />
 				</a>
 				<a href={resolve('/about')}>About Olen</a>
 			</nav>
@@ -54,14 +52,15 @@
 		margin: 0;
 		min-height: 100%;
 		overflow: auto;
-		background: #0b0d0e;
-		color: #f0f0eb;
+		background: #040710;
+		color: #edf5ff;
 		font-family: 'Geist Variable', sans-serif;
 	}
 	:global(*) {
 		box-sizing: border-box;
 	}
 	.error-page {
+		background: radial-gradient(ellipse at 85% 35%, #102f4c66, transparent 65%);
 		display: grid;
 		width: min(100% - 3rem, 74rem);
 		min-height: 100dvh;
@@ -75,7 +74,7 @@
 		justify-content: space-between;
 		min-height: 3rem;
 		border-bottom: 1px solid rgb(231 232 225 / 16%);
-		color: #808580;
+		color: #9cacbd;
 		font:
 			600 0.65rem/1 'JetBrains Mono Variable',
 			monospace;
@@ -85,12 +84,12 @@
 	.topline a {
 		display: inline-flex;
 		gap: 0.55rem;
-		color: #f0f0eb;
+		color: #edf5ff;
 		text-decoration: none;
 	}
 	.topline a span,
 	.eyebrow {
-		color: #d8a54a;
+		color: #9eeaff;
 	}
 	.error-hero {
 		display: grid;
@@ -106,7 +105,7 @@
 		font-weight: 720;
 		line-height: 0.72;
 		letter-spacing: -0.09em;
-		-webkit-text-stroke: 1px rgb(216 165 74 / 72%);
+		-webkit-text-stroke: 1px rgb(158 234 255 / 72%);
 	}
 	.eyebrow {
 		margin: 0 0 1.4rem;
@@ -128,7 +127,7 @@
 	.detail {
 		max-width: 42rem;
 		margin: 2rem 0 0;
-		color: #b2b6b1;
+		color: #b4c5d5;
 		font-size: clamp(1rem, 1.7vw, 1.2rem);
 		line-height: 1.65;
 		text-wrap: pretty;
@@ -144,7 +143,7 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 0.5rem;
-		color: #d8a54a;
+		color: #9eeaff;
 		font-size: 0.82rem;
 		font-weight: 650;
 		text-decoration: none;
@@ -157,13 +156,13 @@
 	.recovery-links .primary {
 		min-height: 2.8rem;
 		padding: 0 1rem;
-		border: 1px solid #d8a54a;
-		background: #d8a54a;
-		color: #0b0d0e;
+		border: 1px solid #9eeaff;
+		background: #9eeaff;
+		color: #040710;
 	}
 	.recovery-links .primary:hover,
 	.recovery-links .primary:focus-visible {
-		background: #e2b762;
+		background: #c3f3ff;
 	}
 	.recovery-links a:active {
 		transform: translateY(1px);
@@ -174,7 +173,7 @@
 		gap: 2rem;
 		padding-top: 1.2rem;
 		border-top: 1px solid rgb(231 232 225 / 16%);
-		color: #777c78;
+		color: #9cacbd;
 		font:
 			500 0.62rem/1.5 'JetBrains Mono Variable',
 			monospace;
@@ -186,7 +185,7 @@
 		white-space: nowrap;
 	}
 	a:focus-visible {
-		outline: 2px solid #d8a54a;
+		outline: 2px solid #9eeaff;
 		outline-offset: 4px;
 	}
 	@media (max-width: 720px) {

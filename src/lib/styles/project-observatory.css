@@ -538,9 +538,6 @@ body[data-motion='off'] .observatory * {
 	.observatory-heading p br {
 		display: none;
 	}
-	.observatory-heading p br::after {
-		content: ' ';
-	}
 	.project-selector {
 		gap: 12px;
 	}

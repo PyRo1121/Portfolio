@@ -43,6 +43,9 @@ for (const url of urls) {
 	assert.ok(!titles.has(title), `${url} has a duplicate title.`);
 	titles.add(title);
 	const metas = [...head.matchAll(/<meta\s[^>]*>/gu)].map((match) => attributes(match[0]));
+	const themeColors = metas.filter((meta) => meta.name === 'theme-color');
+	assert.equal(themeColors.length, 1, `${url} must declare exactly one browser theme color.`);
+	assert.equal(themeColors[0].content, '#040710', `${url} has the wrong portfolio theme color.`);
 	const description = metas.filter((meta) => meta.name === 'description');
 	assert.equal(description.length, 1, `${url} must have one description.`);
 	assert.ok(description[0].content?.length > 40);
@@ -111,6 +114,14 @@ for (const url of urls) {
 	console.log(`SEO verified: ${canonical.pathname}`);
 }
 const redirects = await readFile(resolve('.svelte-kit/cloudflare/_redirects'), 'utf8');
+const [cinematicSource, cinematicOutput] = await Promise.all([
+	readFile(resolve('static/orbit/scene.js')),
+	readFile(resolve('.svelte-kit/cloudflare/orbit/scene.js'))
+]);
+assert.ok(
+	cinematicSource.equals(cinematicOutput),
+	'The deployment contains an outdated cinematic bundle.'
+);
 for (const path of expectedPaths.filter((path) => path !== '/')) {
 	assert.ok(redirects.includes(`${path}/ ${path} 301`), `${path} has no permanent slash redirect.`);
 }

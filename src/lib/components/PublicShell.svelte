@@ -13,7 +13,6 @@
 </script>
 
 <svelte:head>
-	<meta name="theme-color" content="#040710" />
 	<link
 		rel="preload"
 		href="/orbit/D-DIN.woff2"

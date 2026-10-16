@@ -1,5 +1,6 @@
 import { onCLS, onFCP, onINP, onLCP, onTTFB } from 'web-vitals';
 import {
+	isTelemetryOptedOut,
 	shouldCollectTelemetryPath,
 	type ContactAction,
 	type PortfolioAction,
@@ -20,8 +21,17 @@ let sharedClientTelemetry: ClientTelemetry | null = null;
 /** Return the one browser telemetry collector shared by the layout and dashboard. */
 export function getClientTelemetry(): ClientTelemetry | null {
 	if (typeof window === 'undefined') return null;
+	if (isBrowserTelemetryOptedOut()) return null;
 	sharedClientTelemetry ??= new ClientTelemetry();
 	return sharedClientTelemetry;
+}
+
+function isBrowserTelemetryOptedOut(): boolean {
+	return isTelemetryOptedOut({
+		doNotTrack: navigator.doNotTrack,
+		globalPrivacyControl:
+			'globalPrivacyControl' in navigator && navigator.globalPrivacyControl === true
+	});
 }
 
 export class ClientTelemetry {
@@ -36,6 +46,7 @@ export class ClientTelemetry {
 	readonly #sentVitals = new Set<VitalMetric>();
 	#currentPath: string | null = null;
 	#vitalsPath: string | null = null;
+	#errorEventsSent = 0;
 
 	constructor() {
 		this.#observeWebVitals();
@@ -112,6 +123,8 @@ export class ClientTelemetry {
 	}
 
 	#sendError(metricName: string): void {
+		if (this.#errorEventsSent >= 5) return;
+		this.#errorEventsSent += 1;
 		this.#send('error', {
 			path: this.#currentPath ?? window.location.pathname,
 			metricName,
@@ -143,6 +156,7 @@ export class ClientTelemetry {
 
 	#send(eventType: TelemetryEventType, extra: Record<string, TelemetryValue>): void {
 		if (!import.meta.env.PROD) return;
+		if (isBrowserTelemetryOptedOut()) return;
 		const path = String(extra['path'] ?? this.#currentPath ?? '/');
 		if (!shouldCollectTelemetryPath(path)) return;
 		const payload = {

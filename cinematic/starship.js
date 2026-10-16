@@ -129,21 +129,29 @@ export function starbaseDirection(rotation) {
 	).applyEuler(new THREE.Euler(0, rotation, 0.12));
 }
 
+const orbitBasis = {
+	start: new THREE.Vector3(-1.3, 1.4, 3.8),
+	quarterTurn: new THREE.Vector3(3.1, 0, -1.6)
+};
+orbitBasis.quarterTurn
+	.addScaledVector(
+		orbitBasis.start,
+		-orbitBasis.start.dot(orbitBasis.quarterTurn) / orbitBasis.start.lengthSq()
+	)
+	.setLength(3.8);
+
 export function orbitalPoint(angle, target = new THREE.Vector3()) {
-	return target.set(
-		-1.3 * Math.cos(angle) + 3.1 * Math.sin(angle),
-		1.4 * Math.cos(angle),
-		3.8 * Math.cos(angle) - 1.6 * Math.sin(angle)
-	);
+	return target
+		.copy(orbitBasis.start)
+		.multiplyScalar(Math.cos(angle))
+		.addScaledVector(orbitBasis.quarterTurn, Math.sin(angle));
 }
 
 export function orbitalTangent(angle, target = new THREE.Vector3()) {
 	return target
-		.set(
-			1.3 * Math.sin(angle) + 3.1 * Math.cos(angle),
-			-1.4 * Math.sin(angle),
-			-3.8 * Math.sin(angle) - 1.6 * Math.cos(angle)
-		)
+		.copy(orbitBasis.start)
+		.multiplyScalar(-Math.sin(angle))
+		.addScaledVector(orbitBasis.quarterTurn, Math.cos(angle))
 		.normalize();
 }
 

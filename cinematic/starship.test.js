@@ -18,6 +18,15 @@ describe('Starbase launch', () => {
 		for (let progress = 0; progress <= 1; progress += 0.01)
 			expect(path.getPoint(progress).length()).toBeGreaterThan(3.1);
 	});
+	it('keeps the full orbit outside Earth and follows its true tangent', () => {
+		for (let index = 0; index <= 720; index++) {
+			const angle = (index / 720) * Math.PI * 2;
+			const point = orbitalPoint(angle);
+			expect(point.length()).toBeGreaterThan(3.7);
+			const derivative = orbitalPoint(angle + 0.00001).sub(orbitalPoint(angle - 0.00001));
+			expect(orbitalTangent(angle).angleTo(derivative)).toBeLessThan(0.00001);
+		}
+	});
 	it('ignites before ascent, separates in flight, and shuts off exhaust in orbit', () => {
 		expect(launchPose(0)).toEqual({ ascent: 0, separation: 0, ignition: 0, turn: 0 });
 		expect(launchPose(0.1).ignition).toBe(1);
