@@ -97,7 +97,7 @@ export function mountOrbit(hero) {
 			vertexShader: surfaceVertex,
 			fragmentShader: `uniform vec3 uColor,uSun;varying vec3 vNormal,vWorld;
     void main(){vec3 n=normalize(vNormal),view=normalize(cameraPosition-vWorld);
-      float fresnel=pow(1.-abs(dot(n,view)),3.8);float sunlight=smoothstep(-.5,.8,dot(n,uSun));
+      float fresnel=pow(clamp(1.-abs(dot(n,view)),0.,1.),3.8);float sunlight=smoothstep(-.5,.8,dot(n,uSun));
       gl_FragColor=vec4(uColor*(1.2+sunlight*1.8),fresnel*(.04+sunlight*.4));}`,
 			transparent: true,
 			blending: THREE.AdditiveBlending,
@@ -166,7 +166,7 @@ export function mountOrbit(hero) {
 		float fbm(vec2 p){float n=0.,a=.5;for(int i=0;i<4;i++){n+=a*noise(p);p=mat2(.8,.6,-.6,.8)*p*2.1;a*=.48;}return n;}
 		void main(){vec2 p=(vUv-.5)*vec2(uAspect,1.);
 		float haze=fbm(p*3.8+vec2(uTime*.007,0.));
-		float band=exp(-pow((p.y-p.x*.42+.04)*2.8,2.));
+		float distance=(p.y-p.x*.42+.04)*2.8;float band=exp(-distance*distance);
 		float wisps=pow(fbm(p*5.+haze*2.),3.)*band;
 		gl_FragColor=vec4(wisps,0.,0.,1.);}`
 		})
@@ -242,7 +242,7 @@ export function mountOrbit(hero) {
       vec2 radial=normalize(aSeed.xy+vec2(.001)),tangent=vec2(-radial.y,radial.x);float size=.018*aSeed.w;
       mv.xy+=tangent*position.x*size+radial*position.y*size*(1.+uJump*180.);vUv=uv;
       vAlpha=(.3+aSeed.w*.22)*smoothstep(0.,3.,-mv.z)*(.8+.2*sin(uTime*.6+aSeed.z*50.));gl_Position=projectionMatrix*mv;}`,
-			fragmentShader: `uniform vec3 uColor;varying vec2 vUv;varying float vAlpha;void main(){float a=smoothstep(.5,.02,length(vUv-.5));gl_FragColor=vec4(mix(vec3(1.4),uColor,.3),a*vAlpha);}`
+			fragmentShader: `uniform vec3 uColor;varying vec2 vUv;varying float vAlpha;void main(){float a=1.-smoothstep(.02,.5,length(vUv-.5));gl_FragColor=vec4(mix(vec3(1.4),uColor,.3),a*vAlpha);}`
 		})
 	);
 	const stars = new THREE.Mesh(starGeometry, starMaterial);
@@ -260,7 +260,7 @@ export function mountOrbit(hero) {
 		})
 	);
 	const flare = new THREE.Mesh(keep(new THREE.PlaneGeometry(10, 10)), flareMaterial);
-	flare.position.set(-2.45, 2.08, -0.5);
+	flare.position.set(-3.2, 2.08, -0.5);
 	world.add(flare);
 
 	function projectAnchor() {
@@ -591,7 +591,7 @@ export function mountOrbit(hero) {
           vec3 day=texture2D(uDay,vUv).rgb,night=texture2D(uNight,vUv).rgb;
           float ocean=clamp((day.b-day.r)*4.,0.,1.),spec=pow(max(dot(reflect(-uSun,n),view),0.),42.)*ocean;
           vec3 c=day*(.035+max(light,0.)*.94)+night*(1.-daySide)*1.7;c+=vec3(.55,.72,.85)*spec*.5;
-          float rim=pow(1.-max(dot(n,view),0.),3.5)*daySide;vec3 air=mix(vec3(.075,.35,.8),vec3(.39,.15,.8),uNebula);
+          float rim=pow(clamp(1.-dot(n,view),0.,1.),3.5)*daySide;vec3 air=mix(vec3(.075,.35,.8),vec3(.39,.15,.8),uNebula);
           c+=air*rim*.65;gl_FragColor=vec4(c,1.);}`
 				})
 			);
